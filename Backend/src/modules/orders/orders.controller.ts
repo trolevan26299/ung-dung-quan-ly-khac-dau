@@ -120,11 +120,20 @@ export class OrdersController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Hủy đơn hàng' })
-  @ApiResponse({ status: 200, description: 'Hủy đơn hàng thành công' })
+  @ApiOperation({ summary: 'Hủy hoặc xóa vĩnh viễn đơn hàng' })
+  @ApiResponse({ status: 200, description: 'Xử lý thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
   @ApiResponse({ status: 400, description: 'Đơn hàng đã được hủy trước đó' })
-  cancel(@Param('id') id: string, @Request() req) {
-    return this.ordersService.cancel(id, req.user.userId, req.user.username);
+  @ApiQuery({ name: 'permanent', required: false, type: Boolean, description: 'true = xóa vĩnh viễn, false = chỉ hủy' })
+  deleteOrder(
+    @Param('id') id: string, 
+    @Query('permanent') permanent: boolean, 
+    @Request() req
+  ) {
+    if (permanent === true) {
+      return this.ordersService.remove(id, req.user.userId, req.user.username);
+    } else {
+      return this.ordersService.cancel(id, req.user.userId, req.user.username);
+    }
   }
 } 

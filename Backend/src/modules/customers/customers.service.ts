@@ -100,7 +100,7 @@ export class CustomersService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.customerModel.findByIdAndUpdate(id, { isActive: false });
+    const result = await this.customerModel.findByIdAndDelete(id);
     if (!result) {
       throw new NotFoundException('Không tìm thấy khách hàng');
     }

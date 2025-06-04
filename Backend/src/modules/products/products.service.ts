@@ -78,7 +78,7 @@ export class ProductsService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.productModel.findByIdAndUpdate(id, { isActive: false });
+    const result = await this.productModel.findByIdAndDelete(id);
     if (!result) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }

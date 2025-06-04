@@ -319,4 +319,27 @@ export class OrdersService {
       { $sort: { '_id': 1 } }
     ]);
   }
+
+  async remove(id: string, employeeId: string, employeeName: string): Promise<void> {
+    const order = await this.findOne(id);
+
+    // Hoàn trả kho nếu đơn hàng đang active
+    if (order.status === OrderStatus.ACTIVE) {
+      for (const item of order.items) {
+        await this.stockService.returnStock(
+          item.productId.toString(),
+          item.quantity,
+          id,
+          employeeId,
+          employeeName
+        );
+      }
+    }
+
+    // Xóa vĩnh viễn đơn hàng
+    const result = await this.orderModel.findByIdAndDelete(id);
+    if (!result) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+  }
 }

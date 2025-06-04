@@ -65,7 +65,7 @@ export class AgentsService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.agentModel.findByIdAndUpdate(id, { isActive: false });
+    const result = await this.agentModel.findByIdAndDelete(id);
     if (!result) {
       throw new NotFoundException('Không tìm thấy đại lý');
     }

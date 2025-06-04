@@ -214,7 +214,7 @@ export const ordersApi = {
   },
   
   deleteOrder: async (id: string): Promise<void> => {
-    await api.delete(`/orders/${id}`);
+    await api.delete(`/orders/${id}?permanent=true`);
   },
   
   updateOrderStatus: async (id: string, status: Order['status']): Promise<Order> => {
