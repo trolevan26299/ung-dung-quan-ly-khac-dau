@@ -111,9 +111,9 @@ const Users: React.FC = () => {
 
     const handleDeleteUser = async (user: User) => {
         const confirmed = await confirm({
-            title: 'Xóa người dùng',
-            message: `Bạn có chắc chắn muốn xóa người dùng "${user.fullName}"? Hành động này không thể hoàn tác.`,
-            confirmText: 'Xóa',
+            title: 'Xóa vĩnh viễn người dùng',
+            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN người dùng "${user.fullName}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
+            confirmText: 'XÓA VĨNH VIỄN',
             cancelText: 'Hủy',
             confirmVariant: 'destructive'
         });
@@ -121,7 +121,7 @@ const Users: React.FC = () => {
         if (confirmed) {
             try {
                 await dispatch(deleteUser(user._id)).unwrap();
-                success('Xóa thành công', `Người dùng "${user.fullName}" đã được xóa`);
+                success('Đã xóa vĩnh viễn', `Người dùng "${user.fullName}" đã được xóa khỏi hệ thống`);
             } catch (error: any) {
                 console.error('Error deleting user:', error);
                 showError('Xóa thất bại', error.message || 'Có lỗi xảy ra khi xóa người dùng');

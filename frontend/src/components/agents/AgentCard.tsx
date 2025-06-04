@@ -26,20 +26,15 @@ export const AgentCard: React.FC<AgentCardProps> = ({
 
     const handleDelete = async () => {
         const confirmed = await confirm({
-            title: 'Xóa đại lý',
-            message: `Bạn có chắc chắn muốn xóa đại lý "${agent.name}"? Hành động này không thể hoàn tác.`,
-            confirmText: 'Xóa',
+            title: 'Xóa vĩnh viễn đại lý',
+            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN đại lý "${agent.name}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
+            confirmText: 'XÓA VĨNH VIỄN',
             cancelText: 'Hủy',
             confirmVariant: 'destructive'
         });
 
         if (confirmed) {
-            try {
-                onDelete(agent._id);
-                success('Xóa thành công', `Đại lý "${agent.name}" đã được xóa`);
-            } catch (err) {
-                error('Xóa thất bại', 'Có lỗi xảy ra khi xóa đại lý');
-            }
+            onDelete(agent._id);
         }
     };
 

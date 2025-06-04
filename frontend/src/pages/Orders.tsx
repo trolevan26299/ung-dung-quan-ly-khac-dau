@@ -99,9 +99,9 @@ export const Orders: React.FC = () => {
     const handleDeleteOrder = async (id: string) => {
         const orderToDelete = orders.find(order => order._id === id);
         const confirmed = await confirm({
-            title: 'Xóa đơn hàng',
-            message: `Bạn có chắc chắn muốn xóa đơn hàng "#${orderToDelete?.orderNumber || ''}"? Hành động này không thể hoàn tác.`,
-            confirmText: 'Xóa',
+            title: 'Xóa vĩnh viễn đơn hàng',
+            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN đơn hàng "#${orderToDelete?.orderNumber || ''}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
+            confirmText: 'XÓA VĨNH VIỄN',
             cancelText: 'Hủy',
             confirmVariant: 'destructive'
         });
@@ -110,7 +110,7 @@ export const Orders: React.FC = () => {
 
         try {
             await dispatch(deleteOrder(id)).unwrap();
-            success('Xóa thành công', `Đơn hàng "#${orderToDelete?.orderNumber || ''}" đã được xóa`);
+            success('Đã xóa vĩnh viễn', `Đơn hàng "#${orderToDelete?.orderNumber || ''}" đã được xóa khỏi hệ thống`);
         } catch (error: any) {
             console.error('Delete order error:', error);
             showError('Xóa thất bại', error.message || 'Có lỗi xảy ra khi xóa đơn hàng');

@@ -5,11 +5,12 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { SearchInput, Pagination, EmptyState } from '../components/common';
 import { CustomerForm, CustomerDetail, CustomerCard, CustomerTable } from '../components/customers';
-import { usePagination, useModal } from '../hooks';
+import { usePagination, useModal, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import { AppDispatch, RootState } from '../store';
 import { createCustomer, deleteCustomer, fetchCustomers, updateCustomer } from '../store/slices/customersSlice';
 import type { CreateCustomerRequest, Customer } from '../types';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 type ViewMode = 'grid' | 'table';
 
@@ -17,6 +18,7 @@ export const Customers: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { customers, isLoading, error, pagination: paginationData } = useSelector((state: RootState) => state.customers);
     const { success, error: showError } = useToast();
+    const { confirm, confirmProps } = useConfirm();
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
     // Hooks - Khởi tạo với page hiện tại từ Redux nếu có
@@ -47,9 +49,10 @@ export const Customers: React.FC = () => {
     // Handlers
     const handleCreateCustomer = async (data: CreateCustomerRequest) => {
         try {
+            console.log('Creating customer with data:', data);
             await dispatch(createCustomer(data)).unwrap();
             formModal.closeModal();
-            // Refresh current page
+            // Refresh current page to show new customer
             dispatch(fetchCustomers(params));
             success('Tạo thành công', `Khách hàng "${data.name}" đã được tạo`);
         } catch (error: any) {
@@ -78,11 +81,22 @@ export const Customers: React.FC = () => {
     };
 
     const handleDeleteCustomer = async (id: string) => {
+        const customerToDelete = customers.find(customer => customer._id === id);
+        const confirmed = await confirm({
+            title: 'Xóa vĩnh viễn khách hàng',
+            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN khách hàng "${customerToDelete?.name || ''}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
+            confirmText: 'XÓA VĨNH VIỄN',
+            cancelText: 'Hủy',
+            confirmVariant: 'destructive'
+        });
+
+        if (!confirmed) return;
+
         try {
             await dispatch(deleteCustomer(id)).unwrap();
             // Refresh current page
             dispatch(fetchCustomers(params));
-            success('Xóa thành công', 'Khách hàng đã được xóa');
+            success('Đã xóa vĩnh viễn', `Khách hàng "${customerToDelete?.name || ''}" đã được xóa khỏi hệ thống`);
         } catch (error: any) {
             console.error('Error deleting customer:', error);
             showError('Xóa thất bại', error.message || 'Có lỗi xảy ra khi xóa khách hàng');
@@ -255,6 +269,8 @@ export const Customers: React.FC = () => {
                 isOpen={detailModal.isOpen}
                 onClose={detailModal.closeModal}
             />
+
+            <ConfirmDialog {...confirmProps} />
         </div>
     );
 }; 
