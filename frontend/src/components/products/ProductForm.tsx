@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Portal } from '../ui/Portal';
 import { VALIDATION } from '../../constants';
 import type { Product, CreateProductRequest } from '../../types';
 
@@ -125,135 +126,147 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold">
-                        {product ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}
-                    </h2>
-                    <Button variant="ghost" size="sm" onClick={onCancel || onClose} className="h-8 w-8 p-0">
-                        <X className="w-4 h-4" />
-                    </Button>
+        <Portal>
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100vw',
+                    height: '100vh'
+                }}
+            >
+                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold">
+                            {product ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}
+                        </h2>
+                        <Button variant="ghost" size="sm" onClick={onCancel || onClose} className="h-8 w-8 p-0">
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Mã sản phẩm *
+                            </label>
+                            <Input
+                                value={formData.code}
+                                onChange={(e) => handleInputChange('code', e.target.value)}
+                                placeholder="Nhập mã sản phẩm"
+                                className={errors.code ? 'border-red-500' : ''}
+                            />
+                            {errors.code && (
+                                <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Tên sản phẩm *
+                            </label>
+                            <Input
+                                value={formData.name}
+                                onChange={(e) => handleInputChange('name', e.target.value)}
+                                placeholder="Nhập tên sản phẩm"
+                                className={errors.name ? 'border-red-500' : ''}
+                            />
+                            {errors.name && (
+                                <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Danh mục *
+                                </label>
+                                <Input
+                                    value={formData.category}
+                                    onChange={(e) => handleInputChange('category', e.target.value)}
+                                    placeholder="Nhập danh mục"
+                                    className={errors.category ? 'border-red-500' : ''}
+                                />
+                                {errors.category && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Đơn vị tính *
+                                </label>
+                                <Input
+                                    value={formData.unit}
+                                    onChange={(e) => handleInputChange('unit', e.target.value)}
+                                    placeholder="Cái, Chiếc, Kg..."
+                                    className={errors.unit ? 'border-red-500' : ''}
+                                />
+                                {errors.unit && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Giá bán *
+                            </label>
+                            <Input
+                                type="number"
+                                value={formData.sellingPrice}
+                                onChange={(e) => handleNumberChange('sellingPrice', parseFloat(e.target.value) || 0)}
+                                placeholder="Nhập giá bán"
+                                min="0"
+                                step="1000"
+                                className={errors.sellingPrice ? 'border-red-500' : ''}
+                            />
+                            {errors.sellingPrice && (
+                                <p className="text-red-500 text-xs mt-1">{errors.sellingPrice}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ghi chú
+                            </label>
+                            <textarea
+                                value={formData.notes}
+                                onChange={(e) => handleInputChange('notes', e.target.value)}
+                                placeholder="Nhập ghi chú (tùy chọn)"
+                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.notes ? 'border-red-500' : 'border-gray-300'}`}
+                                rows={3}
+                            />
+                            {errors.notes && (
+                                <p className="text-red-500 text-xs mt-1">{errors.notes}</p>
+                            )}
+                        </div>
+
+                        <div className="flex space-x-3 pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onCancel || onClose}
+                                className="flex-1"
+                                disabled={isLoading}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="flex-1"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Đang xử lý...' : (product ? 'Cập nhật' : 'Thêm mới')}
+                            </Button>
+                        </div>
+                    </form>
                 </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Mã sản phẩm *
-                        </label>
-                        <Input
-                            value={formData.code}
-                            onChange={(e) => handleInputChange('code', e.target.value)}
-                            placeholder="Nhập mã sản phẩm"
-                            className={errors.code ? 'border-red-500' : ''}
-                        />
-                        {errors.code && (
-                            <p className="text-red-500 text-xs mt-1">{errors.code}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tên sản phẩm *
-                        </label>
-                        <Input
-                            value={formData.name}
-                            onChange={(e) => handleInputChange('name', e.target.value)}
-                            placeholder="Nhập tên sản phẩm"
-                            className={errors.name ? 'border-red-500' : ''}
-                        />
-                        {errors.name && (
-                            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Danh mục *
-                            </label>
-                            <Input
-                                value={formData.category}
-                                onChange={(e) => handleInputChange('category', e.target.value)}
-                                placeholder="Nhập danh mục"
-                                className={errors.category ? 'border-red-500' : ''}
-                            />
-                            {errors.category && (
-                                <p className="text-red-500 text-xs mt-1">{errors.category}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Đơn vị tính *
-                            </label>
-                            <Input
-                                value={formData.unit}
-                                onChange={(e) => handleInputChange('unit', e.target.value)}
-                                placeholder="Cái, Chiếc, Kg..."
-                                className={errors.unit ? 'border-red-500' : ''}
-                            />
-                            {errors.unit && (
-                                <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Giá bán *
-                        </label>
-                        <Input
-                            type="number"
-                            value={formData.sellingPrice}
-                            onChange={(e) => handleNumberChange('sellingPrice', parseFloat(e.target.value) || 0)}
-                            placeholder="Nhập giá bán"
-                            min="0"
-                            step="1000"
-                            className={errors.sellingPrice ? 'border-red-500' : ''}
-                        />
-                        {errors.sellingPrice && (
-                            <p className="text-red-500 text-xs mt-1">{errors.sellingPrice}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Ghi chú
-                        </label>
-                        <textarea
-                            value={formData.notes}
-                            onChange={(e) => handleInputChange('notes', e.target.value)}
-                            placeholder="Nhập ghi chú (tùy chọn)"
-                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.notes ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                            rows={3}
-                        />
-                        {errors.notes && (
-                            <p className="text-red-500 text-xs mt-1">{errors.notes}</p>
-                        )}
-                    </div>
-
-                    <div className="flex space-x-3 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            className="flex-1"
-                            disabled={isLoading}
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            type="submit"
-                            className="flex-1"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Đang xử lý...' : (product ? 'Cập nhật' : 'Thêm mới')}
-                        </Button>
-                    </div>
-                </form>
             </div>
-        </div>
+        </Portal>
     );
 }; 

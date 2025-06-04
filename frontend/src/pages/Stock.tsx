@@ -31,6 +31,8 @@ import { StockTransactionDetail } from '../components/stock/StockTransactionDeta
 import { StockTransactionCard } from '../components/stock/StockTransactionCard';
 import { ProductStockCard } from '../components/stock/ProductStockCard';
 import { formatCurrency, formatNumber, formatDateTime, safeString, safeNumber } from '../lib/utils';
+import { Portal } from '../components/ui/Portal';
+import { useToast } from '../contexts/ToastContext';
 
 // Stock Transaction Form Modal
 interface StockFormProps {
@@ -112,121 +114,134 @@ const StockForm: React.FC<StockFormProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h2 className="text-xl font-bold mb-4">
-                    {transaction ? 'Cập nhật giao dịch kho' : 'Thêm giao dịch kho'}
-                </h2>
+        <Portal>
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100vw',
+                    height: '100vh'
+                }}
+            >
+                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                    <h2 className="text-xl font-bold mb-4">
+                        {transaction ? 'Cập nhật giao dịch kho' : 'Thêm giao dịch kho'}
+                    </h2>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Sản phẩm *
-                        </label>
-                        <select
-                            value={formData.product}
-                            onChange={(e) => handleProductChange(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            required
-                        >
-                            <option value="">Chọn sản phẩm</option>
-                            {products.map(product => (
-                                <option key={product._id} value={product._id}>
-                                    {product.name} - Tồn: {product.currentStock}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Sản phẩm *
+                            </label>
+                            <select
+                                value={formData.product}
+                                onChange={(e) => handleProductChange(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                required
+                            >
+                                <option value="">Chọn sản phẩm</option>
+                                {products.map(product => (
+                                    <option key={product._id} value={product._id}>
+                                        {product.name} - Tồn: {product.currentStock}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Loại giao dịch *
-                        </label>
-                        <select
-                            value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            required
-                        >
-                            <option value="import">Nhập kho</option>
-                            <option value="export">Xuất kho</option>
-                            <option value="adjustment">Điều chỉnh</option>
-                        </select>
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Loại giao dịch *
+                            </label>
+                            <select
+                                value={formData.type}
+                                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                required
+                            >
+                                <option value="import">Nhập kho</option>
+                                <option value="export">Xuất kho</option>
+                                <option value="adjustment">Điều chỉnh</option>
+                            </select>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Số lượng *
-                        </label>
-                        <Input
-                            type="number"
-                            value={formData.quantity}
-                            onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                            placeholder="Nhập số lượng"
-                            min="1"
-                            required
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Số lượng *
+                            </label>
+                            <Input
+                                type="number"
+                                value={formData.quantity}
+                                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                                placeholder="Nhập số lượng"
+                                min="1"
+                                required
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Đơn giá *
-                        </label>
-                        <Input
-                            type="number"
-                            value={formData.unitPrice}
-                            onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
-                            placeholder="Nhập đơn giá"
-                            min="0"
-                            required
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Đơn giá *
+                            </label>
+                            <Input
+                                type="number"
+                                value={formData.unitPrice}
+                                onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
+                                placeholder="Nhập đơn giá"
+                                min="0"
+                                required
+                            />
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Ghi chú
-                        </label>
-                        <textarea
-                            value={formData.notes}
-                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            placeholder="Nhập ghi chú (tùy chọn)"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            rows={3}
-                        />
-                    </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ghi chú
+                            </label>
+                            <textarea
+                                value={formData.notes}
+                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                placeholder="Nhập ghi chú (tùy chọn)"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                rows={3}
+                            />
+                        </div>
 
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-sm">
-                            <div className="flex justify-between">
-                                <span>Tổng giá trị:</span>
-                                <span className="font-medium">
-                                    {formatCurrency(formData.quantity * (formData.unitPrice || 0))}
-                                </span>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="text-sm">
+                                <div className="flex justify-between">
+                                    <span>Tổng giá trị:</span>
+                                    <span className="font-medium">
+                                        {formatCurrency(formData.quantity * (formData.unitPrice || 0))}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex space-x-3 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            className="flex-1"
-                            disabled={isLoading}
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            type="submit"
-                            className="flex-1"
-                            disabled={isLoading || !formData.product || !formData.quantity}
-                        >
-                            {isLoading ? 'Đang xử lý...' : (transaction ? 'Cập nhật' : 'Thêm mới')}
-                        </Button>
-                    </div>
-                </form>
+                        <div className="flex space-x-3 pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                className="flex-1"
+                                disabled={isLoading}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="flex-1"
+                                disabled={isLoading || !formData.product || !formData.quantity}
+                            >
+                                {isLoading ? 'Đang xử lý...' : (transaction ? 'Cập nhật' : 'Thêm mới')}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        </Portal>
     );
 };
 
@@ -268,77 +283,90 @@ const StockDetail: React.FC<StockDetailProps> = ({ transaction, isOpen, onClose 
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold">Chi tiết giao dịch kho</h2>
-                    <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(transaction.type)}`}>
-                            {getTypeIcon(transaction.type)}
-                            <span className="ml-1">{getTypeText(transaction.type)}</span>
-                        </span>
+        <Portal>
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100vw',
+                    height: '100vh'
+                }}
+            >
+                <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold">Chi tiết giao dịch kho</h2>
+                        <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-500">Sản phẩm</label>
-                            <p className="font-medium">{transaction.product.name}</p>
-                            <p className="text-sm text-gray-600">{transaction.product.code}</p>
+                    <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(transaction.type)}`}>
+                                {getTypeIcon(transaction.type)}
+                                <span className="ml-1">{getTypeText(transaction.type)}</span>
+                            </span>
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-500">Số lượng</label>
-                            <p className="font-medium text-lg">{transaction.quantity}</p>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-500">Đơn giá</label>
-                            <p className="font-medium">{formatCurrency(transaction.unitPrice)}</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Sản phẩm</label>
+                                <p className="font-medium">{transaction.product.name}</p>
+                                <p className="text-sm text-gray-600">{transaction.product.code}</p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Số lượng</label>
+                                <p className="font-medium text-lg">{transaction.quantity}</p>
+                            </div>
                         </div>
-                        <div>
-                            <span className="text-gray-500">Tổng giá trị:</span>
-                            <p className="font-bold text-green-600">
-                                {formatCurrency(transaction.totalPrice)}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-500">Tồn kho trước</label>
-                            <p className="font-medium">-</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Đơn giá</label>
+                                <p className="font-medium">{formatCurrency(transaction.unitPrice)}</p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500">Tổng giá trị:</span>
+                                <p className="font-bold text-green-600">
+                                    {formatCurrency(transaction.totalPrice)}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-500">Tồn kho sau</label>
-                            <p className="font-medium">-</p>
-                        </div>
-                    </div>
 
-                    {transaction.notes && (
-                        <div>
-                            <label className="text-sm font-medium text-gray-500">Ghi chú</label>
-                            <p className="font-medium">{transaction.notes}</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Tồn kho trước</label>
+                                <p className="font-medium">-</p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Tồn kho sau</label>
+                                <p className="font-medium">-</p>
+                            </div>
                         </div>
-                    )}
 
-                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
-                        <div>
-                            <label>Người thực hiện</label>
-                            <p>{transaction.createdBy.username}</p>
-                        </div>
-                        <div>
-                            <label>Ngày thực hiện</label>
-                            <p>{new Date(transaction.createdAt).toLocaleDateString('vi-VN')}</p>
+                        {transaction.notes && (
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Ghi chú</label>
+                                <p className="font-medium">{transaction.notes}</p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                            <div>
+                                <label>Người thực hiện</label>
+                                <p>{transaction.createdBy.username}</p>
+                            </div>
+                            <div>
+                                <label>Ngày thực hiện</label>
+                                <p>{new Date(transaction.createdAt).toLocaleDateString('vi-VN')}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </Portal>
     );
 };
 

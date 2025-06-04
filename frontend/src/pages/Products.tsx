@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import type { Product, CreateProductRequest } from '../types';
+import { Portal } from '../components/ui/Portal';
 
 export const Products: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -209,12 +210,25 @@ export const Products: React.FC = () => {
 
             {/* Loading overlay */}
             {isLoading && products.length > 0 && (
-                <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
-                    <div className="bg-white p-4 rounded-lg shadow-lg">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-                        <p className="mt-2 text-gray-600">Đang xử lý...</p>
+                <Portal>
+                    <div 
+                        className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-[9999]"
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            width: '100vw',
+                            height: '100vh'
+                        }}
+                    >
+                        <div className="bg-white p-4 rounded-lg shadow-lg">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                            <p className="mt-2 text-gray-600">Đang xử lý...</p>
+                        </div>
                     </div>
-                </div>
+                </Portal>
             )}
 
             {/* Product Form Modal */}
@@ -232,6 +246,7 @@ export const Products: React.FC = () => {
             {/* Product Detail Modal */}
             {isDetailOpen && currentProduct && (
                 <ProductDetail
+                    isOpen={isDetailOpen}
                     product={currentProduct}
                     onClose={handleCloseDetail}
                 />
