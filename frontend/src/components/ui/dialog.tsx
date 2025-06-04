@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { X } from "lucide-react"
+import { Portal } from './Portal';
 
 interface DialogProps {
     open?: boolean;
@@ -40,15 +41,37 @@ const Dialog: React.FC<DialogProps> = ({ open = false, onOpenChange, children })
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-                className="fixed inset-0 bg-black/50"
-                onClick={() => onOpenChange?.(false)}
-            />
-            <div className="relative z-50 max-h-[90vh] overflow-auto">
-                {children}
+        <Portal>
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    width: '100vw',
+                    height: '100vh'
+                }}
+            >
+                <div
+                    className="fixed inset-0 bg-black/50"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh'
+                    }}
+                    onClick={() => onOpenChange?.(false)}
+                />
+                <div className="relative z-50 max-h-[90vh] overflow-auto">
+                    {children}
+                </div>
             </div>
-        </div>
+        </Portal>
     );
 };
 
