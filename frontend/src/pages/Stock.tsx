@@ -14,7 +14,9 @@ import {
     ArrowDownCircle,
     RefreshCw,
     Package,
-    RotateCcw
+    RotateCcw,
+    Grid,
+    List
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -29,10 +31,13 @@ import { EmptyState } from '../components/common/EmptyState';
 import { StockTransactionForm } from '../components/stock/StockTransactionForm';
 import { StockTransactionDetail } from '../components/stock/StockTransactionDetail';
 import { StockTransactionCard } from '../components/stock/StockTransactionCard';
+import { StockTransactionTable } from '../components/stock/StockTransactionTable';
 import { ProductStockCard } from '../components/stock/ProductStockCard';
 import { formatCurrency, formatNumber, formatDateTime, safeString, safeNumber } from '../lib/utils';
 import { Portal } from '../components/ui/Portal';
 import { useToast } from '../contexts/ToastContext';
+
+type ViewMode = 'grid' | 'table';
 
 // Stock Transaction Form Modal
 interface StockFormProps {
@@ -378,6 +383,7 @@ export const Stock: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'transactions' | 'products'>('transactions');
     const [typeFilter, setTypeFilter] = useState<string>('');
+    const [viewMode, setViewMode] = useState<ViewMode>('table');
 
     const {
         isOpen: isFormOpen,
@@ -610,7 +616,7 @@ export const Stock: React.FC = () => {
             {/* Search and Filters */}
             <Card>
                 <CardContent className="p-4">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center justify-between">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
@@ -620,20 +626,47 @@ export const Stock: React.FC = () => {
                                 className="pl-10"
                             />
                         </div>
-                        {activeTab === 'transactions' && (
-                            <select
-                                value={typeFilter}
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            >
-                                <option value="">Tất cả loại</option>
-                                <option value="import">Nhập kho</option>
-                                <option value="export">Xuất kho</option>
-                                <option value="adjustment">Điều chỉnh</option>
-                            </select>
-                        )}
-                        <div className="text-sm text-gray-500">
-                            Tổng: {activeTab === 'transactions' ? pagination.total : filteredProducts.length} {activeTab === 'transactions' ? 'giao dịch' : 'sản phẩm'}
+                        <div className="flex items-center space-x-4">
+                            {activeTab === 'transactions' && (
+                                <select
+                                    value={typeFilter}
+                                    onChange={(e) => setTypeFilter(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="">Tất cả loại</option>
+                                    <option value="import">Nhập kho</option>
+                                    <option value="export">Xuất kho</option>
+                                    <option value="adjustment">Điều chỉnh</option>
+                                </select>
+                            )}
+
+                            {/* View Toggle for Transactions */}
+                            {activeTab === 'transactions' && (
+                                <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                                    <Button
+                                        variant={viewMode === 'grid' ? 'active' : 'inactive'}
+                                        size="sm"
+                                        onClick={() => setViewMode('grid')}
+                                        className="h-8 w-8 p-0 rounded-md"
+                                        title="Xem dạng lưới"
+                                    >
+                                        <Grid className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        variant={viewMode === 'table' ? 'active' : 'inactive'}
+                                        size="sm"
+                                        onClick={() => setViewMode('table')}
+                                        className="h-8 w-8 p-0 rounded-md ml-1"
+                                        title="Xem dạng bảng"
+                                    >
+                                        <List className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            )}
+
+                            <div className="text-sm text-gray-500">
+                                Tổng: {activeTab === 'transactions' ? pagination.total : filteredProducts.length} {activeTab === 'transactions' ? 'giao dịch' : 'sản phẩm'}
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -650,39 +683,48 @@ export const Stock: React.FC = () => {
             {activeTab === 'transactions' ? (
                 <div className="space-y-4">
                     {/* Transactions List */}
-                    <div className="grid grid-cols-1 gap-4">
-                        {isLoading ? (
-                            // Loading skeleton
-                            Array.from({ length: 5 }).map((_, index) => (
-                                <Card key={index} className="animate-pulse">
-                                    <CardContent className="p-6">
-                                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                                        <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
-                                        <div className="space-y-2">
-                                            <div className="h-3 bg-gray-200 rounded"></div>
-                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))
-                        ) : filteredTransactions.length === 0 ? (
-                            <EmptyState
-                                icon={Package2}
-                                title="Chưa có giao dịch kho nào"
-                                description="Bắt đầu bằng cách thêm giao dịch đầu tiên"
-                                actionLabel="Thêm giao dịch"
-                                onAction={handleAddNew}
-                            />
-                        ) : (
-                            filteredTransactions.map((transaction) => (
-                                <StockTransactionCard
-                                    key={transaction._id}
-                                    transaction={transaction}
-                                    onViewDetail={handleViewDetail}
+                    {viewMode === 'table' ? (
+                        <StockTransactionTable
+                            transactions={filteredTransactions}
+                            isLoading={isLoading}
+                            onView={handleViewDetail}
+                            onAdd={handleAddNew}
+                        />
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {isLoading ? (
+                                // Loading skeleton
+                                Array.from({ length: 5 }).map((_, index) => (
+                                    <Card key={index} className="animate-pulse">
+                                        <CardContent className="p-6">
+                                            <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                                            <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
+                                            <div className="space-y-2">
+                                                <div className="h-3 bg-gray-200 rounded"></div>
+                                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            ) : filteredTransactions.length === 0 ? (
+                                <EmptyState
+                                    icon={Package2}
+                                    title="Chưa có giao dịch kho nào"
+                                    description="Bắt đầu bằng cách thêm giao dịch đầu tiên"
+                                    actionLabel="Thêm giao dịch"
+                                    onAction={handleAddNew}
                                 />
-                            ))
-                        )}
-                    </div>
+                            ) : (
+                                filteredTransactions.map((transaction) => (
+                                    <StockTransactionCard
+                                        key={transaction._id}
+                                        transaction={transaction}
+                                        onViewDetail={handleViewDetail}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    )}
 
                     {/* Pagination */}
                     {pagination.totalPages > 1 && (

@@ -36,6 +36,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { UserForm } from '../components/users/UserForm';
 import { UserDetail } from '../components/users/UserDetail';
 import { UserTable } from '../components/users/UserTable';
+import { UserCard } from '../components/users/UserCard';
 import { UserStats } from '../components/users/UserStats';
 
 // Hooks
@@ -43,7 +44,9 @@ import { useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 
 // Icons
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Users as UsersIcon, Grid, List } from 'lucide-react';
+
+type ViewMode = 'grid' | 'table';
 
 // Main Users Component
 const Users: React.FC = () => {
@@ -59,6 +62,7 @@ const Users: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | undefined>();
+    const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
     // Load users on component mount
     useEffect(() => {
@@ -155,13 +159,87 @@ const Users: React.FC = () => {
         }));
     };
 
+    const renderUsersGrid = () => {
+        if (isLoading) {
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <Card key={index} className="animate-pulse">
+                            <CardContent className="p-6">
+                                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
+                                <div className="space-y-2">
+                                    <div className="h-3 bg-gray-200 rounded"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            );
+        }
+
+        if (filteredUsers.length === 0) {
+            return (
+                <div className="text-center py-12">
+                    <UsersIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có người dùng nào</h3>
+                    <p className="text-gray-500 mb-4">Bắt đầu bằng cách thêm người dùng đầu tiên</p>
+                    <Button onClick={() => setIsFormOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Thêm người dùng
+                    </Button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredUsers.map((user) => (
+                    <UserCard
+                        key={user._id}
+                        user={user}
+                        onView={handleViewUser}
+                        onEdit={handleEditUser}
+                        onDelete={handleDeleteUser}
+                    />
+                ))}
+            </div>
+        );
+    };
+
+    const renderContent = () => {
+        if (viewMode === 'table') {
+            return (
+                <Card>
+                    <CardContent className="pt-6">
+                        <UserTable
+                            users={filteredUsers}
+                            isLoading={isLoading}
+                            onViewUser={handleViewUser}
+                            onEditUser={handleEditUser}
+                            onDeleteUser={handleDeleteUser}
+                        />
+                    </CardContent>
+                </Card>
+            );
+        }
+
+        return renderUsersGrid();
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Quản lý người dùng</h1>
-                    <p className="text-gray-600">Quản lý tài khoản người dùng hệ thống</p>
+                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                        <UsersIcon className="w-8 h-8 mr-3 text-primary-600" />
+                        Quản lý người dùng
+                    </h1>
+                    <p className="text-gray-500 mt-1">
+                        Quản lý tài khoản người dùng hệ thống
+                    </p>
                 </div>
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogTrigger asChild>
@@ -189,53 +267,82 @@ const Users: React.FC = () => {
             {/* Stats Cards */}
             <UserStats users={users} totalUsers={pagination.total} />
 
-            {/* Filters */}
+            {/* Search and Filters */}
             <Card>
-                <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-                            <Input
-                                placeholder="Tìm kiếm theo tên đăng nhập hoặc họ tên..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="flex-1"
-                            />
-                            <Button type="submit" variant="outline">
-                                <Search className="w-4 h-4" />
-                            </Button>
-                        </form>
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1 max-w-md">
+                            <form onSubmit={handleSearch} className="flex gap-2">
+                                <Input
+                                    placeholder="Tìm kiếm theo tên đăng nhập hoặc họ tên..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="flex-1"
+                                />
+                                <Button type="submit" variant="secondary">
+                                    <Search className="w-4 h-4" />
+                                </Button>
+                            </form>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                <SelectTrigger className="w-40">
+                                    <SelectValue placeholder="Vai trò" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tất cả vai trò</SelectItem>
+                                    <SelectItem value="admin">Quản trị viên</SelectItem>
+                                    <SelectItem value="employee">Nhân viên</SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        <Select value={roleFilter} onValueChange={setRoleFilter}>
-                            <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Vai trò" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tất cả vai trò</SelectItem>
-                                <SelectItem value="admin">Quản trị viên</SelectItem>
-                                <SelectItem value="employee">Nhân viên</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-40">
+                                    <SelectValue placeholder="Trạng thái" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tất cả</SelectItem>
+                                    <SelectItem value="active">Kích hoạt</SelectItem>
+                                    <SelectItem value="inactive">Vô hiệu hóa</SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Trạng thái" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tất cả</SelectItem>
-                                <SelectItem value="active">Kích hoạt</SelectItem>
-                                <SelectItem value="inactive">Vô hiệu hóa</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            {/* View Toggle */}
+                            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                                <Button
+                                    variant={viewMode === 'grid' ? 'active' : 'inactive'}
+                                    size="sm"
+                                    onClick={() => setViewMode('grid')}
+                                    className="h-8 w-8 p-0 rounded-md"
+                                    title="Xem dạng lưới"
+                                >
+                                    <Grid className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'table' ? 'active' : 'inactive'}
+                                    size="sm"
+                                    onClick={() => setViewMode('table')}
+                                    className="h-8 w-8 p-0 rounded-md ml-1"
+                                    title="Xem dạng bảng"
+                                >
+                                    <List className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <div className="text-sm text-gray-500">
+                                Tổng: {pagination.total} người dùng
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Error Display */}
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     {error}
                     <Button
-                        variant="ghost"
+                        variant="light"
                         size="sm"
                         onClick={() => dispatch(clearError())}
                         className="ml-2"
@@ -245,24 +352,14 @@ const Users: React.FC = () => {
                 </div>
             )}
 
-            {/* Users Table */}
-            <Card>
-                <CardContent className="pt-6">
-                    <UserTable
-                        users={filteredUsers}
-                        isLoading={isLoading}
-                        onViewUser={handleViewUser}
-                        onEditUser={handleEditUser}
-                        onDeleteUser={handleDeleteUser}
-                    />
-                </CardContent>
-            </Card>
+            {/* Users Content */}
+            {renderContent()}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
                 <div className="flex justify-center space-x-2">
                     <Button
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
                     >
@@ -272,7 +369,7 @@ const Users: React.FC = () => {
                         Trang {currentPage} / {pagination.totalPages}
                     </span>
                     <Button
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
                         disabled={currentPage === pagination.totalPages}
                     >

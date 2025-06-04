@@ -1,22 +1,23 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
-import { Plus, ShoppingCart, Search, Filter } from 'lucide-react';
+import { Plus, ShoppingCart, Search, Filter, Grid, List } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { fetchOrders, createOrder, updateOrder, deleteOrder, setSearchTerm, setStatusFilter, setPaymentFilter, setCurrentOrder, clearError } from '../store/slices/ordersSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchProducts } from '../store/slices/productsSlice';
 import { fetchAgents } from '../store/slices/agentsSlice';
-import { OrderForm } from '../components/orders/OrderForm';
-import { OrderDetail } from '../components/orders/OrderDetail';
-import { OrderCard } from '../components/orders/OrderCard';
+import { OrderForm, OrderDetail, OrderCard, OrderTable } from '../components/orders';
 import { EmptyState, Pagination } from '../components/common';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useModal, usePagination, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import type { CreateOrderRequest, Order } from '../types';
+
+type ViewMode = 'grid' | 'table';
 
 export const Orders: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -30,6 +31,7 @@ export const Orders: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+    const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
     // Hooks
     const formModal = useModal<Order>();
@@ -167,11 +169,19 @@ export const Orders: React.FC = () => {
     const renderOrdersGrid = () => {
         if (isLoading && orders.length === 0) {
             return (
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Đang tải đơn hàng...</p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <Card key={index} className="animate-pulse">
+                            <CardContent className="p-6">
+                                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
+                                <div className="space-y-2">
+                                    <div className="h-3 bg-gray-200 rounded"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
             );
         }
@@ -203,6 +213,23 @@ export const Orders: React.FC = () => {
         );
     };
 
+    const renderContent = () => {
+        if (viewMode === 'table') {
+            return (
+                <OrderTable
+                    orders={orders}
+                    isLoading={isLoading}
+                    onView={handleViewDetail}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteOrder}
+                    onAdd={handleAddNew}
+                />
+            );
+        }
+
+        return renderOrdersGrid();
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -213,7 +240,7 @@ export const Orders: React.FC = () => {
                         Quản lý đơn hàng
                     </h1>
                     <p className="text-gray-500 mt-1">
-                        Quản lý đơn hàng và theo dõi trạng thái
+                        Quản lý đơn hàng và theo dõi tiến trình
                     </p>
                 </div>
                 <Button onClick={handleAddNew} className="flex items-center">
@@ -225,85 +252,68 @@ export const Orders: React.FC = () => {
             {/* Search and Filters */}
             <Card>
                 <CardContent className="p-4">
-                    <div className="flex flex-col space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1 max-w-md">
-                                <div className="relative">
-                                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Tìm kiếm theo mã đơn hàng, khách hàng..."
-                                        value={searchTerm}
-                                        onChange={(e) => handleSearch(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                    />
-                                </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="Tìm kiếm theo số đơn hàng, khách hàng..."
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    className="pl-10"
+                                />
                             </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            {/* View Toggle */}
+                            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                                <Button
+                                    variant={viewMode === 'grid' ? 'active' : 'inactive'}
+                                    size="sm"
+                                    onClick={() => setViewMode('grid')}
+                                    className="h-8 w-8 p-0 rounded-md"
+                                    title="Xem dạng lưới"
+                                >
+                                    <Grid className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'table' ? 'active' : 'inactive'}
+                                    size="sm"
+                                    onClick={() => setViewMode('table')}
+                                    className="h-8 w-8 p-0 rounded-md ml-1"
+                                    title="Xem dạng bảng"
+                                >
+                                    <List className="w-4 h-4" />
+                                </Button>
+                            </div>
+
                             <div className="text-sm text-gray-500">
                                 Tổng: {pagination.total} đơn hàng
                             </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Trạng thái đơn hàng</label>
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => handleStatusFilter(e.target.value as Order['status'] | 'all')}
-                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                >
-                                    <option value="all">Tất cả</option>
-                                    <option value="active">Đang hoạt động</option>
-                                    <option value="cancelled">Đã hủy</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Trạng thái thanh toán</label>
-                                <select
-                                    value={paymentFilter}
-                                    onChange={(e) => handlePaymentFilter(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                >
-                                    <option value="">Tất cả</option>
-                                    <option value="pending">Chờ thanh toán</option>
-                                    <option value="completed">Đã thanh toán</option>
-                                    <option value="debt">Công nợ</option>
-                                </select>
-                            </div>
-
-                            {(searchTerm || statusFilter || paymentFilter) && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={clearFilters}
-                                    className="mt-6"
-                                >
-                                    Xóa bộ lọc
-                                </Button>
-                            )}
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Error Message */}
+            {/* Error Display */}
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     {error}
                 </div>
             )}
 
-            {/* Orders Grid */}
-            {renderOrdersGrid()}
+            {/* Orders Content */}
+            {renderContent()}
 
             {/* Pagination */}
-            <Pagination
-                pagination={paginationHook.pagination}
-                onPageChange={paginationHook.goToPage}
-                onNextPage={paginationHook.goToNextPage}
-                onPreviousPage={paginationHook.goToPreviousPage}
-            />
+            {pagination && pagination.totalPages > 1 && (
+                <Pagination
+                    pagination={paginationHook.pagination}
+                    onPageChange={paginationHook.goToPage}
+                    onPreviousPage={paginationHook.goToPreviousPage}
+                    onNextPage={paginationHook.goToNextPage}
+                />
+            )}
 
             {/* Modals */}
             <OrderForm
@@ -317,14 +327,11 @@ export const Orders: React.FC = () => {
                 products={products}
             />
 
-            {/* Order Detail Modal */}
-            {isDetailOpen && currentOrder && (
-                <OrderDetail
-                    isOpen={isDetailOpen}
-                    order={currentOrder}
-                    onClose={handleCloseDetail}
-                />
-            )}
+            <OrderDetail
+                order={currentOrder}
+                isOpen={isDetailOpen}
+                onClose={handleCloseDetail}
+            />
 
             <ConfirmDialog {...confirmProps} />
         </div>

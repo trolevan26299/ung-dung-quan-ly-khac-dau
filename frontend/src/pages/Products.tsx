@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Package } from 'lucide-react';
+import { Plus, Search, Package, Grid, List } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, setSearchTerm, setCurrentProduct, clearError } from '../store/slices/productsSlice';
-import { ProductForm } from '../components/products/ProductForm';
-import { ProductDetail } from '../components/products/ProductDetail';
-import { ProductCard } from '../components/products/ProductCard';
+import { ProductForm, ProductDetail, ProductCard, ProductTable } from '../components/products';
+import { Button } from '../components/ui/Button';
+import { Card, CardContent } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import type { Product, CreateProductRequest } from '../types';
 import { Portal } from '../components/ui/Portal';
+
+type ViewMode = 'grid' | 'table';
 
 export const Products: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -21,6 +24,7 @@ export const Products: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
     useEffect(() => {
         dispatch(fetchProducts({ page: 1, limit: 10, search: searchTerm }));
@@ -109,24 +113,36 @@ export const Products: React.FC = () => {
         dispatch(setCurrentProduct(null));
     };
 
-    const clearFilters = () => {
-        dispatch(setSearchTerm(''));
-    };
-
     const renderProductsGrid = () => {
+        if (isLoading) {
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Array.from({ length: 8 }).map((_, index) => (
+                        <Card key={index} className="animate-pulse">
+                            <CardContent className="p-6">
+                                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
+                                <div className="space-y-2">
+                                    <div className="h-3 bg-gray-200 rounded"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            );
+        }
+
         if (products.length === 0) {
             return (
                 <div className="text-center py-12">
                     <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có sản phẩm nào</h3>
-                    <p className="text-gray-500 mb-6">Tạo sản phẩm đầu tiên để bắt đầu quản lý</p>
-                    <button
-                        onClick={handleAddNew}
-                        className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                    >
+                    <p className="text-gray-500 mb-4">Bắt đầu bằng cách thêm sản phẩm đầu tiên</p>
+                    <Button onClick={handleAddNew}>
                         <Plus className="w-4 h-4 mr-2" />
                         Thêm sản phẩm
-                    </button>
+                    </Button>
                 </div>
             );
         }
@@ -146,6 +162,23 @@ export const Products: React.FC = () => {
         );
     };
 
+    const renderContent = () => {
+        if (viewMode === 'table') {
+            return (
+                <ProductTable
+                    products={products}
+                    isLoading={isLoading}
+                    onView={handleViewDetail}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteProduct}
+                    onAdd={handleAddNew}
+                />
+            );
+        }
+
+        return renderProductsGrid();
+    };
+
     if (isLoading && products.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -160,53 +193,77 @@ export const Products: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Quản lý sản phẩm</h1>
-                    <p className="text-gray-600">Quản lý các sản phẩm khắc dấu</p>
+                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+                        <Package className="w-8 h-8 mr-3 text-primary-600" />
+                        Quản lý sản phẩm
+                    </h1>
+                    <p className="text-gray-500 mt-1">
+                        Quản lý các sản phẩm khắc dấu
+                    </p>
                 </div>
-                <button
-                    onClick={handleAddNew}
-                    className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                >
+                <Button onClick={handleAddNew} className="flex items-center">
                     <Plus className="w-4 h-4 mr-2" />
                     Thêm sản phẩm
-                </button>
+                </Button>
             </div>
 
             {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                    <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm sản phẩm..."
-                            value={searchTerm}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
+            <Card>
+                <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="Tìm kiếm theo tên, mã sản phẩm..."
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            {/* View Toggle */}
+                            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
+                                <Button
+                                    variant={viewMode === 'grid' ? 'active' : 'inactive'}
+                                    size="sm"
+                                    onClick={() => setViewMode('grid')}
+                                    className="h-8 w-8 p-0 rounded-md"
+                                    title="Xem dạng lưới"
+                                >
+                                    <Grid className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'table' ? 'active' : 'inactive'}
+                                    size="sm"
+                                    onClick={() => setViewMode('table')}
+                                    className="h-8 w-8 p-0 rounded-md ml-1"
+                                    title="Xem dạng bảng"
+                                >
+                                    <List className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <div className="text-sm text-gray-500">
+                                Tổng: {pagination.total} sản phẩm
+                            </div>
+                        </div>
                     </div>
-                </div>
-                {searchTerm && (
-                    <button
-                        onClick={clearFilters}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                    >
-                        Xóa bộ lọc
-                    </button>
-                )}
-            </div>
+                </CardContent>
+            </Card>
 
             {/* Error Display */}
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-800">{error}</p>
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {error}
                 </div>
             )}
 
-            {/* Products Grid */}
-            {renderProductsGrid()}
+            {/* Products Content */}
+            {renderContent()}
 
             {/* Loading overlay */}
             {isLoading && products.length > 0 && (
