@@ -284,7 +284,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                         <div className="flex space-x-3 pt-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 onClick={onClose}
                                 className="flex-1"
                                 disabled={isLoading}
@@ -293,6 +293,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                             </Button>
                             <Button
                                 type="submit"
+                                variant="default"
                                 className="flex-1"
                                 disabled={isLoading}
                             >

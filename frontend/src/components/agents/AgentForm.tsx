@@ -123,7 +123,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                         <div className="flex space-x-3 pt-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 onClick={onClose}
                                 className="flex-1"
                                 disabled={isLoading}
@@ -132,6 +132,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                             </Button>
                             <Button
                                 type="submit"
+                                variant="default"
                                 className="flex-1"
                                 disabled={isLoading || !formData.name || !formData.phone || !formData.address}
                             >
