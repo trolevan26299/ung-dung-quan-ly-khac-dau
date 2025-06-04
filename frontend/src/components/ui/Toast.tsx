@@ -62,7 +62,7 @@ export const Toast: React.FC<ToastProps> = ({
 
     return (
         <div className={`
-            max-w-sm w-full shadow-lg rounded-lg pointer-events-auto border
+            w-full min-w-[280px] max-w-sm sm:max-w-md md:max-w-lg shadow-lg rounded-lg pointer-events-auto border
             transform transition-all duration-300 ease-in-out
             ${getToastStyles()}
         `}>
@@ -71,12 +71,12 @@ export const Toast: React.FC<ToastProps> = ({
                     <div className="flex-shrink-0">
                         {getIcon()}
                     </div>
-                    <div className="ml-3 w-0 flex-1">
-                        <p className="text-sm font-medium">
+                    <div className="ml-3 flex-1 min-w-0">
+                        <p className="text-sm font-medium break-words">
                             {title}
                         </p>
                         {message && (
-                            <p className="mt-1 text-sm opacity-90">
+                            <p className="mt-1 text-sm opacity-90 break-words">
                                 {message}
                             </p>
                         )}

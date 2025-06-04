@@ -23,7 +23,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
     if (toasts.length === 0) return null;
 
     return (
-        <div className="fixed top-4 right-4 z-[9999] space-y-2">
+        <div className="fixed top-4 right-4 z-[9999] space-y-2 w-auto max-w-[calc(100vw-2rem)] sm:max-w-md md:max-w-lg">
             {toasts.map((toast, index) => (
                 <div
                     key={toast.id}
