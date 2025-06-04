@@ -144,7 +144,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                         <h2 className="text-xl font-bold">
                             {product ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}
                         </h2>
-                        <Button variant="ghost" size="sm" onClick={onCancel || onClose} className="h-8 w-8 p-0">
+                        <Button variant="light" size="xs" onClick={onCancel || onClose} className="h-8 w-8 p-0">
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
@@ -249,7 +249,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                         <div className="flex space-x-3 pt-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 onClick={onCancel || onClose}
                                 className="flex-1"
                                 disabled={isLoading}
@@ -258,6 +258,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                             </Button>
                             <Button
                                 type="submit"
+                                variant="default"
                                 className="flex-1"
                                 disabled={isLoading}
                             >

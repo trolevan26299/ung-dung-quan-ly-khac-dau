@@ -68,7 +68,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
                     <div className="flex space-x-3 justify-end">
                         <Button
-                            variant="outline"
+                            variant="secondary"
                             onClick={onCancel}
                             className="flex-1"
                         >

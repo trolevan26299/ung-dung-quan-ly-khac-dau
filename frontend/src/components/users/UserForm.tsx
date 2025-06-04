@@ -154,10 +154,10 @@ export const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onCancel, is
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={onCancel}>
+                <Button type="button" variant="secondary" onClick={onCancel}>
                     Hủy
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" variant="default" disabled={isLoading}>
                     {isLoading ? 'Đang xử lý...' : user ? 'Cập nhật' : 'Tạo mới'}
                 </Button>
             </div>

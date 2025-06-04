@@ -79,7 +79,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
             <nav className="flex items-center space-x-2">
                 <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={onPreviousPage}
                     disabled={currentPage === 1}
@@ -96,7 +96,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                                 <span className="px-3 py-2 text-gray-500">...</span>
                             ) : (
                                 <Button
-                                    variant={currentPage === page ? 'default' : 'outline'}
+                                    variant={currentPage === page ? 'active' : 'secondary'}
                                     size="sm"
                                     onClick={() => onPageChange(page as number)}
                                     className="min-w-[40px]"
@@ -109,7 +109,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                 </div>
 
                 <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={onNextPage}
                     disabled={currentPage === totalPages}

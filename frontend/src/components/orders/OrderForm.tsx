@@ -285,7 +285,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                 <div className="flex items-center space-x-2">
                                                     <Button
                                                         type="button"
-                                                        variant="outline"
+                                                        variant="secondary"
                                                         size="sm"
                                                         onClick={() => updateOrderItem(index, 'quantity', Math.max(1, item.quantity - 1))}
                                                         className="h-8 w-8 p-0"
@@ -301,7 +301,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                     />
                                                     <Button
                                                         type="button"
-                                                        variant="outline"
+                                                        variant="secondary"
                                                         size="sm"
                                                         onClick={() => updateOrderItem(index, 'quantity', item.quantity + 1)}
                                                         className="h-8 w-8 p-0"
@@ -322,10 +322,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                 </div>
                                                 <Button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="danger"
+                                                    size="xs"
                                                     onClick={() => removeOrderItem(index)}
-                                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                                    className="h-8 w-8 p-0"
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </Button>
@@ -425,7 +425,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                         <div className="flex space-x-3 pt-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 onClick={onClose}
                                 className="flex-1"
                                 disabled={isLoading}
@@ -434,6 +434,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                             </Button>
                             <Button
                                 type="submit"
+                                variant="default"
                                 className="flex-1"
                                 disabled={isLoading || orderItems.length === 0}
                             >

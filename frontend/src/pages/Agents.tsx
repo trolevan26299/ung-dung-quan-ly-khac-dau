@@ -261,7 +261,7 @@ export const Agents: React.FC = () => {
             {pagination.totalPages > 1 && (
                 <div className="flex items-center justify-center space-x-2">
                     <Button
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
                     >
@@ -273,7 +273,7 @@ export const Agents: React.FC = () => {
                     </span>
 
                     <Button
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
                         disabled={currentPage === pagination.totalPages}
                     >

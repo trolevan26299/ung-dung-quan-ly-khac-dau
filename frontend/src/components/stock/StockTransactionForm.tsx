@@ -174,7 +174,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                         <h2 className="text-xl font-bold">
                             {transaction ? 'Cập nhật giao dịch kho' : 'Thêm giao dịch kho'}
                         </h2>
-                        <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+                        <Button variant="light" size="xs" onClick={onClose} className="h-8 w-8 p-0">
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
@@ -279,7 +279,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                         <div className="flex space-x-3 pt-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="secondary"
                                 onClick={onClose}
                                 className="flex-1"
                                 disabled={isLoading}
@@ -288,6 +288,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                             </Button>
                             <Button
                                 type="submit"
+                                variant="default"
                                 className="flex-1"
                                 disabled={isLoading}
                             >
