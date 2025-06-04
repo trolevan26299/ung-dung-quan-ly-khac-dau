@@ -32,7 +32,7 @@ export class CustomersService {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = { isActive: true };
+    const filter: any = {};
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -66,7 +66,7 @@ export class CustomersService {
       .findById(id)
       .populate('agentId', 'name phone email')
       .exec();
-    if (!customer || !customer.isActive) {
+    if (!customer) {
       throw new NotFoundException('Không tìm thấy khách hàng');
     }
     return customer;
@@ -108,7 +108,6 @@ export class CustomersService {
 
   async search(keyword: string): Promise<Customer[]> {
     return this.customerModel.find({
-      isActive: true,
       $or: [
         { name: { $regex: keyword, $options: 'i' } },
         { phone: { $regex: keyword, $options: 'i' } },
@@ -121,7 +120,7 @@ export class CustomersService {
   // Lấy khách hàng theo đại lý
   async getCustomersByAgent(agentId: string): Promise<Customer[]> {
     return this.customerModel
-      .find({ agentId, isActive: true })
+      .find({ agentId })
       .populate('agentId', 'name phone')
       .exec();
   }
@@ -129,7 +128,7 @@ export class CustomersService {
   // Top khách hàng mua nhiều nhất
   async getTopCustomers(limit: number = 5): Promise<any[]> {
     return this.customerModel.aggregate([
-      { $match: { isActive: true } },
+      { $match: {} },
       {
         $lookup: {
           from: 'orders',

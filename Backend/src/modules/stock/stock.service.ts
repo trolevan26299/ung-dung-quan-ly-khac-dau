@@ -275,14 +275,13 @@ export class StockService {
 
   // Thống kê tồn kho
   async getStockSummary(): Promise<any> {
-    const totalProducts = await this.productModel.countDocuments({ isActive: true });
+    const totalProducts = await this.productModel.countDocuments({});
     const lowStockProducts = await this.productModel.countDocuments({
-      isActive: true,
       $expr: { $lte: ['$stockQuantity', '$minStock'] }
     });
 
     const stockValue = await this.productModel.aggregate([
-      { $match: { isActive: true } },
+      { $match: {} },
       {
         $group: {
           _id: null,

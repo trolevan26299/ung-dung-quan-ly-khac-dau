@@ -25,9 +25,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
     const handleDelete = async () => {
         const confirmed = await confirm({
-            title: 'Xóa vĩnh viễn đơn hàng',
-            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN đơn hàng "#${order.orderNumber}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
-            confirmText: 'XÓA VĨNH VIỄN',
+            title: 'Xóa đơn hàng',
+            message: `Bạn có chắc chắn muốn xóa đơn hàng "#${order.orderNumber}"?`,
+            confirmText: 'Xóa',
             cancelText: 'Hủy',
             confirmVariant: 'destructive'
         });

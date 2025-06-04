@@ -20,7 +20,7 @@ export class AgentsService {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = { isActive: true };
+    const filter: any = {};
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -45,7 +45,7 @@ export class AgentsService {
 
   async findOne(id: string): Promise<Agent> {
     const agent = await this.agentModel.findById(id).exec();
-    if (!agent || !agent.isActive) {
+    if (!agent) {
       throw new NotFoundException('Không tìm thấy đại lý');
     }
     return agent;
@@ -73,7 +73,6 @@ export class AgentsService {
 
   async search(keyword: string): Promise<Agent[]> {
     return this.agentModel.find({
-      isActive: true,
       $or: [
         { name: { $regex: keyword, $options: 'i' } },
         { phone: { $regex: keyword, $options: 'i' } },
@@ -85,7 +84,7 @@ export class AgentsService {
   // Lấy đại lý có doanh số cao nhất
   async getTopAgents(limit: number = 5): Promise<any[]> {
     return this.agentModel.aggregate([
-      { $match: { isActive: true } },
+      { $match: {} },
       {
         $lookup: {
           from: 'orders',

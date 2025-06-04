@@ -96,15 +96,14 @@ export class StatisticsService {
 
   // Thống kê sản phẩm
   private async getProductStats(): Promise<ProductStats> {
-    const totalProducts = await this.productModel.countDocuments({ isActive: true });
+    const totalProducts = await this.productModel.countDocuments({});
     
     const lowStockProducts = await this.productModel.countDocuments({
-      isActive: true,
       $expr: { $lte: ['$stockQuantity', '$minStock'] }
     });
 
     const stockValueResult = await this.productModel.aggregate([
-      { $match: { isActive: true } },
+      { $match: {} },
       {
         $group: {
           _id: null,
@@ -126,7 +125,7 @@ export class StatisticsService {
 
   // Thống kê khách hàng
   private async getCustomerStats(dateFilter: any): Promise<CustomerStats> {
-    const totalCustomers = await this.customerModel.countDocuments({ isActive: true });
+    const totalCustomers = await this.customerModel.countDocuments({});
 
     const topCustomerResult = await this.orderModel.aggregate([
       { 
@@ -165,7 +164,7 @@ export class StatisticsService {
 
   // Thống kê đại lý
   private async getAgentStats(dateFilter: any): Promise<AgentStats> {
-    const totalAgents = await this.agentModel.countDocuments({ isActive: true });
+    const totalAgents = await this.agentModel.countDocuments({});
 
     const topAgentResult = await this.orderModel.aggregate([
       { 

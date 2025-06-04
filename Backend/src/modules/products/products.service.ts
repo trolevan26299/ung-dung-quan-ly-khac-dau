@@ -25,7 +25,7 @@ export class ProductsService {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = { isActive: true };
+    const filter: any = {};
     if (search) {
       filter.$or = [
         { code: { $regex: search, $options: 'i' } },
@@ -50,14 +50,14 @@ export class ProductsService {
 
   async findOne(id: string): Promise<Product> {
     const product = await this.productModel.findById(id).exec();
-    if (!product || !product.isActive) {
+    if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
     return product;
   }
 
   async findByCode(code: string): Promise<Product> {
-    const product = await this.productModel.findOne({ code, isActive: true }).exec();
+    const product = await this.productModel.findOne({ code }).exec();
     if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm với mã: ' + code);
     }
@@ -123,7 +123,6 @@ export class ProductsService {
   // Lấy sản phẩm sắp hết hàng
   async getLowStockProducts(): Promise<Product[]> {
     return this.productModel.find({
-      isActive: true,
       $expr: { $lte: ['$stockQuantity', '$minStock'] }
     }).exec();
   }
@@ -131,7 +130,7 @@ export class ProductsService {
   // Lấy sản phẩm bán chạy nhất
   async getTopSellingProducts(limit: number = 10): Promise<any[]> {
     return this.productModel.aggregate([
-      { $match: { isActive: true } },
+      { $match: {} },
       {
         $lookup: {
           from: 'orders',

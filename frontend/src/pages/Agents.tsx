@@ -78,9 +78,9 @@ export const Agents: React.FC = () => {
     const handleDeleteAgent = async (id: string) => {
         const agentToDelete = agents.find(agent => agent._id === id);
         const confirmed = await confirm({
-            title: 'Xóa vĩnh viễn đại lý',
-            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN đại lý "${agentToDelete?.name || ''}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
-            confirmText: 'XÓA VĨNH VIỄN',
+            title: 'Xóa đại lý',
+            message: `Bạn có chắc chắn muốn xóa đại lý "${agentToDelete?.name || ''}"?`,
+            confirmText: 'Xóa',
             cancelText: 'Hủy',
             confirmVariant: 'destructive'
         });
@@ -88,11 +88,15 @@ export const Agents: React.FC = () => {
         if (confirmed) {
             try {
                 await dispatch(deleteAgent(id)).unwrap();
-                success('Đã xóa vĩnh viễn', `Đại lý "${agentToDelete?.name || ''}" đã được xóa khỏi hệ thống`);
-                dispatch(fetchAgents({ page: currentPage, limit: 10, search: searchTerm }));
+                success('Đã xóa', `Đại lý "${agentToDelete?.name || ''}" đã được xóa`);
+                dispatch(fetchAgents({
+                    page: pagination.page,
+                    limit: pagination.limit,
+                    search: searchTerm
+                }));
             } catch (error: any) {
                 console.error('Error deleting agent:', error);
-                showError('Xóa thất bại', error.message || 'Có lỗi xảy ra khi xóa đại lý');
+                showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa đại lý');
             }
         }
     };

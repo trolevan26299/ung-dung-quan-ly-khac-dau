@@ -83,9 +83,9 @@ export const Customers: React.FC = () => {
     const handleDeleteCustomer = async (id: string) => {
         const customerToDelete = customers.find(customer => customer._id === id);
         const confirmed = await confirm({
-            title: 'Xóa vĩnh viễn khách hàng',
-            message: `⚠️ BẠN SẮP XÓA VĨNH VIỄN khách hàng "${customerToDelete?.name || ''}" khỏi hệ thống!\n\nDữ liệu sẽ bị mất hoàn toàn và KHÔNG THỂ KHÔI PHỤC. Tất cả thông tin liên quan cũng có thể bị ảnh hưởng.\n\nBạn có chắc chắn muốn tiếp tục?`,
-            confirmText: 'XÓA VĨNH VIỄN',
+            title: 'Xóa khách hàng',
+            message: `Bạn có chắc chắn muốn xóa khách hàng "${customerToDelete?.name || ''}"?`,
+            confirmText: 'Xóa',
             cancelText: 'Hủy',
             confirmVariant: 'destructive'
         });
@@ -96,10 +96,10 @@ export const Customers: React.FC = () => {
             await dispatch(deleteCustomer(id)).unwrap();
             // Refresh current page
             dispatch(fetchCustomers(params));
-            success('Đã xóa vĩnh viễn', `Khách hàng "${customerToDelete?.name || ''}" đã được xóa khỏi hệ thống`);
+            success('Đã xóa', `Khách hàng "${customerToDelete?.name || ''}" đã được xóa`);
         } catch (error: any) {
             console.error('Error deleting customer:', error);
-            showError('Xóa thất bại', error.message || 'Có lỗi xảy ra khi xóa khách hàng');
+            showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa khách hàng');
         }
     };
 
