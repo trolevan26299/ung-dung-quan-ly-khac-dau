@@ -75,10 +75,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                                 </div>
                             </div>
                         </div>
-                        <div className="flex space-x-1 ml-2">
+                        <div className="flex space-x-1">
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="light"
+                                size="xs"
                                 onClick={() => onView(order)}
                                 className="h-8 w-8 p-0"
                                 title="Xem chi tiết"
@@ -86,8 +86,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                                 <Eye className="w-4 h-4" />
                             </Button>
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="light"
+                                size="xs"
                                 onClick={() => onEdit(order)}
                                 className="h-8 w-8 p-0"
                                 title="Chỉnh sửa"
@@ -95,10 +95,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                                 <Edit className="w-4 h-4" />
                             </Button>
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="danger"
+                                size="xs"
                                 onClick={handleDelete}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-8 w-8 p-0"
                                 title="Xóa"
                             >
                                 <Trash2 className="w-4 h-4" />

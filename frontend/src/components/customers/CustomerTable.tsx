@@ -148,33 +148,33 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end space-x-2">
+                                        <div className="flex space-x-1">
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
+                                                variant="light"
+                                                size="xs"
                                                 onClick={() => onView(customer)}
-                                                className="h-8 w-8 p-0"
+                                                className="h-7 w-7 p-0"
                                                 title="Xem chi tiết"
                                             >
-                                                <Eye className="w-4 h-4" />
+                                                <Eye className="w-3 h-3" />
                                             </Button>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
+                                                variant="light"
+                                                size="xs"
                                                 onClick={() => onEdit(customer)}
-                                                className="h-8 w-8 p-0"
+                                                className="h-7 w-7 p-0"
                                                 title="Chỉnh sửa"
                                             >
-                                                <Edit className="w-4 h-4" />
+                                                <Edit className="w-3 h-3" />
                                             </Button>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
+                                                variant="danger"
+                                                size="xs"
                                                 onClick={() => handleDelete(customer)}
-                                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                className="h-7 w-7 p-0"
                                                 title="Xóa"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-3 h-3" />
                                             </Button>
                                         </div>
                                     </td>

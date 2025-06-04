@@ -51,8 +51,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                             </h3>
                         </div>
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="light"
+                            size="xs"
                             onClick={onCancel}
                             className="h-8 w-8 p-0"
                         >

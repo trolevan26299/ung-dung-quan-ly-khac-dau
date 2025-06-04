@@ -143,33 +143,33 @@ export const AgentTable: React.FC<AgentTableProps> = ({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center space-x-1">
+                                            <div className="flex space-x-1">
                                                 <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="light"
+                                                    size="xs"
                                                     onClick={() => onView(agent)}
-                                                    className="h-8 w-8 p-0"
+                                                    className="h-7 w-7 p-0"
                                                     title="Xem chi tiết"
                                                 >
-                                                    <Eye className="w-4 h-4" />
+                                                    <Eye className="w-3 h-3" />
                                                 </Button>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="light"
+                                                    size="xs"
                                                     onClick={() => onEdit(agent)}
-                                                    className="h-8 w-8 p-0"
+                                                    className="h-7 w-7 p-0"
                                                     title="Chỉnh sửa"
                                                 >
-                                                    <Edit className="w-4 h-4" />
+                                                    <Edit className="w-3 h-3" />
                                                 </Button>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="sm"
+                                                    variant="danger"
+                                                    size="xs"
                                                     onClick={() => handleDelete(agent)}
-                                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    className="h-7 w-7 p-0"
                                                     title="Xóa"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <Trash2 className="w-3 h-3" />
                                                 </Button>
                                             </div>
                                         </td>

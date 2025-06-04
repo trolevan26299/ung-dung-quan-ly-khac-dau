@@ -187,21 +187,21 @@ export const Customers: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                             {/* View Toggle */}
-                            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
                                 <Button
-                                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                                    variant={viewMode === 'grid' ? 'active' : 'inactive'}
                                     size="sm"
                                     onClick={() => setViewMode('grid')}
-                                    className="h-8 w-8 p-0"
+                                    className="h-8 w-8 p-0 rounded-md"
                                     title="Xem dạng lưới"
                                 >
                                     <Grid className="w-4 h-4" />
                                 </Button>
                                 <Button
-                                    variant={viewMode === 'table' ? 'default' : 'ghost'}
+                                    variant={viewMode === 'table' ? 'active' : 'inactive'}
                                     size="sm"
                                     onClick={() => setViewMode('table')}
-                                    className="h-8 w-8 p-0"
+                                    className="h-8 w-8 p-0 rounded-md ml-1"
                                     title="Xem dạng bảng"
                                 >
                                     <List className="w-4 h-4" />

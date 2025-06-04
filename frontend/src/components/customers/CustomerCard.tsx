@@ -52,8 +52,8 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                         </div>
                         <div className="flex space-x-1 ml-2">
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="light"
+                                size="xs"
                                 onClick={() => onView(customer)}
                                 className="h-8 w-8 p-0"
                                 title="Xem chi tiết"
@@ -61,8 +61,8 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                                 <Eye className="w-4 h-4" />
                             </Button>
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="light"
+                                size="xs"
                                 onClick={() => onEdit(customer)}
                                 className="h-8 w-8 p-0"
                                 title="Chỉnh sửa"
@@ -70,10 +70,10 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                                 <Edit className="w-4 h-4" />
                             </Button>
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="danger"
+                                size="xs"
                                 onClick={handleDelete}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-8 w-8 p-0"
                                 title="Xóa"
                             >
                                 <Trash2 className="w-4 h-4" />

@@ -71,28 +71,35 @@ export const UserTable: React.FC<UserTableProps> = ({
                         <TableCell>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</TableCell>
                         <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onViewUser(user)}
-                                >
-                                    <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onEditUser(user)}
-                                >
-                                    <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onDeleteUser(user)}
-                                    className="text-red-600 hover:text-red-800"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
+                                <div className="flex space-x-1">
+                                    <Button
+                                        variant="light"
+                                        size="xs"
+                                        onClick={() => onViewUser(user)}
+                                        className="h-7 w-7 p-0"
+                                        title="Xem chi tiết"
+                                    >
+                                        <Eye className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                        variant="light"
+                                        size="xs"
+                                        onClick={() => onEditUser(user)}
+                                        className="h-7 w-7 p-0"
+                                        title="Chỉnh sửa"
+                                    >
+                                        <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                        variant="danger"
+                                        size="xs"
+                                        onClick={() => onDeleteUser(user)}
+                                        className="h-7 w-7 p-0"
+                                        title="Xóa"
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                </div>
                             </div>
                         </TableCell>
                     </TableRow>
