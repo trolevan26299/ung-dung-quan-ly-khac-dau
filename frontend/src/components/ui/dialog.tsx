@@ -67,7 +67,7 @@ const Dialog: React.FC<DialogProps> = ({ open = false, onOpenChange, children })
                     }}
                     onClick={() => onOpenChange?.(false)}
                 />
-                <div className="relative z-50 max-h-[90vh] overflow-auto">
+                <div className="relative z-50">
                     {children}
                 </div>
             </div>
@@ -85,7 +85,7 @@ const DialogTrigger: React.FC<DialogTriggerProps> = ({ asChild, children }) => {
 const DialogContent: React.FC<DialogContentProps> = ({ className, children }) => (
     <div
         className={cn(
-            "bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4",
+            "bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl mx-4",
             className
         )}
     >

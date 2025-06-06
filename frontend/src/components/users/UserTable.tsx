@@ -15,6 +15,8 @@ import { Eye, Edit, Trash2 } from 'lucide-react';
 interface UserTableProps {
     users: User[];
     isLoading: boolean;
+    isAdmin?: boolean;
+    currentUserId?: string;
     onViewUser: (user: User) => void;
     onEditUser: (user: User) => void;
     onDeleteUser: (user: User) => void;
@@ -23,6 +25,8 @@ interface UserTableProps {
 export const UserTable: React.FC<UserTableProps> = ({
     users,
     isLoading,
+    isAdmin = false,
+    currentUserId,
     onViewUser,
     onEditUser,
     onDeleteUser
@@ -69,7 +73,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                             </Badge>
                         </TableCell>
                         <TableCell>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
                             <div className="flex justify-end space-x-2">
                                 <div className="flex space-x-1">
                                     <Button
@@ -81,24 +85,30 @@ export const UserTable: React.FC<UserTableProps> = ({
                                     >
                                         <Eye className="w-3 h-3" />
                                     </Button>
-                                    <Button
-                                        variant="light"
-                                        size="xs"
-                                        onClick={() => onEditUser(user)}
-                                        className="h-7 w-7 p-0"
-                                        title="Chỉnh sửa"
-                                    >
-                                        <Edit className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                        variant="danger"
-                                        size="xs"
-                                        onClick={() => onDeleteUser(user)}
-                                        className="h-7 w-7 p-0"
-                                        title="Xóa"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </Button>
+                                    {isAdmin && (
+                                        <>
+                                            <Button
+                                                variant="light"
+                                                size="xs"
+                                                onClick={() => onEditUser(user)}
+                                                className="h-7 w-7 p-0"
+                                                title="Chỉnh sửa"
+                                            >
+                                                <Edit className="w-3 h-3" />
+                                            </Button>
+                                            {user._id !== currentUserId && (
+                                                <Button
+                                                    variant="danger"
+                                                    size="xs"
+                                                    onClick={() => onDeleteUser(user)}
+                                                    className="h-7 w-7 p-0"
+                                                    title="Xóa"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </Button>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </TableCell>

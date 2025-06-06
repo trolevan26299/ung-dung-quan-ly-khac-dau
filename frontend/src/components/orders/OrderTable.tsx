@@ -1,9 +1,8 @@
 import React from 'react';
 import { Eye, Edit, Trash2, ShoppingCart, Calendar, DollarSign, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EmptyState } from '../common';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import type { Order } from '../../types';
 
 interface OrderTableProps {
@@ -23,20 +22,8 @@ export const OrderTable: React.FC<OrderTableProps> = ({
     onDelete,
     onAdd
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async (order: Order) => {
-        const confirmed = await confirm({
-            title: 'Xóa đơn hàng',
-            message: `Bạn có chắc chắn muốn xóa đơn hàng "#${order.orderNumber}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(order._id);
-        }
+    const handleDelete = (order: Order) => {
+        onDelete(order._id);
     };
 
     const getStatusColor = (status: string) => {
@@ -244,8 +231,6 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                     </table>
                 </div>
             </div>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 }; 

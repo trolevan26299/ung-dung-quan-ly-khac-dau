@@ -6,6 +6,8 @@ import type { User as UserType } from '../../types';
 
 interface UserCardProps {
     user: UserType;
+    isAdmin?: boolean;
+    currentUserId?: string;
     onView: (user: UserType) => void;
     onEdit: (user: UserType) => void;
     onDelete: (user: UserType) => void;
@@ -13,6 +15,8 @@ interface UserCardProps {
 
 export const UserCard: React.FC<UserCardProps> = ({
     user,
+    isAdmin = false,
+    currentUserId,
     onView,
     onEdit,
     onDelete
@@ -119,22 +123,28 @@ export const UserCard: React.FC<UserCardProps> = ({
                     >
                         <Eye className="w-4 h-4" />
                     </Button>
-                    <Button
-                        variant="light"
-                        size="xs"
-                        onClick={() => onEdit(user)}
-                        title="Chỉnh sửa"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                        variant="danger"
-                        size="xs"
-                        onClick={() => onDelete(user)}
-                        title="Xóa"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {isAdmin && (
+                        <>
+                            <Button
+                                variant="light"
+                                size="xs"
+                                onClick={() => onEdit(user)}
+                                title="Chỉnh sửa"
+                            >
+                                <Edit className="w-4 h-4" />
+                            </Button>
+                            {user._id !== currentUserId && (
+                                <Button
+                                    variant="danger"
+                                    size="xs"
+                                    onClick={() => onDelete(user)}
+                                    title="Xóa"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            )}
+                        </>
+                    )}
                 </div>
             </CardContent>
         </Card>

@@ -2,19 +2,17 @@ import React from 'react';
 import { Eye, Edit, Trash2, Phone, MapPin, Users, ShoppingBag } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState } from '../common';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import type { Agent } from '../../types';
 
 interface AgentTableProps {
     agents?: Agent[];
-    isLoading: boolean;
+    isLoading?: boolean;
     onView: (agent: Agent) => void;
     onEdit: (agent: Agent) => void;
     onDelete: (id: string) => void;
-    onAdd?: () => void;
+    onAdd: () => void;
 }
 
 export const AgentTable: React.FC<AgentTableProps> = ({
@@ -25,20 +23,8 @@ export const AgentTable: React.FC<AgentTableProps> = ({
     onDelete,
     onAdd
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async (agent: Agent) => {
-        const confirmed = await confirm({
-            title: 'Xóa đại lý',
-            message: `Bạn có chắc chắn muốn xóa đại lý "${agent.name}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(agent._id);
-        }
+    const handleDelete = (agent: Agent) => {
+        onDelete(agent._id);
     };
 
     if (isLoading) {
@@ -180,8 +166,6 @@ export const AgentTable: React.FC<AgentTableProps> = ({
                     </div>
                 </CardContent>
             </Card>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 }; 

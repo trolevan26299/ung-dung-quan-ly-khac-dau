@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
 import {
     fetchUsers,
@@ -20,7 +21,6 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '../components/ui/dialog';
 import {
     Select,
@@ -44,14 +44,16 @@ import { useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 
 // Icons
-import { Plus, Search, Users as UsersIcon, Grid, List } from 'lucide-react';
+import { Plus, Search, Users as UsersIcon, Grid, List, Lock } from 'lucide-react';
 
 type ViewMode = 'grid' | 'table';
 
 // Main Users Component
 const Users: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
+    const navigate = useNavigate();
     const { users, currentUser, isLoading, error, pagination } = useSelector((state: RootState) => state.users);
+    const { user: currentAuthUser } = useSelector((state: RootState) => state.auth);
     const { confirm, confirmProps } = useConfirm();
     const { success, error: showError } = useToast();
 
@@ -64,14 +66,45 @@ const Users: React.FC = () => {
     const [editingUser, setEditingUser] = useState<User | undefined>();
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
+    // Kiểm tra quyền admin với fallback
+    const localStorageUser = JSON.parse(localStorage.getItem('user') || 'null');
+    const isAdmin = currentAuthUser?.role === 'admin' || localStorageUser?.role === 'admin';
+
+    // Redirect employee to dashboard
+    useEffect(() => {
+        if (!isAdmin) {
+            navigate('/', { replace: true });
+            showError('Không có quyền truy cập', 'Chỉ admin mới có thể quản lý người dùng');
+            return;
+        }
+    }, [isAdmin, navigate, showError]);
+
     // Load users on component mount
     useEffect(() => {
-        dispatch(fetchUsers({
-            page: currentPage,
-            limit: 10,
-            search: searchTerm,
-        }));
-    }, [dispatch, currentPage, searchTerm]);
+        if (isAdmin) {
+            dispatch(fetchUsers({
+                page: currentPage,
+                limit: 10,
+                search: searchTerm,
+            }));
+        }
+    }, [dispatch, currentPage, searchTerm, isAdmin]);
+
+    // If not admin, show forbidden page
+    if (!isAdmin) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Không có quyền truy cập</h1>
+                    <p className="text-gray-600 mb-4">Chỉ quản trị viên mới có thể truy cập trang này</p>
+                    <Button onClick={() => navigate('/')}>
+                        Về trang chủ
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     // Filter users
     const filteredUsers = (users || []).filter(user => {
@@ -90,7 +123,6 @@ const Users: React.FC = () => {
             setEditingUser(undefined);
             success('Tạo thành công', `Người dùng "${data.fullName}" đã được tạo`);
         } catch (error: any) {
-            console.error('Error creating user:', error);
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo người dùng');
         }
     };
@@ -104,7 +136,6 @@ const Users: React.FC = () => {
             setEditingUser(undefined);
             success('Cập nhật thành công', `Người dùng "${data.fullName}" đã được cập nhật`);
         } catch (error: any) {
-            console.error('Error updating user:', error);
             showError('Cập nhật thất bại', error.message || 'Có lỗi xảy ra khi cập nhật người dùng');
         }
     };
@@ -123,7 +154,6 @@ const Users: React.FC = () => {
                 await dispatch(deleteUser(user._id)).unwrap();
                 success('Đã xóa', `Người dùng "${user.fullName}" đã được xóa`);
             } catch (error: any) {
-                console.error('Error deleting user:', error);
                 showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa người dùng');
             }
         }
@@ -184,11 +214,15 @@ const Users: React.FC = () => {
                 <div className="text-center py-12">
                     <UsersIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có người dùng nào</h3>
-                    <p className="text-gray-500 mb-4">Bắt đầu bằng cách thêm người dùng đầu tiên</p>
-                    <Button onClick={() => setIsFormOpen(true)}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Thêm người dùng
-                    </Button>
+                    <p className="text-gray-500 mb-4">
+                        {isAdmin ? 'Bắt đầu bằng cách thêm người dùng đầu tiên' : 'Chỉ có admin mới có thể thêm người dùng'}
+                    </p>
+                    {isAdmin && (
+                        <Button onClick={() => setIsFormOpen(true)}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Thêm người dùng
+                        </Button>
+                    )}
                 </div>
             );
         }
@@ -199,6 +233,8 @@ const Users: React.FC = () => {
                     <UserCard
                         key={user._id}
                         user={user}
+                        isAdmin={isAdmin}
+                        currentUserId={currentAuthUser?._id || localStorageUser?._id}
                         onView={handleViewUser}
                         onEdit={handleEditUser}
                         onDelete={handleDeleteUser}
@@ -216,6 +252,8 @@ const Users: React.FC = () => {
                         <UserTable
                             users={filteredUsers}
                             isLoading={isLoading}
+                            isAdmin={isAdmin}
+                            currentUserId={currentAuthUser?._id || localStorageUser?._id}
                             onViewUser={handleViewUser}
                             onEditUser={handleEditUser}
                             onDeleteUser={handleDeleteUser}
@@ -241,27 +279,35 @@ const Users: React.FC = () => {
                         Quản lý tài khoản người dùng hệ thống
                     </p>
                 </div>
-                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                    <DialogTrigger asChild>
-                        <Button onClick={() => setEditingUser(undefined)}>
+                {isAdmin && (
+                    <>
+                        {/* Nút chính */}
+                        <Button onClick={() => {
+                            setEditingUser(undefined);
+                            setIsFormOpen(true);
+                        }}>
                             <Plus className="w-4 h-4 mr-2" />
                             Thêm người dùng
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>
-                                {editingUser ? 'Sửa người dùng' : 'Thêm người dùng mới'}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <UserForm
-                            user={editingUser}
-                            onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-                            onCancel={handleCloseForm}
-                            isLoading={isLoading}
-                        />
-                    </DialogContent>
-                </Dialog>
+                        
+                        {/* Dialog riêng biệt */}
+                        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                            <DialogContent >
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {editingUser ? 'Sửa người dùng' : 'Thêm người dùng mới'}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <UserForm
+                                    user={editingUser}
+                                    onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+                                    onCancel={handleCloseForm}
+                                    isLoading={isLoading}
+                                />
+                            </DialogContent>
+                        </Dialog>
+                    </>
+                )}
             </div>
 
             {/* Stats Cards */}

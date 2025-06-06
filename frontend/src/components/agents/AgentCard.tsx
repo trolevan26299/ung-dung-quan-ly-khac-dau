@@ -2,10 +2,8 @@ import React from 'react';
 import { Agent } from '../../types';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Phone, MapPin, FileText, ShoppingBag, Eye, Edit, Trash2 } from 'lucide-react';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import { useToast } from '../../contexts/ToastContext';
 
 interface AgentCardProps {
@@ -21,21 +19,10 @@ export const AgentCard: React.FC<AgentCardProps> = ({
     onEdit,
     onDelete
 }) => {
-    const { confirm, confirmProps } = useConfirm();
     const { success, error } = useToast();
 
-    const handleDelete = async () => {
-        const confirmed = await confirm({
-            title: 'Xóa đại lý',
-            message: `Bạn có chắc chắn muốn xóa đại lý "${agent.name}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(agent._id);
-        }
+    const handleDelete = () => {
+        onDelete(agent._id);
     };
 
     return (
@@ -108,8 +95,6 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                     </div>
                 </CardContent>
             </Card>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 }; 

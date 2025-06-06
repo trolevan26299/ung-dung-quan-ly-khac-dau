@@ -2,10 +2,8 @@ import React from 'react';
 import { Customer } from '../../types';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Phone, MapPin, FileText, ShoppingBag, Eye, Edit, Trash2, Users } from 'lucide-react';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 
 interface CustomerCardProps {
     customer: Customer;
@@ -20,20 +18,8 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
     onEdit,
     onDelete
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async () => {
-        const confirmed = await confirm({
-            title: 'Xóa khách hàng',
-            message: `Bạn có chắc chắn muốn xóa khách hàng "${customer.name}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(customer._id);
-        }
+    const handleDelete = () => {
+        onDelete(customer._id);
     };
 
     return (
@@ -111,8 +97,6 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                     </div>
                 </CardContent>
             </Card>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 };

@@ -2,7 +2,6 @@
 export interface User {
   _id: string;
   username: string;
-  email: string;
   fullName: string;
   phone?: string;
   role: 'admin' | 'employee';
@@ -211,7 +210,6 @@ export interface ApiResponse<T = any> {
 
 export interface CreateUserRequest {
   username: string;
-  email: string;
   password: string;
   fullName: string;
   phone?: string;
@@ -219,7 +217,6 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest {
-  email?: string;
   password?: string;
   fullName?: string;
   phone?: string;

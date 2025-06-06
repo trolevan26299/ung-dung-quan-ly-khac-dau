@@ -83,15 +83,29 @@ const usersSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchUsers.fulfilled, (state, action: PayloadAction<PaginatedResponse<User>>) => {
+      .addCase(fetchUsers.fulfilled, (state, action: PayloadAction<any>) => {
         state.isLoading = false;
-        state.users = action.payload.data;
-        state.pagination = {
-          total: action.payload.total,
-          page: action.payload.page,
-          limit: action.payload.limit,
-          totalPages: action.payload.totalPages,
-        };
+        
+        // Handle both old and new response structures
+        if (action.payload.data) {
+          // New structure: {data: [...], page, limit, total, totalPages}
+          state.users = action.payload.data;
+          state.pagination = {
+            total: action.payload.total,
+            page: action.payload.page,
+            limit: action.payload.limit,
+            totalPages: action.payload.totalPages,
+          };
+        } else if (action.payload.users) {
+          // Old structure: {users: [...], pagination: {...}}
+          state.users = action.payload.users;
+          state.pagination = {
+            total: action.payload.pagination.total,
+            page: action.payload.pagination.page,
+            limit: action.payload.pagination.limit,
+            totalPages: action.payload.pagination.totalPages,
+          };
+        }
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;

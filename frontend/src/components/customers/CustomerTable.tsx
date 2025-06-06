@@ -1,9 +1,7 @@
 import React from 'react';
 import { Eye, Edit, Trash2, Phone, MapPin, Users } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import type { Customer } from '../../types';
 
 interface CustomerTableProps {
@@ -21,20 +19,8 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
     onEdit,
     onDelete
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async (customer: Customer) => {
-        const confirmed = await confirm({
-            title: 'Xóa khách hàng',
-            message: `Bạn có chắc chắn muốn xóa khách hàng "${customer.name}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(customer._id);
-        }
+    const handleDelete = (customer: Customer) => {
+        onDelete(customer._id);
     };
 
     if (isLoading) {
@@ -184,8 +170,6 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                     </table>
                 </div>
             </div>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 }; 

@@ -1,9 +1,8 @@
 import React from 'react';
-import { Eye, Edit, Trash2, Package, DollarSign, Archive } from 'lucide-react';
+import { Eye, Edit, Trash2, Package, DollarSign, Archive, Plus } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EmptyState } from '../common';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import type { Product } from '../../types';
 
 interface ProductTableProps {
@@ -12,7 +11,7 @@ interface ProductTableProps {
     onView: (product: Product) => void;
     onEdit: (product: Product) => void;
     onDelete: (id: string) => void;
-    onAdd?: () => void;
+    onAdd: () => void;
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({
@@ -23,20 +22,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
     onDelete,
     onAdd
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async (product: Product) => {
-        const confirmed = await confirm({
-            title: 'Xóa sản phẩm',
-            message: `Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(product._id);
-        }
+    const handleDelete = (product: Product) => {
+        onDelete(product._id);
     };
 
     const getStockStatus = (currentStock: number) => {
@@ -200,8 +187,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                     </table>
                 </div>
             </div>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 }; 

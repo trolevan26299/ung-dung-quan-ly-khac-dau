@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import {
     Home,
     Users,
@@ -15,7 +17,7 @@ import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { cn } from '../../lib/utils';
 
-const menuItems = [
+const allMenuItems = [
     { icon: Home, label: 'Tổng quan', path: '/' },
     { icon: Users, label: 'Khách hàng', path: '/customers' },
     { icon: UserCheck, label: 'Đại lý', path: '/agents' },
@@ -23,12 +25,20 @@ const menuItems = [
     { icon: ShoppingCart, label: 'Đơn hàng', path: '/orders' },
     { icon: Warehouse, label: 'Kho hàng', path: '/stock' },
     { icon: BarChart3, label: 'Thống kê', path: '/statistics' },
-    { icon: Settings, label: 'Người dùng', path: '/users' },
+    { icon: Settings, label: 'Người dùng', path: '/users', adminOnly: true },
 ];
 
 export const Sidebar: React.FC = () => {
     const location = useLocation();
     const dispatch = useDispatch();
+    const { user: currentAuthUser } = useSelector((state: RootState) => state.auth);
+    
+    // Kiểm tra quyền admin với fallback
+    const localStorageUser = JSON.parse(localStorage.getItem('user') || 'null');
+    const isAdmin = currentAuthUser?.role === 'admin' || localStorageUser?.role === 'admin';
+
+    // Filter menu items based on user role
+    const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
     const handleLogout = () => {
         dispatch(logout());

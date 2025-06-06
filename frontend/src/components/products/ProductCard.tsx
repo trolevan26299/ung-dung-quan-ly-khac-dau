@@ -2,9 +2,7 @@ import React from 'react';
 import { Package, Edit, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import type { Product } from '../../types';
 
 interface ProductCardProps {
@@ -20,20 +18,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     onEdit,
     onDelete
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async () => {
-        const confirmed = await confirm({
-            title: 'Xóa sản phẩm',
-            message: `Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(product._id);
-        }
+    const handleDelete = () => {
+        onDelete(product._id);
     };
 
     const isLowStock = safeNumber(product.currentStock) <= 10;
@@ -145,8 +131,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 </CardContent>
             </Card>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 };

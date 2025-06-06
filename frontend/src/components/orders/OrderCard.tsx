@@ -2,10 +2,8 @@ import React from 'react';
 import { Edit, Eye, Trash2, User, Calendar, Package, DollarSign } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { StatusBadge } from '../common';
 import { formatCurrency, formatDate, safeString, safeNumber } from '../../lib/utils';
-import { useConfirm } from '../../hooks';
 import type { Order } from '../../types';
 
 interface OrderCardProps {
@@ -21,20 +19,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     onView,
     onDelete
 }) => {
-    const { confirm, confirmProps } = useConfirm();
-
-    const handleDelete = async () => {
-        const confirmed = await confirm({
-            title: 'Xóa đơn hàng',
-            message: `Bạn có chắc chắn muốn xóa đơn hàng "#${order.orderNumber}"?`,
-            confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
-        });
-
-        if (confirmed) {
-            onDelete(order._id);
-        }
+    const handleDelete = () => {
+        onDelete(order._id);
     };
 
     const getPaymentStatusColor = (status: string) => {
@@ -146,8 +132,6 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                     )}
                 </CardContent>
             </Card>
-
-            <ConfirmDialog {...confirmProps} />
         </>
     );
 }; 
