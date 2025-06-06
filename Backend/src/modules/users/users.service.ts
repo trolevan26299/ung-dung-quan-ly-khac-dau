@@ -20,19 +20,11 @@ export class UsersService {
     }
 
     const existingUser = await this.userModel.findOne({
-      $or: [
-        { email: createUserDto.email },
-        { username: createUserDto.username }
-      ]
+      username: createUserDto.username
     });
 
     if (existingUser) {
-      if (existingUser.email === createUserDto.email) {
-        throw new ConflictException(ERROR_MESSAGES.DUPLICATE_EMAIL);
-      }
-      if (existingUser.username === createUserDto.username) {
-        throw new ConflictException('Tên đăng nhập đã tồn tại');
-      }
+      throw new ConflictException('Tên đăng nhập đã tồn tại');
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -55,7 +47,6 @@ export class UsersService {
     if (search) {
       filter.$or = [
         { fullName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
         { username: { $regex: search, $options: 'i' } }
       ];
     }
@@ -74,13 +65,11 @@ export class UsersService {
     ]);
 
     return {
-      users: users.map(user => this.toResponseDto(user)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      data: users.map(user => this.toResponseDto(user)),
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -122,6 +111,10 @@ export class UsersService {
       throw new ForbiddenException(ERROR_MESSAGES.ADMIN_REQUIRED);
     }
 
+    if (currentUser.id === id) {
+      throw new ForbiddenException('Không thể xóa chính tài khoản của bạn');
+    }
+
     const user = await this.userModel.findById(id);
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
@@ -141,7 +134,6 @@ export class UsersService {
     return {
       _id: user._id.toString(),
       username: user.username,
-      email: user.email,
       role: user.role as UserRole,
       fullName: user.fullName,
       phone: user.phone,

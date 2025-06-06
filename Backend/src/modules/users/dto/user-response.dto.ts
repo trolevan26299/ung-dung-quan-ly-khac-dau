@@ -9,9 +9,6 @@ export class UserResponseDto {
   username: string;
 
   @ApiProperty()
-  email: string;
-
-  @ApiProperty()
   fullName: string;
 
   @ApiProperty({ required: false })
@@ -49,8 +46,17 @@ export class PaginationDto {
 
 export class PaginatedUsersDto {
   @ApiProperty({ type: [UserResponseDto] })
-  users: UserResponseDto[];
+  data: UserResponseDto[];
 
   @ApiProperty()
-  pagination: PaginationDto;
+  page: number;
+
+  @ApiProperty()
+  limit: number;
+
+  @ApiProperty()
+  total: number;
+
+  @ApiProperty()
+  totalPages: number;
 } 

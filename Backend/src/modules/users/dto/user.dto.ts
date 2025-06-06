@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, IsOptional, IsBoolean, IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserRole } from '../../../types/common.types';
 
@@ -8,11 +8,6 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   username: string;
-
-  @ApiProperty({ description: 'Email' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
 
   @ApiProperty({ description: 'Mật khẩu' })
   @IsString()
@@ -35,11 +30,6 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
-  @ApiProperty({ description: 'Email', required: false })
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
   @ApiProperty({ description: 'Mật khẩu mới', required: false })
   @IsOptional()
   @IsString()
