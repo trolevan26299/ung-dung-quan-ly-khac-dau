@@ -55,7 +55,8 @@ export class StatisticsService {
       ...dateFilter 
     };
 
-    const stats = await this.orderModel.aggregate([
+    // Tổng doanh thu từ tất cả đơn hàng active
+    const totalStats = await this.orderModel.aggregate([
       { $match: filter },
       {
         $group: {
@@ -76,21 +77,21 @@ export class StatisticsService {
       }
     ]);
 
-    const result = stats[0] || {
+    const result = totalStats[0] || {
       totalOrders: 0,
       totalRevenue: 0,
       totalDebt: 0,
       completedRevenue: 0
     };
 
-    // Tính lợi nhuận ước tính (30% doanh thu)
+    // Tính lợi nhuận ước tính (30% doanh thu hoàn thành)
     const totalProfit = result.completedRevenue * 0.3;
 
     return {
       totalOrders: result.totalOrders,
-      totalRevenue: result.totalRevenue,
+      totalRevenue: result.totalRevenue, // Tổng tất cả đơn hàng
       totalDebt: result.totalDebt,
-      totalProfit
+      totalProfit // Lợi nhuận chỉ từ đơn hoàn thành
     };
   }
 
@@ -207,8 +208,7 @@ export class StatisticsService {
     
     let groupBy: any;
     let matchCondition: any = {
-      status: OrderStatus.ACTIVE,
-      paymentStatus: PaymentStatus.COMPLETED,
+      status: OrderStatus.ACTIVE, // Tính tất cả đơn hàng active, bao gồm cả công nợ
       createdAt: {
         $gte: new Date(currentYear, 0, 1),
         $lt: new Date(currentYear + 1, 0, 1)
@@ -234,8 +234,7 @@ export class StatisticsService {
       case 'year':
         groupBy = { $year: '$createdAt' };
         matchCondition = {
-          status: OrderStatus.ACTIVE,
-          paymentStatus: PaymentStatus.COMPLETED,
+          status: OrderStatus.ACTIVE, // Tính tất cả đơn hàng active, bao gồm cả công nợ
           createdAt: { $gte: new Date(currentYear - 4, 0, 1) }
         };
         break;
@@ -248,7 +247,18 @@ export class StatisticsService {
           _id: groupBy,
           totalRevenue: { $sum: '$totalAmount' },
           totalOrders: { $sum: 1 },
-          avgOrderValue: { $avg: '$totalAmount' }
+          avgOrderValue: { $avg: '$totalAmount' },
+          // Thêm phân tích theo trạng thái payment
+          completedRevenue: {
+            $sum: {
+              $cond: [{ $eq: ['$paymentStatus', PaymentStatus.COMPLETED] }, '$totalAmount', 0]
+            }
+          },
+          debtRevenue: {
+            $sum: {
+              $cond: [{ $in: ['$paymentStatus', [PaymentStatus.PENDING, PaymentStatus.DEBT]] }, '$totalAmount', 0]
+            }
+          }
         }
       },
       { $sort: { '_id': 1 } }
@@ -388,6 +398,14 @@ export class StatisticsService {
 
   // Xây dựng bộ lọc ngày
   private buildDateFilter(period?: StatisticsPeriod): any {
+    console.log('🔍 buildDateFilter input:', {
+      period,
+      hasStartDate: !!period?.startDate,
+      hasEndDate: !!period?.endDate,
+      startDateValue: period?.startDate,
+      endDateValue: period?.endDate
+    });
+
     if (!period) return {};
 
     const now = new Date();
@@ -419,11 +437,293 @@ export class StatisticsService {
       }
     }
 
-    return {
+    const filter = {
       createdAt: {
         $gte: startDate,
         $lte: endDate
       }
     };
+
+    console.log('🔍 buildDateFilter output:', {
+      filter,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+
+    return filter;
+  }
+
+  // Thống kê cho frontend (trả về đúng structure mà frontend mong đợi)
+  async getStatisticsForFrontend(period?: StatisticsPeriod): Promise<{
+    totalRevenue: number;
+    totalProfit: number;
+    totalDebt: number;
+    totalOrders: number;
+    topCustomers: Array<{
+      customer: any;
+      totalAmount: number;
+      totalOrders: number;
+    }>;
+    topAgents: Array<{
+      agent: any;
+      totalAmount: number;
+      totalOrders: number;
+    }>;
+    topProducts: Array<{
+      product: any;
+      totalSold: number;
+      totalRevenue: number;
+    }>;
+    revenueByMonth: Array<{
+      month: string;
+      revenue: number;
+      profit: number;
+    }>;
+  }> {
+    const dateFilter = this.buildDateFilter(period);
+    console.log('🔍 Date Filter Debug:', { period, dateFilter });
+
+    // Lấy thống kê cơ bản từ orders
+    const orderStats = await this.getOrderStats(dateFilter);
+    
+    // Lấy top customers với full data
+    const topCustomers = await this.getTopCustomersWithFullData(5, period);
+    console.log('👥 Top Customers Count:', topCustomers.length);
+    
+    // Lấy top agents với full data
+    const topAgents = await this.getTopAgentsWithFullData(5, period);
+    console.log('🏢 Top Agents Count:', topAgents.length);
+    
+    // Lấy top products với full data
+    const topProducts = await this.getTopProductsWithFullData(5, period);
+    console.log('📦 Top Products Count:', topProducts.length);
+    
+    // Lấy revenue by month và transform format (KHÔNG áp dụng date filter - độc lập)
+    const rawRevenueData = await this.getRevenueByPeriod('month');
+    const revenueByMonth = this.transformRevenueData(rawRevenueData);
+
+    return {
+      totalRevenue: orderStats.totalRevenue,
+      totalProfit: orderStats.totalProfit,
+      totalDebt: orderStats.totalDebt,
+      totalOrders: orderStats.totalOrders,
+      topCustomers,
+      topAgents,
+      topProducts,
+      revenueByMonth
+    };
+  }
+
+  // Transform revenue data to frontend format
+  private transformRevenueData(rawData: any[]): Array<{
+    month: string;
+    revenue: number;
+    profit: number;
+  }> {
+    // Tạo map với 12 tháng, tất cả bắt đầu với giá trị 0
+    const monthsMap = new Map();
+    for (let i = 1; i <= 12; i++) {
+      monthsMap.set(i, {
+        month: `Tháng ${i}`,
+        revenue: 0,
+        profit: 0
+      });
+    }
+
+    // Fill data thực từ rawData nếu có
+    // Revenue bao gồm tất cả đơn hàng (đã thanh toán + công nợ)
+    if (rawData && rawData.length > 0) {
+      rawData.forEach(item => {
+        if (item._id && item._id >= 1 && item._id <= 12) {
+          const revenue = item.totalRevenue || 0; // Tổng doanh thu bao gồm cả công nợ
+          const profit = (item.completedRevenue || 0) * 0.3; // Lợi nhuận chỉ từ doanh thu đã thu được
+          monthsMap.set(item._id, {
+            month: `Tháng ${item._id}`,
+            revenue,
+            profit
+          });
+        }
+      });
+    }
+
+    // Trả về array theo thứ tự tháng (1-12)
+    return Array.from(monthsMap.values());
+  }
+
+  // Top customers với full customer data
+  private async getTopCustomersWithFullData(limit: number = 5, period?: StatisticsPeriod) {
+    const dateFilter = this.buildDateFilter(period);
+
+    const pipeline: any[] = [
+      { 
+        $match: { 
+          status: 'active',
+          customerId: { $exists: true },
+          ...dateFilter 
+        } 
+      },
+      {
+        $group: {
+          _id: '$customerId',
+          totalAmount: { $sum: '$totalAmount' },
+          totalOrders: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'customers',
+          let: { customerId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$customerId'] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$customerId' }] },
+                    { $eq: ['$_id', { $toString: '$$customerId' }] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'customer'
+        }
+      },
+      { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+      { $sort: { totalAmount: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          customer: {
+            _id: '$customer._id',
+            name: '$customer.name',
+            phone: '$customer.phone',
+            address: '$customer.address'
+          },
+          totalAmount: 1,
+          totalOrders: 1
+        }
+      }
+    ];
+
+    return this.orderModel.aggregate(pipeline);
+  }
+
+  // Top agents với full agent data
+  private async getTopAgentsWithFullData(limit: number = 5, period?: StatisticsPeriod) {
+    const dateFilter = this.buildDateFilter(period);
+
+    const pipeline: any[] = [
+      { 
+        $match: { 
+          status: 'active',
+          agentId: { $exists: true },
+          ...dateFilter 
+        } 
+      },
+      {
+        $group: {
+          _id: '$agentId',
+          totalAmount: { $sum: '$totalAmount' },
+          totalOrders: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'agents',
+          let: { agentId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$agentId'] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$agentId' }] },
+                    { $eq: ['$_id', { $toString: '$$agentId' }] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'agent'
+        }
+      },
+      { $unwind: { path: '$agent', preserveNullAndEmptyArrays: true } },
+      { $sort: { totalAmount: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          agent: {
+            _id: '$agent._id',
+            name: '$agent.name',
+            phone: '$agent.phone',
+            address: '$agent.address'
+          },
+          totalAmount: 1,
+          totalOrders: 1
+        }
+      }
+    ];
+
+    return this.orderModel.aggregate(pipeline);
+  }
+
+  // Top products với full product data
+  private async getTopProductsWithFullData(limit: number = 5, period?: StatisticsPeriod) {
+    const dateFilter = this.buildDateFilter(period);
+
+    const pipeline: any[] = [
+      { 
+        $match: { 
+          status: 'active',
+          ...dateFilter 
+        } 
+      },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.productId',
+          totalSold: { $sum: '$items.quantity' },
+          totalRevenue: { $sum: '$items.totalPrice' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          let: { productId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$productId'] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$productId' }] },
+                    { $eq: ['$_id', { $toString: '$$productId' }] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'product'
+        }
+      },
+      { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+      { $sort: { totalRevenue: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          product: {
+            _id: '$product._id',
+            name: '$product.name',
+            code: '$product.code',
+            currentPrice: '$product.currentPrice'
+          },
+          totalSold: 1,
+          totalRevenue: 1
+        }
+      }
+    ];
+
+    return this.orderModel.aggregate(pipeline);
   }
 } 

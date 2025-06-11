@@ -25,17 +25,14 @@ export const Statistics: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Date range state
+    // Date range state - mặc định là "tháng này"
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
-        date.setMonth(date.getMonth() - 1);
-        return date.toISOString().split('T')[0];
+        return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
     });
     const [endDate, setEndDate] = useState(() => {
         return new Date().toISOString().split('T')[0];
     });
-
-    const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
 
     const fetchStatistics = async () => {
         setIsLoading(true);
@@ -102,18 +99,6 @@ export const Statistics: React.FC = () => {
                                 onStartDateChange={setStartDate}
                                 onEndDateChange={setEndDate}
                             />
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Chu kỳ</label>
-                                <select
-                                    value={selectedPeriod}
-                                    onChange={(e) => setSelectedPeriod(e.target.value as any)}
-                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                >
-                                    <option value="month">Theo tháng</option>
-                                    <option value="quarter">Theo quý</option>
-                                    <option value="year">Theo năm</option>
-                                </select>
-                            </div>
                         </div>
                         <div className="text-sm text-gray-500">
                             Dữ liệu từ {new Date(startDate).toLocaleDateString('vi-VN')} đến {new Date(endDate).toLocaleDateString('vi-VN')}
@@ -149,9 +134,7 @@ export const Statistics: React.FC = () => {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Biểu đồ doanh thu</CardTitle>
-                                <CardDescription>
-                                    Doanh thu và lợi nhuận theo thời gian
-                                </CardDescription>
+                               
                             </CardHeader>
                             <CardContent>
                                 <RevenueChart data={statistics.revenueByMonth} />

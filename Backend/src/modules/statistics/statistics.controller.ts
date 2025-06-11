@@ -27,13 +27,15 @@ export class StatisticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    const statisticsPeriod: StatisticsPeriod | undefined = period ? {
-      period,
+    const statisticsPeriod: StatisticsPeriod | undefined = (period || startDate || endDate) ? {
+      period: period || 'month',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined
     } : undefined;
 
-    return this.statisticsService.getOverviewStats(statisticsPeriod);
+    console.log('🎯 Controller Debug:', { period, startDate, endDate, statisticsPeriod });
+
+    return this.statisticsService.getStatisticsForFrontend(statisticsPeriod);
   }
 
   @Get('revenue')
@@ -61,8 +63,8 @@ export class StatisticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    const statisticsPeriod: StatisticsPeriod | undefined = period ? {
-      period,
+    const statisticsPeriod: StatisticsPeriod | undefined = (period || startDate || endDate) ? {
+      period: period || 'month',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined
     } : undefined;
@@ -83,8 +85,8 @@ export class StatisticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    const statisticsPeriod: StatisticsPeriod | undefined = period ? {
-      period,
+    const statisticsPeriod: StatisticsPeriod | undefined = (period || startDate || endDate) ? {
+      period: period || 'month',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined
     } : undefined;
@@ -105,8 +107,8 @@ export class StatisticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    const statisticsPeriod: StatisticsPeriod | undefined = period ? {
-      period,
+    const statisticsPeriod: StatisticsPeriod | undefined = (period || startDate || endDate) ? {
+      period: period || 'month',
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined
     } : undefined;

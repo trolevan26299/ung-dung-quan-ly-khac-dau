@@ -39,10 +39,6 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) 
                             <p className="text-2xl font-bold text-gray-900">
                                 {formatCurrency(statistics.totalRevenue)}
                             </p>
-                            <div className="flex items-center mt-1">
-                                <TrendingUp className="w-4 h-4 text-green-500" />
-                                <span className="text-sm text-green-600 ml-1">+12.5%</span>
-                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -59,10 +55,6 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) 
                             <p className="text-2xl font-bold text-gray-900">
                                 {formatCurrency(statistics.totalProfit)}
                             </p>
-                            <div className="flex items-center mt-1">
-                                <TrendingUp className="w-4 h-4 text-green-500" />
-                                <span className="text-sm text-green-600 ml-1">+8.2%</span>
-                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -79,10 +71,6 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) 
                             <p className="text-2xl font-bold text-gray-900">
                                 {formatCurrency(statistics.totalDebt)}
                             </p>
-                            <div className="flex items-center mt-1">
-                                <TrendingDown className="w-4 h-4 text-red-500" />
-                                <span className="text-sm text-red-600 ml-1">-5.1%</span>
-                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -99,10 +87,6 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) 
                             <p className="text-2xl font-bold text-gray-900">
                                 {formatNumber(statistics.totalOrders)}
                             </p>
-                            <div className="flex items-center mt-1">
-                                <TrendingUp className="w-4 h-4 text-green-500" />
-                                <span className="text-sm text-green-600 ml-1">+15.3%</span>
-                            </div>
                         </div>
                     </div>
                 </CardContent>
