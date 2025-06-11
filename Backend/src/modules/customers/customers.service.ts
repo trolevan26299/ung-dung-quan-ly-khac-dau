@@ -32,9 +32,10 @@ export class CustomersService {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = {};
+    // Build match filter for search
+    const matchFilter: any = {};
     if (search) {
-      filter.$or = [
+      matchFilter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
@@ -42,18 +43,107 @@ export class CustomersService {
       ];
     }
 
-    const [data, total] = await Promise.all([
-      this.customerModel
-        .find(filter)
-        .populate('agentId', 'name phone')
-        .skip(skip)
-        .limit(limit)
-        .exec(),
-      this.customerModel.countDocuments(filter),
+    // Aggregation pipeline để tính tổng đơn hàng và giá trị
+    const pipeline = [
+      { $match: matchFilter },
+      {
+        $addFields: {
+          // Convert _id to string for comparison
+          customerIdString: { $toString: '$_id' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { customerId: '$_id', customerIdStr: '$customerIdString' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$customerId', '$$customerId'] },
+                    { $eq: [{ $toString: '$customerId' }, '$$customerIdStr'] },
+                    { $eq: ['$customerId', '$$customerIdStr'] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'customerOrders'
+        }
+      },
+      {
+        $lookup: {
+          from: 'agents',
+          localField: 'agentId',
+          foreignField: '_id',
+          as: 'agent'
+        }
+      },
+      {
+        $addFields: {
+          // Chỉ tính các đơn hàng active (không bị hủy)
+          activeOrders: {
+            $filter: {
+              input: '$customerOrders',
+              cond: { $ne: ['$$this.status', 'cancelled'] }
+            }
+          },
+          // Thêm thông tin agent nếu có
+          agentName: {
+            $ifNull: [
+              { $arrayElemAt: ['$agent.name', 0] },
+              '$agentName'
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          totalOrders: { $size: '$activeOrders' },
+          totalAmount: {
+            $sum: {
+              $map: {
+                input: '$activeOrders',
+                as: 'order',
+                in: '$$order.totalAmount'
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          customerOrders: 0, // Loại bỏ array orders để giảm dung lượng
+          activeOrders: 0,
+          agent: 0,
+          customerIdString: 0
+        }
+      }
+    ];
+
+    // Get paginated data
+    const paginatedPipeline = [
+      ...pipeline,
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    // Get total count
+    const countPipeline = [
+      ...pipeline,
+      { $count: 'total' }
+    ];
+
+    const [dataResult, countResult] = await Promise.all([
+      this.customerModel.aggregate(paginatedPipeline).exec(),
+      this.customerModel.aggregate(countPipeline).exec()
     ]);
 
+    const total = countResult[0]?.total || 0;
+
     return {
-      data,
+      data: dataResult,
       total,
       page,
       limit,
@@ -139,18 +229,27 @@ export class CustomersService {
       },
       {
         $addFields: {
+          // Chỉ tính các đơn hàng active (không bị hủy)
+          activeOrders: {
+            $filter: {
+              input: '$orders',
+              cond: { $ne: ['$$this.status', 'cancelled'] }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
           totalSpent: {
             $sum: {
               $map: {
-                input: { $filter: { input: '$orders', cond: { $eq: ['$$this.status', 'active'] } } },
+                input: '$activeOrders',
                 as: 'order',
                 in: '$$order.totalAmount'
               }
             }
           },
-          totalOrders: {
-            $size: { $filter: { input: '$orders', cond: { $eq: ['$$this.status', 'active'] } } }
-          }
+          totalOrders: { $size: '$activeOrders' }
         }
       },
       { $sort: { totalSpent: -1 } },
@@ -167,4 +266,52 @@ export class CustomersService {
       }
     ]);
   }
-} 
+
+  // Thống kê khách hàng với % thay đổi
+  async getCustomerStats(): Promise<any> {
+    const now = new Date();
+    
+    // Tháng hiện tại
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthEnd = now;
+    
+    // Tháng trước
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // Đếm khách hàng tháng hiện tại
+    const currentMonthCustomers = await this.customerModel.countDocuments({
+      createdAt: {
+        $gte: currentMonthStart,
+        $lte: currentMonthEnd
+      }
+    });
+
+    // Đếm khách hàng tháng trước
+    const previousMonthCustomers = await this.customerModel.countDocuments({
+      createdAt: {
+        $gte: previousMonthStart,
+        $lte: previousMonthEnd
+      }
+    });
+
+    // Tổng khách hàng
+    const totalCustomers = await this.customerModel.countDocuments();
+
+    // Tính % thay đổi
+    const calculatePercentageChange = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100 * 100) / 100;
+    };
+
+    const customersChange = calculatePercentageChange(currentMonthCustomers, previousMonthCustomers);
+
+    return {
+      totalCustomers,
+      currentMonthCustomers,
+      previousMonthCustomers,
+      customersChange,
+      customersChangeFormatted: `${customersChange >= 0 ? '+' : ''}${customersChange}%`
+    };
+  }
+}

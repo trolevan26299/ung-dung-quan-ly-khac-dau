@@ -83,6 +83,7 @@ export class UserQueryDto {
 
   @ApiProperty({ description: 'Lọc theo trạng thái', required: false })
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
 } 

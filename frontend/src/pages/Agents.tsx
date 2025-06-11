@@ -10,9 +10,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
+import { Pagination } from '../components/ui/Pagination';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { AppDispatch, RootState } from '../store';
-import { createAgent, deleteAgent, fetchAgents, updateAgent } from '../store/slices/agentsSlice';
+import { createAgent, deleteAgent, fetchAgents, updateAgent, setSearchTerm, setPage, setPageSize } from '../store/slices/agentsSlice';
 import { useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import type { Agent, CreateAgentRequest } from '../types';
@@ -25,31 +26,35 @@ type ViewMode = 'grid' | 'table';
 // Main Agents Page
 export const Agents: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { agents, isLoading, error, pagination } = useSelector((state: RootState) => state.agents);
+    const { agents, isLoading, error, pagination, searchTerm } = useSelector((state: RootState) => state.agents);
     const { confirm, confirmProps } = useConfirm();
     const { success, error: showError } = useToast();
 
-    const [searchTerm, setSearchTerm] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
+    // Load agents khi component mount hoặc khi pagination/search thay đổi
     useEffect(() => {
         dispatch(fetchAgents({
-            page: currentPage,
-            limit: 10,
+            page: pagination.page,
+            limit: pagination.limit,
             search: searchTerm
         }));
-    }, [dispatch, currentPage, searchTerm]);
+    }, [dispatch, pagination.page, pagination.limit, searchTerm]);
 
     const handleCreateAgent = async (data: CreateAgentRequest) => {
         try {
             await dispatch(createAgent(data)).unwrap();
             setIsFormOpen(false);
             success('Tạo thành công', `Đại lý "${data.name}" đã được tạo`);
-            dispatch(fetchAgents({ page: currentPage, limit: 10, search: searchTerm }));
+            // Refresh current page
+            dispatch(fetchAgents({
+                page: pagination.page,
+                limit: pagination.limit,
+                search: searchTerm
+            }));
         } catch (error: any) {
             console.error('Error creating agent:', error);
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo đại lý');
@@ -68,7 +73,12 @@ export const Agents: React.FC = () => {
             setIsFormOpen(false);
             setSelectedAgent(null);
             success('Cập nhật thành công', `Đại lý "${data.name}" đã được cập nhật`);
-            dispatch(fetchAgents({ page: currentPage, limit: 10, search: searchTerm }));
+            // Refresh current page
+            dispatch(fetchAgents({
+                page: pagination.page,
+                limit: pagination.limit,
+                search: searchTerm
+            }));
         } catch (error: any) {
             console.error('Error updating agent:', error);
             showError('Cập nhật thất bại', error.message || 'Có lỗi xảy ra khi cập nhật đại lý');
@@ -89,6 +99,7 @@ export const Agents: React.FC = () => {
             try {
                 await dispatch(deleteAgent(id)).unwrap();
                 success('Đã xóa', `Đại lý "${agentToDelete?.name || ''}" đã được xóa`);
+                // Refresh current page
                 dispatch(fetchAgents({
                     page: pagination.page,
                     limit: pagination.limit,
@@ -114,6 +125,19 @@ export const Agents: React.FC = () => {
     const handleAddNew = () => {
         setSelectedAgent(null);
         setIsFormOpen(true);
+    };
+
+    const handleSearch = (searchValue: string) => {
+        dispatch(setSearchTerm(searchValue));
+        dispatch(setPage(1)); // Reset to first page when searching
+    };
+
+    const handlePageChange = (page: number) => {
+        dispatch(setPage(page));
+    };
+
+    const handlePageSizeChange = (pageSize: number) => {
+        dispatch(setPageSize(pageSize));
     };
 
     const renderAgentGrid = () => {
@@ -195,9 +219,6 @@ export const Agents: React.FC = () => {
                         <UserCheck className="w-8 h-8 mr-3 text-primary-600" />
                         Quản lý đại lý
                     </h1>
-                    <p className="text-gray-500 mt-1">
-                        Quản lý thông tin đại lý và lịch sử giao dịch
-                    </p>
                 </div>
                 <Button onClick={handleAddNew} className="flex items-center">
                     <Plus className="w-4 h-4 mr-2" />
@@ -215,7 +236,7 @@ export const Agents: React.FC = () => {
                                 <Input
                                     placeholder="Tìm kiếm theo tên, số điện thoại..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => handleSearch(e.target.value)}
                                     className="pl-10"
                                 />
                             </div>
@@ -262,28 +283,17 @@ export const Agents: React.FC = () => {
             {renderContent()}
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
-                <div className="flex items-center justify-center space-x-2">
-                    <Button
-                        variant="secondary"
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                    >
-                        Trước
-                    </Button>
-
-                    <span className="text-sm text-gray-600">
-                        Trang {currentPage} / {pagination.totalPages}
-                    </span>
-
-                    <Button
-                        variant="secondary"
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
-                        disabled={currentPage === pagination.totalPages}
-                    >
-                        Sau
-                    </Button>
-                </div>
+            {pagination.total > 0 && (
+                <Card>
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.total}
+                        pageSize={pagination.limit}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                    />
+                </Card>
             )}
 
             {/* Modals */}

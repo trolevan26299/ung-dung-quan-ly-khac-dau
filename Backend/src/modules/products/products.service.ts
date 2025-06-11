@@ -169,49 +169,4 @@ export class ProductsService {
       }
     ]);
   }
-
-  // Khởi tạo sản phẩm mẫu
-  async initializeProducts(): Promise<void> {
-    const sampleProducts = [
-      { code: 'C20_XANH', name: 'C20 XANH', category: 'Dấu tròn', currentPrice: 50000 },
-      { code: 'C20_DO', name: 'C20 ĐỎ', category: 'Dấu tròn', currentPrice: 50000 },
-      { code: 'C30_XANH', name: 'C30 XANH', category: 'Dấu tròn', currentPrice: 70000 },
-      { code: 'C30_DO', name: 'C30 ĐỎ', category: 'Dấu tròn', currentPrice: 70000 },
-      { code: 'C40_XANH', name: 'C40 XANH', category: 'Dấu tròn', currentPrice: 90000 },
-      { code: 'C40_DO', name: 'C40 ĐỎ', category: 'Dấu tròn', currentPrice: 90000 },
-      { code: 'CAO_SU', name: 'CAO SU', category: 'Dấu cao su', currentPrice: 120000 },
-      { code: 'CAN_70_120', name: 'CẦN 70*120', category: 'Phụ kiện', currentPrice: 30000 },
-      { code: 'LAN_TAY_SHINY', name: 'LĂN TAY SHINY', category: 'Phụ kiện', currentPrice: 25000 },
-      { code: 'MUC_LAN_TAY_DEN', name: 'MỰC LĂN TAY ĐEN', category: 'Mực', currentPrice: 15000 },
-      { code: 'MUC_LAN_TAY_DO', name: 'MỰC LĂN TAY ĐỎ', category: 'Mực', currentPrice: 15000 },
-      { code: 'MUC_LAN_TAY_XANH', name: 'MỰC LĂN TAY XANH', category: 'Mực', currentPrice: 15000 },
-      { code: 'MUC_XANH_10ML', name: 'MỰC XANH 10ML', category: 'Mực', currentPrice: 20000 },
-      { code: 'MUC_XANH_20ML', name: 'MỰC XANH 20ML', category: 'Mực', currentPrice: 35000 },
-      { code: 'MUC_DO_10ML', name: 'MỰC ĐỎ 10ML', category: 'Mực', currentPrice: 20000 },
-      { code: 'MUC_DO_20ML', name: 'MỰC ĐỎ 20ML', category: 'Mực', currentPrice: 35000 },
-      { code: 'P30_DO', name: 'P30 ĐỎ', category: 'Dấu chữ nhật', currentPrice: 80000 },
-      { code: 'P53_DATE_DO', name: 'P53 DATE ĐỎ', category: 'Dấu ngày', currentPrice: 150000 },
-      { code: 'PET_300', name: 'PET 300', category: 'Phụ kiện', currentPrice: 45000 },
-      { code: 'PET_400', name: 'PET 400', category: 'Phụ kiện', currentPrice: 60000 },
-      { code: 'R24', name: 'R24', category: 'Dấu tròn', currentPrice: 40000 },
-      { code: 'R40', name: 'R40', category: 'Dấu tròn', currentPrice: 65000 },
-      { code: 'R40_DATE', name: 'R40 DATE', category: 'Dấu ngày', currentPrice: 120000 },
-    ];
-
-    for (const productData of sampleProducts) {
-      const existingProduct = await this.productModel.findOne({ code: productData.code });
-      if (!existingProduct) {
-        const product = new this.productModel({
-          ...productData,
-          stockQuantity: 100,
-          minStock: 10,
-          avgImportPrice: productData.currentPrice * 0.7, // Giả sử giá nhập = 70% giá bán
-          unit: 'cái',
-          isActive: true
-        });
-        await product.save();
-      }
-    }
-    console.log('✅ Đã khởi tạo danh sách sản phẩm mẫu');
-  }
 } 

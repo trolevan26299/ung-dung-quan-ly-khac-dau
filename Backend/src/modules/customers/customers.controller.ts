@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
-import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
+import { CreateCustomerDto, UpdateCustomerDto, CustomerQueryDto } from './dto/customer.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Customers')
@@ -31,11 +31,20 @@ export class CustomersController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách khách hàng' })
   @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
-  findAll(@Query('search') search?: string) {
-    if (search) {
-      return this.customersService.search(search);
-    }
-    return this.customersService.findAll();
+  findAll(@Query() query: CustomerQueryDto) {
+    const paginationQuery = {
+      page: query.page ? parseInt(query.page) : 1,
+      limit: query.limit ? parseInt(query.limit) : 10,
+      search: query.search
+    };
+    return this.customersService.findAll(paginationQuery);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Thống kê khách hàng' })
+  @ApiResponse({ status: 200, description: 'Lấy thống kê thành công' })
+  getCustomerStats() {
+    return this.customersService.getCustomerStats();
   }
 
   @Get(':id')

@@ -39,12 +39,12 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
     const getPaymentStatusColor = (status: string) => {
         switch (status) {
-            case 'paid':
+            case 'completed':
                 return 'text-green-600 bg-green-50';
-            case 'partial':
-                return 'text-yellow-600 bg-yellow-50';
+            case 'debt':
+                return 'text-red-600 bg-red-50';
             case 'pending':
-                return 'text-orange-600 bg-orange-50';
+                return 'text-yellow-600 bg-yellow-50';
             default:
                 return 'text-gray-600 bg-gray-50';
         }
@@ -53,7 +53,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
     const getStatusText = (status: string) => {
         switch (status) {
             case 'active':
-                return 'Hoạt động';
+                return 'Hoàn thành';
             case 'cancelled':
                 return 'Đã hủy';
             default:
@@ -63,12 +63,12 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
     const getPaymentStatusText = (status: string) => {
         switch (status) {
-            case 'paid':
+            case 'completed':
                 return 'Đã thanh toán';
-            case 'partial':
-                return 'Thanh toán 1 phần';
+            case 'debt':
+                return 'Công nợ';
             case 'pending':
-                return 'Chờ thanh toán';
+                return 'Chưa thanh toán';
             default:
                 return 'Không xác định';
         }
@@ -118,6 +118,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                     Khách hàng
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Đại lý
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Ngày tạo
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -143,7 +146,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div>
                                             <div className="text-sm font-medium text-gray-900">
-                                                #{order.orderNumber}
+                                                {order.orderNumber}
                                             </div>
                                             <div className="text-sm text-gray-500">
                                                 ID: {order._id.slice(-6)}
@@ -157,6 +160,16 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </div>
                                             <div className="text-sm text-gray-500">
                                                 {safeString(order.customer?.phone || '')}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {safeString(order.agent?.name || 'N/A')}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {safeString(order.agent?.phone || '')}
                                             </div>
                                         </div>
                                     </td>
@@ -209,8 +222,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                                 variant="light"
                                                 size="xs"
                                                 onClick={() => onEdit(order)}
-                                                className="h-7 w-7 p-0"
-                                                title="Chỉnh sửa"
+                                                disabled={order.status === 'cancelled'}
+                                                className={`h-7 w-7 p-0 ${order.status === 'cancelled' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                title={order.status === 'cancelled' ? 'Không thể chỉnh sửa đơn hàng đã hủy' : 'Chỉnh sửa'}
                                             >
                                                 <Edit className="w-3 h-3" />
                                             </Button>

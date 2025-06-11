@@ -55,13 +55,6 @@ export class ProductsController {
     return this.productsService.getTopSellingProducts(limit || 10);
   }
 
-  @Post('initialize')
-  @ApiOperation({ summary: 'Khởi tạo sản phẩm mẫu' })
-  @ApiResponse({ status: 200, description: 'Khởi tạo thành công' })
-  initializeProducts() {
-    return this.productsService.initializeProducts();
-  }
-
   @Get('code/:code')
   @ApiOperation({ summary: 'Lấy sản phẩm theo mã' })
   @ApiResponse({ status: 200, description: 'Lấy thông tin thành công' })

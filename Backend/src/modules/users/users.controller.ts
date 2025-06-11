@@ -32,6 +32,13 @@ export class UsersController {
     return this.usersService.create(createUserDto, req.user);
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Lấy thống kê tổng quan người dùng' })
+  @ApiResponse({ status: 200, description: 'Lấy thống kê thành công' })
+  getStats() {
+    return this.usersService.getStats();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách người dùng' })
   @ApiResponse({ status: 200, description: 'Lấy danh sách thành công', type: PaginatedUsersDto })
@@ -67,4 +74,6 @@ export class UsersController {
   remove(@Param('id') id: string, @Request() req): Promise<void> {
     return this.usersService.remove(id, req.user);
   }
+
 } 
+ 

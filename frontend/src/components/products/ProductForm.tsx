@@ -4,7 +4,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Portal } from '../ui/Portal';
 import { VALIDATION } from '../../constants';
-import type { Product, CreateProductRequest } from '../../types';
+import { categoriesApi } from '../../services/api';
+import type { Product, CreateProductRequest, Category } from '../../types';
 
 interface ProductFormProps {
     product?: Product | null;
@@ -21,7 +22,7 @@ interface FormErrors {
     name?: string;
     category?: string;
     unit?: string;
-    sellingPrice?: string;
+    currentPrice?: string;
     notes?: string;
 }
 
@@ -38,11 +39,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         name: '',
         category: '',
         unit: '',
-        sellingPrice: 0,
+        currentPrice: 0,
         notes: ''
     });
 
+    const [categories, setCategories] = useState<Category[]>([]);
     const [errors, setErrors] = useState<FormErrors>({});
+
+    useEffect(() => {
+        if (isOpen) {
+            loadCategories();
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (product) {
@@ -51,7 +59,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 name: product.name,
                 category: product.category,
                 unit: product.unit,
-                sellingPrice: product.sellingPrice,
+                currentPrice: product.currentPrice,
                 notes: product.notes || ''
             });
         } else {
@@ -60,12 +68,21 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 name: '',
                 category: '',
                 unit: '',
-                sellingPrice: 0,
+                currentPrice: 0,
                 notes: ''
             });
         }
         setErrors({});
     }, [product, isOpen]);
+
+    const loadCategories = async () => {
+        try {
+            const response = await categoriesApi.getActiveCategories();
+            setCategories(response);
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    };
 
     const validateForm = (): boolean => {
         const newErrors: FormErrors = {};
@@ -88,10 +105,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             newErrors.unit = 'Đơn vị tính là bắt buộc';
         }
 
-        if (formData.sellingPrice <= 0) {
-            newErrors.sellingPrice = 'Giá bán phải lớn hơn 0';
-        }
-
         if (formData.notes && formData.notes.length > VALIDATION.MAX_NOTES_LENGTH) {
             newErrors.notes = `Ghi chú không được vượt quá ${VALIDATION.MAX_NOTES_LENGTH} ký tự`;
         }
@@ -110,12 +123,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     const handleInputChange = (field: keyof CreateProductRequest, value: string | number) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         // Clear error when user starts typing
-        if (errors[field]) {
+        if (errors[field as keyof FormErrors]) {
             setErrors(prev => ({ ...prev, [field]: undefined }));
         }
     };
 
-    const handleNumberChange = (field: 'sellingPrice', value: number) => {
+    const handleNumberChange = (field: 'currentPrice', value: number) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         // Clear error when user starts typing
         if (errors[field]) {
@@ -185,12 +198,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Danh mục *
                                 </label>
-                                <Input
+                                <select
                                     value={formData.category}
                                     onChange={(e) => handleInputChange('category', e.target.value)}
-                                    placeholder="Nhập danh mục"
-                                    className={errors.category ? 'border-red-500' : ''}
-                                />
+                                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
+                                >
+                                    <option value="">Chọn danh mục</option>
+                                    {categories.map(category => (
+                                        <option key={category._id} value={category.name}>
+                                            {category.name}
+                                        </option>
+                                    ))}
+                                </select>
                                 {errors.category && (
                                     <p className="text-red-500 text-xs mt-1">{errors.category}</p>
                                 )}
@@ -200,12 +219,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Đơn vị tính *
                                 </label>
-                                <Input
+                                <select
                                     value={formData.unit}
                                     onChange={(e) => handleInputChange('unit', e.target.value)}
-                                    placeholder="Cái, Chiếc, Kg..."
-                                    className={errors.unit ? 'border-red-500' : ''}
-                                />
+                                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.unit ? 'border-red-500' : 'border-gray-300'}`}
+                                >
+                                    <option value="">Chọn đơn vị</option>
+                                    <option value="Cái">Cái</option>
+                                    <option value="Chiếc">Chiếc</option>
+                                    <option value="Kg">Kg</option>
+                                </select>
                                 {errors.unit && (
                                     <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
                                 )}
@@ -214,19 +237,25 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Giá bán *
+                                {product ? 'Giá nhập *' : 'Giá nhập (sẽ tính từ kho hàng)'}
                             </label>
                             <Input
                                 type="number"
-                                value={formData.sellingPrice}
-                                onChange={(e) => handleNumberChange('sellingPrice', parseFloat(e.target.value) || 0)}
-                                placeholder="Nhập giá bán"
+                                value={formData.currentPrice}
+                                onChange={(e) => handleNumberChange('currentPrice', parseFloat(e.target.value) || 0)}
+                                placeholder={product ? "Nhập giá nhập" : "Giá sẽ được tính từ kho hàng"}
                                 min="0"
                                 step="1000"
-                                className={errors.sellingPrice ? 'border-red-500' : ''}
+                                disabled={!product} // Chỉ cho sửa khi edit sản phẩm
+                                className={`${errors.currentPrice ? 'border-red-500' : ''} ${!product ? 'bg-gray-100 text-gray-500' : ''}`}
                             />
-                            {errors.sellingPrice && (
-                                <p className="text-red-500 text-xs mt-1">{errors.sellingPrice}</p>
+                            {!product && (
+                                <p className="text-gray-500 text-xs mt-1">
+                                    Giá sẽ được tính trung bình từ các giao dịch nhập kho
+                                </p>
+                            )}
+                            {errors.currentPrice && (
+                                <p className="text-red-500 text-xs mt-1">{errors.currentPrice}</p>
                             )}
                         </div>
 

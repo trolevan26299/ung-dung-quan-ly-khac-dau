@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, ArrowUpCircle, ArrowDownCircle, RotateCcw, Package, Calendar, DollarSign } from 'lucide-react';
+import { Eye, ArrowUpCircle, ArrowDownCircle, RotateCcw, Package, Calendar, DollarSign, User } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { formatCurrency, formatDateTime, safeString, safeNumber } from '../../lib/utils';
 import type { StockTransaction } from '../../types';
@@ -9,13 +9,28 @@ interface StockTransactionTableProps {
     isLoading?: boolean;
     onView: (transaction: StockTransaction) => void;
     onAdd?: () => void;
+    pagination?: {
+        currentPage: number;
+        totalPages: number;
+        total: number;
+        limit: number;
+    };
+    onPageChange?: (page: number) => void;
+    onNextPage?: () => void;
+    onPreviousPage?: () => void;
+    onLimitChange?: (limit: number) => void;
 }
 
 export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
     transactions,
     isLoading = false,
     onView,
-    onAdd
+    onAdd,
+    pagination,
+    onPageChange,
+    onNextPage,
+    onPreviousPage,
+    onLimitChange
 }) => {
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -108,6 +123,9 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                 Tổng giá trị
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Người tạo
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Thời gian
                             </th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -121,18 +139,18 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div>
                                         <div className="text-sm font-medium text-gray-900">
-                                            {safeString(transaction.product?.name || 'N/A')}
+                                            {safeString(transaction.productName || 'N/A')}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            Mã: {safeString(transaction.product?.code || '')}
+                                            Mã: {safeString(transaction.productCode || '')}
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        {getTypeIcon(transaction.type)}
-                                        <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeBadgeColor(transaction.type)}`}>
-                                            {getTypeText(transaction.type)}
+                                        {getTypeIcon(transaction.transactionType)}
+                                        <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeBadgeColor(transaction.transactionType)}`}>
+                                            {getTypeText(transaction.transactionType)}
                                         </span>
                                     </div>
                                 </td>
@@ -145,7 +163,10 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                     <div className="flex items-center">
                                         <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                                         <span className="text-sm text-gray-900">
-                                            {formatCurrency(transaction.unitPrice || 0)}
+                                            {transaction.transactionType === 'import' 
+                                                ? formatCurrency(transaction.unitPrice || 0)
+                                                : '-'
+                                            }
                                         </span>
                                     </div>
                                 </td>
@@ -153,8 +174,23 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                     <div className="flex items-center">
                                         <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                                         <span className="text-sm font-semibold text-green-600">
-                                            {formatCurrency((transaction.quantity || 0) * (transaction.unitPrice || 0))}
+                                            {transaction.transactionType === 'import' 
+                                                ? formatCurrency((transaction.quantity || 0) * (transaction.unitPrice || 0))
+                                                : '-'
+                                            }
                                         </span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        <User className="w-4 h-4 text-gray-400 mr-2" />
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {typeof transaction.userId === 'object' 
+                                                    ? (transaction.userId.fullName === 'Administrator' ? transaction.userId.username : transaction.userId.fullName)
+                                                    : transaction.userName || 'N/A'}
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -181,6 +217,80 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                     </tbody>
                 </table>
             </div>
+            
+            {/* Pagination tích hợp trong bảng */}
+            {pagination && (
+                <div className="flex items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-700">Hiển thị:</span>
+                        <select
+                            value={pagination.limit}
+                            onChange={(e) => onLimitChange && onLimitChange(Number(e.target.value))}
+                            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                        <span className="text-sm text-gray-700">mục</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-700">
+                            Hiển thị {((pagination.currentPage - 1) * pagination.limit) + 1} đến{' '}
+                            {Math.min(pagination.currentPage * pagination.limit, pagination.total)} trong{' '}
+                            {pagination.total} kết quả
+                        </span>
+                        
+                        <div className="flex items-center space-x-1 ml-4">
+                            <button 
+                                onClick={onPreviousPage}
+                                disabled={pagination.currentPage === 1}
+                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
+                            >
+                                ‹ Trước
+                            </button>
+                            
+                            {/* Render page numbers */}
+                            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                                let pageNumber: number;
+                                if (pagination.totalPages <= 5) {
+                                    pageNumber = i + 1;
+                                } else if (pagination.currentPage <= 3) {
+                                    pageNumber = i + 1;
+                                } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                                    pageNumber = pagination.totalPages - 4 + i;
+                                } else {
+                                    pageNumber = pagination.currentPage - 2 + i;
+                                }
+                                
+                                return (
+                                    <button
+                                        key={pageNumber}
+                                        onClick={() => onPageChange && onPageChange(pageNumber)}
+                                        className={`px-3 py-1 text-sm border border-gray-300 rounded ${
+                                            pagination.currentPage === pageNumber
+                                                ? 'bg-blue-500 text-white border-blue-500'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {pageNumber}
+                                    </button>
+                                );
+                            })}
+                            
+                            <button 
+                                onClick={onNextPage}
+                                disabled={pagination.currentPage === pagination.totalPages}
+                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
+                            >
+                                Sau ›
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }; 

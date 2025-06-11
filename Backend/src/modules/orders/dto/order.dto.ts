@@ -74,6 +74,13 @@ export class CreateOrderDto {
 }
 
 export class UpdateOrderDto {
+  @ApiProperty({ description: 'Danh sách sản phẩm', type: [OrderItemDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items?: OrderItemDto[];
+
   @ApiProperty({ description: 'Trạng thái thanh toán', enum: PaymentStatus, required: false })
   @IsOptional()
   @IsEnum(PaymentStatus)
@@ -106,15 +113,18 @@ export class OrderQueryDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @Type(() => Number)
+  @IsNumber()
   page?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @Type(() => Number)
+  @IsNumber()
   limit?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsString()
   search?: string;
 
   @ApiProperty({ enum: PaymentStatus, required: false })
@@ -136,4 +146,14 @@ export class OrderQueryDto {
   @IsOptional()
   @IsMongoId()
   agentId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  dateFrom?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  dateTo?: string;
 } 

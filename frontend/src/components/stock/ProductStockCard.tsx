@@ -10,67 +10,71 @@ interface ProductStockCardProps {
 
 export const ProductStockCard: React.FC<ProductStockCardProps> = ({ product }) => {
     const getStockStatus = (stock: number) => {
-        if (stock < 10) {
+        if (stock === 0) {
+            return {
+                text: 'Hết hàng',
+                color: 'bg-red-100 text-red-800',
+                cardBorder: 'border-red-200',
+                cardBg: 'bg-red-50',
+                textColor: 'text-red-600',
+                showAlert: true
+            };
+        } else if (stock >= 1 && stock <= 9) {
+            return {
+                text: 'Tồn kho thấp',
+                color: 'bg-red-100 text-red-800',
+                cardBorder: 'border-red-200',
+                cardBg: 'bg-red-50',
+                textColor: 'text-red-600',
+                showAlert: true
+            };
+        } else if (stock >= 10 && stock <= 20) {
             return {
                 text: 'Tồn kho thấp',
                 color: 'bg-orange-100 text-orange-800',
                 cardBorder: 'border-orange-200',
-                cardBg: 'bg-orange-50'
-            };
-        } else if (stock < 50) {
-            return {
-                text: 'Tồn kho vừa',
-                color: 'bg-yellow-100 text-yellow-800',
-                cardBorder: 'border-gray-200',
-                cardBg: 'bg-white'
+                cardBg: 'bg-orange-50',
+                textColor: 'text-orange-600',
+                showAlert: true
             };
         } else {
             return {
                 text: 'Tồn kho tốt',
                 color: 'bg-green-100 text-green-800',
                 cardBorder: 'border-gray-200',
-                cardBg: 'bg-white'
+                cardBg: 'bg-white',
+                textColor: 'text-blue-600',
+                showAlert: false
             };
         }
     };
 
-    const stockStatus = getStockStatus(safeNumber(product.currentStock));
+    const stockStatus = getStockStatus(safeNumber(product.stockQuantity));
 
     return (
         <Card className={`hover:shadow-lg transition-shadow ${stockStatus.cardBorder} ${stockStatus.cardBg}`}>
-            <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
+            <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
                     <div>
-                        <h3 className="font-semibold text-lg text-gray-900">
-                            {safeString(product.name)}
-                        </h3>
-                        <p className="text-sm text-gray-500">{safeString(product.code)}</p>
+                        <h4 className="font-medium text-gray-900">{safeString(product.name)}</h4>
                     </div>
-                    {safeNumber(product.currentStock) < 10 && (
-                        <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    {stockStatus.showAlert && (
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
                     )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">Tồn kho hiện tại:</span>
-                        <span className={`font-bold text-lg ${safeNumber(product.currentStock) < 10 ? 'text-orange-600' : 'text-blue-600'
-                            }`}>
-                            {safeNumber(product.currentStock)}
+                        <span className={`font-bold text-lg ${stockStatus.textColor}`}>
+                            {safeNumber(product.stockQuantity)}
                         </span>
                     </div>
 
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">Giá nhập TB:</span>
                         <span className="font-medium text-gray-900">
-                            {formatCurrency(product.averageImportPrice)}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Giá bán:</span>
-                        <span className="font-medium text-green-600">
-                            {formatCurrency(product.sellingPrice)}
+                            {formatCurrency(product.avgImportPrice)}
                         </span>
                     </div>
 

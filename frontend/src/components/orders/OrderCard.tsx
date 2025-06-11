@@ -75,8 +75,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                                 variant="light"
                                 size="xs"
                                 onClick={() => onEdit(order)}
-                                className="h-8 w-8 p-0"
-                                title="Chỉnh sửa"
+                                disabled={order.status === 'cancelled'}
+                                className={`h-8 w-8 p-0 ${order.status === 'cancelled' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={order.status === 'cancelled' ? 'Không thể chỉnh sửa đơn hàng đã hủy' : 'Chỉnh sửa'}
                             >
                                 <Edit className="w-4 h-4" />
                             </Button>
@@ -134,4 +135,4 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             </Card>
         </>
     );
-}; 
+};

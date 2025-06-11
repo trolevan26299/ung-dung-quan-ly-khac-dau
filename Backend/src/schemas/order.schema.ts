@@ -42,6 +42,18 @@ export class Order {
   items: OrderItem[];
 
   @Prop({ required: true, min: 0 })
+  subtotal: number;
+
+  @Prop({ min: 0, max: 100, default: 0 })
+  vatRate: number;
+
+  @Prop({ min: 0, default: 0 })
+  vatAmount: number;
+
+  @Prop({ min: 0, default: 0 })
+  shippingFee: number;
+
+  @Prop({ required: true, min: 0 })
   totalAmount: number;
 
   @Prop({ required: true, enum: Object.values(PAYMENT_STATUS), default: PAYMENT_STATUS.PENDING })

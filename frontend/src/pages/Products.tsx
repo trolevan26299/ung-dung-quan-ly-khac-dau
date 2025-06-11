@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Package, Grid, List } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, setSearchTerm, setCurrentProduct, clearError } from '../store/slices/productsSlice';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, setSearchTerm, setCurrentProduct, clearError, setPage, setPageSize } from '../store/slices/productsSlice';
 import { ProductForm, ProductDetail, ProductCard, ProductTable } from '../components/products';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
+import { Pagination } from '../components/ui/Pagination';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
@@ -14,7 +15,6 @@ import type { Product, CreateProductRequest } from '../types';
 import { Portal } from '../components/ui/Portal';
 
 type ViewMode = 'grid' | 'table';
-
 export const Products: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { products, currentProduct, isLoading, error, searchTerm, pagination } = useSelector((state: RootState) => state.products);
@@ -26,9 +26,14 @@ export const Products: React.FC = () => {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
 
+    // Load products khi component mount hoặc khi pagination/search thay đổi
     useEffect(() => {
-        dispatch(fetchProducts({ page: 1, limit: 10, search: searchTerm }));
-    }, [dispatch, searchTerm]);
+        dispatch(fetchProducts({ 
+            page: pagination.page, 
+            limit: pagination.limit, 
+            search: searchTerm 
+        }));
+    }, [dispatch, pagination.page, pagination.limit, searchTerm]);
 
     useEffect(() => {
         if (error) {
@@ -40,6 +45,12 @@ export const Products: React.FC = () => {
     const handleCreateProduct = async (data: CreateProductRequest) => {
         try {
             await dispatch(createProduct(data)).unwrap();
+            // Refresh danh sách sau khi tạo thành công
+            await dispatch(fetchProducts({ 
+                page: pagination.page, 
+                limit: pagination.limit, 
+                search: searchTerm 
+            }));
             setIsFormOpen(false);
             setEditingProduct(null);
             success('Tạo thành công', `Sản phẩm "${data.name}" đã được tạo`);
@@ -77,6 +88,12 @@ export const Products: React.FC = () => {
 
         try {
             await dispatch(deleteProduct(id)).unwrap();
+            // Refresh danh sách sau khi xóa thành công
+            await dispatch(fetchProducts({ 
+                page: pagination.page, 
+                limit: pagination.limit, 
+                search: searchTerm 
+            }));
             success('Đã xóa', `Sản phẩm "${productToDelete?.name || ''}" đã được xóa`);
         } catch (error: any) {
             console.error('Error deleting product:', error);
@@ -86,6 +103,14 @@ export const Products: React.FC = () => {
 
     const handleSearch = (searchValue: string) => {
         dispatch(setSearchTerm(searchValue));
+    };
+
+    const handlePageChange = (page: number) => {
+        dispatch(setPage(page));
+    };
+
+    const handlePageSizeChange = (pageSize: number) => {
+        dispatch(setPageSize(pageSize));
     };
 
     const handleViewDetail = (product: Product) => {
@@ -165,18 +190,52 @@ export const Products: React.FC = () => {
     const renderContent = () => {
         if (viewMode === 'table') {
             return (
-                <ProductTable
-                    products={products}
-                    isLoading={isLoading}
-                    onView={handleViewDetail}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteProduct}
-                    onAdd={handleAddNew}
-                />
+                <Card>
+                    <CardContent className="p-0">
+                        <ProductTable
+                            products={products}
+                            isLoading={isLoading}
+                            onView={handleViewDetail}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteProduct}
+                            onAdd={handleAddNew}
+                        />
+                        {/* Table View Pagination */}
+                        {pagination.total > 0 && (
+                            <Card>
+                                <Pagination
+                                    currentPage={pagination.page}
+                                    totalPages={pagination.totalPages}
+                                    totalItems={pagination.total}
+                                    pageSize={pagination.limit}
+                                    onPageChange={handlePageChange}
+                                    onPageSizeChange={handlePageSizeChange}
+                                />
+                            </Card>
+                        )}
+                    </CardContent>
+                </Card>
             );
         }
 
-        return renderProductsGrid();
+        return (
+            <div className="space-y-6">
+                {renderProductsGrid()}
+                {/* Grid View Pagination */}
+                {pagination.total > 0 && (
+                    <Card>
+                        <Pagination
+                            currentPage={pagination.page}
+                            totalPages={pagination.totalPages}
+                            totalItems={pagination.total}
+                            pageSize={pagination.limit}
+                            onPageChange={handlePageChange}
+                            onPageSizeChange={handlePageSizeChange}
+                        />
+                    </Card>
+                )}
+            </div>
+        );
     };
 
     if (isLoading && products.length === 0) {
@@ -199,9 +258,6 @@ export const Products: React.FC = () => {
                         <Package className="w-8 h-8 mr-3 text-primary-600" />
                         Quản lý sản phẩm
                     </h1>
-                    <p className="text-gray-500 mt-1">
-                        Quản lý các sản phẩm khắc dấu
-                    </p>
                 </div>
                 <Button onClick={handleAddNew} className="flex items-center">
                     <Plus className="w-4 h-4 mr-2" />

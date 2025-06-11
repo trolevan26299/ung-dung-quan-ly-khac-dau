@@ -16,12 +16,15 @@ import type {
   Statistics,
   PaginationParams,
   PaginatedResponse,
-  ApiResponse,
   CreateUserRequest,
-  UpdateUserRequest
+  UpdateUserRequest,
+  Category,
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+  OrderQuery
 } from '../types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -80,6 +83,21 @@ export const usersApi = {
     return response.data as PaginatedResponse<User>;
   },
   
+  getUserStats: async (): Promise<{
+    totalUsers: number;
+    adminCount: number;
+    employeeCount: number;
+    activeCount: number;
+  }> => {
+    const response = await api.get('/users/stats');
+    return response.data as {
+      totalUsers: number;
+      adminCount: number;
+      employeeCount: number;
+      activeCount: number;
+    };
+  },
+  
   getUser: async (id: string): Promise<User> => {
     const response = await api.get(`/users/${id}`);
     return response.data as User;
@@ -91,7 +109,7 @@ export const usersApi = {
   },
   
   updateUser: async (id: string, data: UpdateUserRequest): Promise<User> => {
-    const response = await api.put(`/users/${id}`, data);
+    const response = await api.patch(`/users/${id}`, data);
     return response.data as User;
   },
   
@@ -182,7 +200,7 @@ export const productsApi = {
   },
   
   updateProduct: async (id: string, data: Partial<CreateProductRequest>): Promise<Product> => {
-    const response = await api.put(`/products/${id}`, data);
+    const response = await api.patch(`/products/${id}`, data);
     return response.data as Product;
   },
   
@@ -193,7 +211,7 @@ export const productsApi = {
 
 // Orders API
 export const ordersApi = {
-  getOrders: async (params?: PaginationParams): Promise<PaginatedResponse<Order>> => {
+  getOrders: async (params?: OrderQuery): Promise<PaginatedResponse<Order>> => {
     const response = await api.get('/orders', { params });
     return response.data as PaginatedResponse<Order>;
   },
@@ -209,7 +227,7 @@ export const ordersApi = {
   },
   
   updateOrder: async (id: string, data: Partial<CreateOrderRequest>): Promise<Order> => {
-    const response = await api.put(`/orders/${id}`, data);
+    const response = await api.patch(`/orders/${id}`, data);
     return response.data as Order;
   },
   
@@ -231,12 +249,12 @@ export const ordersApi = {
 // Stock API
 export const stockApi = {
   getStockTransactions: async (params?: PaginationParams): Promise<PaginatedResponse<StockTransaction>> => {
-    const response = await api.get('/stock/transactions', { params });
+    const response = await api.get('/stock/report', { params });
     return response.data as PaginatedResponse<StockTransaction>;
   },
   
   createStockTransaction: async (data: CreateStockTransactionRequest): Promise<StockTransaction> => {
-    const response = await api.post('/stock/transactions', data);
+    const response = await api.post('/stock/transaction', data);
     return response.data as StockTransaction;
   },
   
@@ -276,6 +294,38 @@ export const statisticsApi = {
     const response = await api.get('/statistics/top-products', { params });
     return response.data;
   },
+};
+
+// Categories API
+export const categoriesApi = {
+  getCategories: async (params?: PaginationParams): Promise<PaginatedResponse<Category>> => {
+    const response = await api.get('/categories', { params });
+    return response.data as PaginatedResponse<Category>;
+  },
+
+  getActiveCategories: async (): Promise<Category[]> => {
+    const response = await api.get('/categories/active');
+    return response.data as Category[];
+  },
+
+  createCategory: async (data: CreateCategoryRequest): Promise<Category> => {
+    const response = await api.post('/categories', data);
+    return response.data as Category;
+  },
+
+  updateCategory: async (id: string, data: UpdateCategoryRequest): Promise<Category> => {
+    const response = await api.patch(`/categories/${id}`, data);
+    return response.data as Category;
+  },
+
+  deleteCategory: async (id: string): Promise<void> => {
+    await api.delete(`/categories/${id}`);
+  },
+
+  getCategoryById: async (id: string): Promise<Category> => {
+    const response = await api.get(`/categories/${id}`);
+    return response.data as Category;
+  }
 };
 
 export default api;

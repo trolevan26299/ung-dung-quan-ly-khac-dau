@@ -1,7 +1,6 @@
 import React from 'react';
-import { Eye, Edit, Trash2, Package, DollarSign, Archive, Plus } from 'lucide-react';
+import { Eye, Edit, Trash2, Package, DollarSign, Archive} from 'lucide-react';
 import { Button } from '../ui/Button';
-import { EmptyState } from '../common';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
 import type { Product } from '../../types';
 
@@ -85,7 +84,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                                     Đơn vị
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Giá bán
+                                    Giá nhập
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Tồn kho
@@ -100,16 +99,13 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {(products || []).map((product) => {
-                                const stockStatus = getStockStatus(product.currentStock);
+                                const stockStatus = getStockStatus(product.stockQuantity);
                                 return (
                                     <tr key={product._id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">
                                                     {safeString(product.name)}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    ID: {product._id.slice(-6)}
                                                 </div>
                                             </div>
                                         </td>
@@ -131,8 +127,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                                                <span className="text-sm font-semibold text-green-600">
-                                                    {formatCurrency(product.sellingPrice)}
+                                                <span className="text-sm font-semibold text-blue-600">
+                                                    {formatCurrency(product.avgImportPrice)}
                                                 </span>
                                             </div>
                                         </td>
@@ -140,7 +136,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                                             <div className="flex items-center">
                                                 <Archive className="w-4 h-4 text-gray-400 mr-2" />
                                                 <span className="text-sm font-medium text-gray-900">
-                                                    {safeNumber(product.currentStock)}
+                                                    {safeNumber(product.stockQuantity)}
                                                 </span>
                                             </div>
                                         </td>

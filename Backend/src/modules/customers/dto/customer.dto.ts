@@ -1,5 +1,23 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsBoolean, IsMongoId } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsBoolean, IsMongoId, IsNumberString, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class CustomerQueryDto {
+  @ApiProperty({ description: 'Số trang', required: false, default: 1 })
+  @IsOptional()
+  @IsNumberString()
+  page?: string;
+
+  @ApiProperty({ description: 'Số lượng mỗi trang', required: false, default: 10 })
+  @IsOptional()
+  @IsNumberString()
+  limit?: string;
+
+  @ApiProperty({ description: 'Từ khóa tìm kiếm', required: false })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
 
 export class CreateCustomerDto {
   @ApiProperty({ description: 'Tên khách hàng' })

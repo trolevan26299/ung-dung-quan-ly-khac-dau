@@ -22,7 +22,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         onDelete(product._id);
     };
 
-    const isLowStock = safeNumber(product.currentStock) <= 10;
+    const isLowStock = safeNumber(product.stockQuantity) <= 10;
 
     return (
         <>
@@ -90,23 +90,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                             <div>
                                 <span className="text-gray-500">Tồn kho:</span>
                                 <p className={`font-semibold ${isLowStock ? 'text-orange-600' : 'text-gray-900'}`}>
-                                    {product.currentStock} {product.unit}
+                                    {product.stockQuantity} {product.unit}
                                 </p>
                             </div>
                             <div>
                                 <span className="text-gray-500">Giá bán:</span>
-                                <p className="font-semibold text-green-600">
-                                    {formatCurrency(product.sellingPrice)}
-                                </p>
+                                <span className="font-semibold text-green-600 ml-1">
+                                    {formatCurrency(product.currentPrice)}
+                                </span>
                             </div>
                         </div>
 
                         {/* Import Price */}
                         <div className="text-sm">
                             <span className="text-gray-500">Giá nhập TB:</span>
-                            <span className="font-medium text-gray-900 ml-1">
-                                {formatCurrency(product.averageImportPrice)}
-                            </span>
+                            <div className="text-2xl font-bold text-primary-600">
+                                {formatCurrency(product.avgImportPrice)}
+                            </div>
+                            <p className="text-sm text-gray-500">Giá nhập TB</p>
                         </div>
 
                         {/* Status */}

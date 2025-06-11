@@ -66,12 +66,12 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                         </Button>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-2">
                         {/* Transaction Type */}
                         <div className="flex items-center space-x-3">
-                            <span className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${getTypeColor(transaction.type)}`}>
-                                {getTypeIcon(transaction.type)}
-                                <span className="ml-2">{getTypeText(transaction.type)}</span>
+                            <span className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${getTypeColor(transaction.transactionType || transaction.type)}`}>
+                                {getTypeIcon(transaction.transactionType || transaction.type)}
+                                <span className="ml-2">{getTypeText(transaction.transactionType || transaction.type)}</span>
                             </span>
                         </div>
 
@@ -83,25 +83,13 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                     <label className="block text-sm font-medium text-gray-500 mb-1">
                                         Tên sản phẩm
                                     </label>
-                                    <p className="text-gray-900 font-medium">{transaction.product.name}</p>
+                                    <p className="text-gray-900 font-medium">{transaction.productName || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">
                                         Mã sản phẩm
                                     </label>
-                                    <p className="text-gray-900">{transaction.product.code}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">
-                                        Danh mục
-                                    </label>
-                                    <p className="text-gray-900">{transaction.product.category}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">
-                                        Đơn vị tính
-                                    </label>
-                                    <p className="text-gray-900">{transaction.product.unit}</p>
+                                    <p className="text-gray-900">{transaction.productCode || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
@@ -115,7 +103,7 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                         Số lượng
                                     </label>
                                     <p className="text-gray-900 font-medium text-lg">
-                                        {transaction.quantity.toLocaleString('vi-VN')} {transaction.product.unit}
+                                        {transaction.quantity.toLocaleString('vi-VN')}
                                     </p>
                                 </div>
                                 <div>
@@ -123,7 +111,10 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                         Đơn giá
                                     </label>
                                     <p className="text-gray-900 font-medium">
-                                        {(transaction.unitPrice || 0).toLocaleString('vi-VN')}₫
+                                        {(transaction.transactionType === 'import' || transaction.type === 'import')
+                                            ? `${(transaction.unitPrice || 0).toLocaleString('vi-VN')}₫`
+                                            : '-'
+                                        }
                                     </p>
                                 </div>
                                 <div>
@@ -131,17 +122,32 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                         Tổng giá trị
                                     </label>
                                     <p className="text-green-600 font-bold text-xl">
-                                        {(transaction.totalPrice || 0).toLocaleString('vi-VN')}₫
+                                        {(transaction.transactionType === 'import' || transaction.type === 'import')
+                                            ? `${((transaction.quantity || 0) * (transaction.unitPrice || 0)).toLocaleString('vi-VN')}₫`
+                                            : '-'
+                                        }
                                     </p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-500 mb-1">
-                                        Tồn kho hiện tại
-                                    </label>
-                                    <p className="text-blue-600 font-medium">
-                                        {transaction.product.currentStock.toLocaleString('vi-VN')} {transaction.product.unit}
-                                    </p>
-                                </div>
+                                {transaction.stockBefore !== undefined && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-500 mb-1">
+                                            Tồn kho trước
+                                        </label>
+                                        <p className="text-blue-600 font-medium">
+                                            {transaction.stockBefore.toLocaleString('vi-VN')}
+                                        </p>
+                                    </div>
+                                )}
+                                {transaction.stockAfter !== undefined && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-500 mb-1">
+                                            Tồn kho sau
+                                        </label>
+                                        <p className="text-blue-600 font-medium">
+                                            {transaction.stockAfter.toLocaleString('vi-VN')}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -160,7 +166,23 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                 <label className="block text-sm font-medium text-gray-500 mb-1">
                                     Người thực hiện
                                 </label>
-                                <p className="text-gray-900">{transaction.createdBy.fullName}</p>
+                                <div className="flex items-center space-x-2 pb-2">
+                                    <p className="text-gray-900 font-medium">
+                                        {typeof transaction.userId === 'object' 
+                                            ? (transaction.userId.fullName === 'Administrator' ? transaction.userId.username : transaction.userId.fullName)
+                                            : transaction.userName || 'N/A'} -
+                                    </p>
+                                   
+                                    {typeof transaction.userId === 'object' && transaction.userId.role && (
+                                        <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
+                                            transaction.userId.role === 'admin' 
+                                                ? 'bg-purple-100 text-purple-800' 
+                                                : 'bg-blue-100 text-blue-800'
+                                        }`}>
+                                            {transaction.userId.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             {transaction.notes && (
@@ -174,12 +196,12 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                 </div>
                             )}
 
-                            {transaction.order && (
+                            {transaction.orderId && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-500 mb-1">
                                         Liên kết đơn hàng
                                     </label>
-                                    <p className="text-blue-600 font-medium">#{transaction.order}</p>
+                                    <p className="text-blue-600 font-medium">#{transaction.orderId}</p>
                                 </div>
                             )}
                         </div>

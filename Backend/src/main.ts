@@ -3,7 +3,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AuthService } from './modules/auth/auth.service';
-import { ProductsService } from './modules/products/products.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,12 +25,10 @@ async function bootstrap() {
 
   // Initialize default data
   const authService = app.get(AuthService);
-  const productsService = app.get(ProductsService);
   
   await authService.createDefaultAdmin();
-  await productsService.initializeProducts();
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 8080;
   await app.listen(port);
   
   console.log('🚀 Server is running on: http://localhost:' + port);

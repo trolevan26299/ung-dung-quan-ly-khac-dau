@@ -83,7 +83,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, 
                                     <label className="text-sm text-gray-500 mb-2 block">
                                         Tồn kho hiện tại
                                     </label>
-                                    <p className="text-2xl font-bold text-green-600">{product.currentStock}</p>
+                                    <p className="text-2xl font-bold text-green-600">{product.stockQuantity}</p>
                                 </div>
 
                                 <div>
@@ -92,7 +92,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, 
                                         Giá nhập trung bình
                                     </label>
                                     <p className="text-lg font-medium text-gray-900">
-                                        {formatCurrency(product.averageImportPrice)}
+                                        {formatCurrency(product.avgImportPrice)}
                                     </p>
                                 </div>
 
@@ -102,7 +102,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, 
                                         Giá bán
                                     </label>
                                     <p className="text-lg font-bold text-primary-600">
-                                        {formatCurrency(product.sellingPrice)}
+                                        {formatCurrency(product.currentPrice)}
                                     </p>
                                 </div>
 
@@ -147,7 +147,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, 
                         </div>
                     </div>
 
-                    <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex justify-end">
+                    <div className="sticky bottom-0 bg-white px-6 py-4 flex justify-end">
                         <button
                             onClick={onClose}
                             className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"

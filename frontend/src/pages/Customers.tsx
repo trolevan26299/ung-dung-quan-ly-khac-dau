@@ -1,9 +1,11 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { Users, Plus, Grid, List } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
-import { SearchInput, Pagination, EmptyState } from '../components/common';
+import { SearchInput, EmptyState } from '../components/common';
+import { Pagination } from '../components/ui/Pagination';
 import { CustomerForm, CustomerDetail, CustomerCard, CustomerTable } from '../components/customers';
 import { usePagination, useModal, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
@@ -16,10 +18,14 @@ type ViewMode = 'grid' | 'table';
 
 export const Customers: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
+    const location = useLocation();
     const { customers, isLoading, error, pagination: paginationData } = useSelector((state: RootState) => state.customers);
     const { success, error: showError } = useToast();
     const { confirm, confirmProps } = useConfirm();
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [hasProcessedUrlAction, setHasProcessedUrlAction] = useState(false);
 
     // Hooks - Khởi tạo với page hiện tại từ Redux nếu có
     const {
@@ -36,13 +42,34 @@ export const Customers: React.FC = () => {
 
     // Memoized refresh function
     const refreshCustomers = useCallback(() => {
-        dispatch(fetchCustomers(params));
-    }, [dispatch, params]);
+        const fetchParams = {
+            page: currentPage,
+            limit: pageSize,
+            search: params.search || ''
+        };
+        dispatch(fetchCustomers(fetchParams));
+    }, [dispatch, currentPage, pageSize, params.search]);
 
     // Fetch customers when pagination params change
     useEffect(() => {
         refreshCustomers();
     }, [refreshCustomers]);
+
+    // Check URL parameters for auto-open form
+    useEffect(() => {
+        const urlParams = new URLSearchParams(location.search);
+        const action = urlParams.get('action');
+        
+        if (action === 'create' && !hasProcessedUrlAction) {
+            setHasProcessedUrlAction(true);
+            formModal.openCreateModal();
+            
+            // Clean URL after opening form
+            if (window.history.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
+    }, [location.search, hasProcessedUrlAction]);
 
     // NOTE: Không cần useEffect để update pagination vì nó đã được handle trong Redux slice
 
@@ -53,7 +80,7 @@ export const Customers: React.FC = () => {
             await dispatch(createCustomer(data)).unwrap();
             formModal.closeModal();
             // Refresh current page to show new customer
-            dispatch(fetchCustomers(params));
+            refreshCustomers();
             success('Tạo thành công', `Khách hàng "${data.name}" đã được tạo`);
         } catch (error: any) {
             console.error('Error creating customer:', error);
@@ -72,7 +99,7 @@ export const Customers: React.FC = () => {
             })).unwrap();
             formModal.closeModal();
             // Refresh current page
-            dispatch(fetchCustomers(params));
+            refreshCustomers();
             success('Cập nhật thành công', `Khách hàng "${data.name}" đã được cập nhật`);
         } catch (error: any) {
             console.error('Error updating customer:', error);
@@ -95,7 +122,7 @@ export const Customers: React.FC = () => {
         try {
             await dispatch(deleteCustomer(id)).unwrap();
             // Refresh current page
-            dispatch(fetchCustomers(params));
+            refreshCustomers();
             success('Đã xóa', `Khách hàng "${customerToDelete?.name || ''}" đã được xóa`);
         } catch (error: any) {
             console.error('Error deleting customer:', error);
@@ -105,6 +132,16 @@ export const Customers: React.FC = () => {
 
     const handleSearch = (searchTerm: string) => {
         setSearch(searchTerm);
+        setCurrentPage(1); // Reset to first page when searching
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (pageSize: number) => {
+        setPageSize(pageSize);
+        setCurrentPage(1); // Reset to first page when changing page size
     };
 
     const renderCustomerGrid = () => {
@@ -179,9 +216,6 @@ export const Customers: React.FC = () => {
                         <Users className="w-8 h-8 mr-3 text-primary-600" />
                         Quản lý khách hàng
                     </h1>
-                    <p className="text-gray-500 mt-1">
-                        Quản lý thông tin khách hàng và lịch sử mua hàng
-                    </p>
                 </div>
                 <Button onClick={formModal.openCreateModal} className="flex items-center">
                     <Plus className="w-4 h-4 mr-2" />
@@ -241,18 +275,17 @@ export const Customers: React.FC = () => {
             {renderContent()}
 
             {/* Pagination */}
-            {paginationData && paginationData.totalPages > 1 && (
-                <Pagination
-                    pagination={{
-                        currentPage: paginationData.page,
-                        totalPages: paginationData.totalPages,
-                        total: paginationData.total,
-                        limit: paginationData.limit
-                    }}
-                    onPageChange={goToPage}
-                    onNextPage={goToNextPage}
-                    onPreviousPage={goToPreviousPage}
-                />
+            {paginationData && paginationData.total > 0 && (
+                <Card>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={paginationData.totalPages}
+                        totalItems={paginationData.total}
+                        pageSize={pageSize}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                    />
+                </Card>
             )}
 
             {/* Modals */}

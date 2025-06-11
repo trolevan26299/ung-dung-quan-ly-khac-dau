@@ -92,9 +92,6 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                             {/* Agent Information */}
                             {order.agent && (
                                 <div className="mt-6">
-                                    <h3 className="font-semibold text-lg text-gray-900 mb-3">
-                                        Thông tin đại lý
-                                    </h3>
                                     <div className="bg-gray-50 p-4 rounded-lg">
                                         <div className="space-y-2">
                                             <div>
@@ -135,7 +132,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                                         <span className="text-gray-600">Phí vận chuyển:</span>
                                         <span className="font-medium">{formatCurrency(order.shippingFee)}</span>
                                     </div>
-                                    <div className="border-t pt-3">
+                                    <div className="border-t pt-3 pb-1">
                                         <div className="flex justify-between">
                                             <span className="text-lg font-semibold">Tổng cộng:</span>
                                             <span className="text-lg font-bold text-green-600">
@@ -148,18 +145,22 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
 
                             {/* Order Meta */}
                             <div className="bg-gray-50 p-4 rounded-lg">
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <span className="text-gray-500">Ngày tạo:</span>
-                                        <p className="font-medium">{formatDate(order.createdAt)}</p>
+                                <div className="grid grid-cols-2 grid-rows-2 gap-4 h-40">
+                                    <div className="bg-white p-3 rounded border flex flex-col justify-center items-start">
+                                        <span className="text-xs text-gray-500 block">Ngày tạo</span>
+                                        <p className="font-medium text-sm mt-1">{formatDate(order.createdAt)}</p>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-500">Cập nhật:</span>
-                                        <p className="font-medium">{formatDate(order.updatedAt)}</p>
+                                    <div className="bg-white p-3 rounded border flex flex-col justify-center items-start">
+                                        <span className="text-xs text-gray-500 block">Cập nhật</span>
+                                        <p className="font-medium text-sm mt-1">{formatDate(order.updatedAt)}</p>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-500">Người tạo:</span>
-                                        <p className="font-medium">{safeString(order.createdBy?.fullName)}</p>
+                                    <div className="bg-white p-3 rounded border flex flex-col justify-center items-start">
+                                        <span className="text-xs text-gray-500 block">Người tạo</span>
+                                        <p className="font-medium text-sm mt-1 break-words">{safeString(order.createdBy?.fullName)}</p>
+                                    </div>
+                                    <div className="bg-white p-3 rounded border flex flex-col justify-center items-start">
+                                        <span className="text-xs text-gray-500 block">Mã đơn hàng</span>
+                                        <p className="font-medium text-sm mt-1 break-words">#{order.orderNumber}</p>
                                     </div>
                                 </div>
                             </div>

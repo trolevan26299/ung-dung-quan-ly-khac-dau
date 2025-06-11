@@ -7,6 +7,7 @@ interface AgentsState {
   currentAgent: Agent | null;
   isLoading: boolean;
   error: string | null;
+  searchTerm: string;
   pagination: {
     page: number;
     limit: number;
@@ -20,6 +21,7 @@ const initialState: AgentsState = {
   currentAgent: null,
   isLoading: false,
   error: null,
+  searchTerm: '',
   pagination: {
     page: 1,
     limit: 10,
@@ -83,6 +85,16 @@ const agentsSlice = createSlice({
     setCurrentAgent: (state, action: PayloadAction<Agent | null>) => {
       state.currentAgent = action.payload;
     },
+    setSearchTerm: (state, action: PayloadAction<string>) => {
+      state.searchTerm = action.payload;
+    },
+    setPage: (state, action: PayloadAction<number>) => {
+      state.pagination.page = action.payload;
+    },
+    setPageSize: (state, action: PayloadAction<number>) => {
+      state.pagination.limit = action.payload;
+      state.pagination.page = 1; // Reset to first page when changing page size
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -125,5 +137,5 @@ const agentsSlice = createSlice({
   },
 });
 
-export const { clearError, setCurrentAgent } = agentsSlice.actions;
+export const { clearError, setCurrentAgent, setSearchTerm, setPage, setPageSize } = agentsSlice.actions;
 export default agentsSlice.reducer; 

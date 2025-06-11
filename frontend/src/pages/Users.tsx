@@ -7,6 +7,7 @@ import {
     createUser,
     updateUser,
     deleteUser,
+    fetchUserStats,
     clearError,
     setCurrentUser,
     clearCurrentUser,
@@ -31,6 +32,7 @@ import {
 } from '../components/ui/select';
 import { Card, CardContent } from '../components/ui/Card';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { Pagination } from '../components/ui/Pagination';
 
 // User Components
 import { UserForm } from '../components/users/UserForm';
@@ -52,7 +54,7 @@ type ViewMode = 'grid' | 'table';
 const Users: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
-    const { users, currentUser, isLoading, error, pagination } = useSelector((state: RootState) => state.users);
+    const { users, currentUser, isLoading, error, pagination, stats } = useSelector((state: RootState) => state.users);
     const { user: currentAuthUser } = useSelector((state: RootState) => state.auth);
     const { confirm, confirmProps } = useConfirm();
     const { success, error: showError } = useToast();
@@ -65,6 +67,7 @@ const Users: React.FC = () => {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | undefined>();
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
+    const [pageSize, setPageSize] = useState(10);
 
     // Kiểm tra quyền admin với fallback
     const localStorageUser = JSON.parse(localStorage.getItem('user') || 'null');
@@ -79,16 +82,29 @@ const Users: React.FC = () => {
         }
     }, [isAdmin, navigate, showError]);
 
-    // Load users on component mount
+    // Load users and stats on component mount
     useEffect(() => {
         if (isAdmin) {
-            dispatch(fetchUsers({
+            const params: any = {
                 page: currentPage,
-                limit: 10,
+                limit: pageSize,
                 search: searchTerm,
-            }));
+            };
+
+            // Add role filter if not 'all'
+            if (roleFilter !== 'all') {
+                params.role = roleFilter;
+            }
+
+            // Add isActive filter if not 'all'
+            if (statusFilter !== 'all') {
+                params.isActive = statusFilter === 'active';
+            }
+
+            dispatch(fetchUsers(params));
+            dispatch(fetchUserStats());
         }
-    }, [dispatch, currentPage, searchTerm, isAdmin]);
+    }, [dispatch, currentPage, searchTerm, pageSize, roleFilter, statusFilter, isAdmin]);
 
     // If not admin, show forbidden page
     if (!isAdmin) {
@@ -107,14 +123,7 @@ const Users: React.FC = () => {
     }
 
     // Filter users
-    const filteredUsers = (users || []).filter(user => {
-        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-        const matchesStatus = statusFilter === 'all' ||
-            (statusFilter === 'active' && user.isActive) ||
-            (statusFilter === 'inactive' && !user.isActive);
-
-        return matchesRole && matchesStatus;
-    });
+    const filteredUsers = users || [];
 
     const handleCreateUser = async (data: any) => {
         try {
@@ -182,11 +191,24 @@ const Users: React.FC = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         setCurrentPage(1);
-        dispatch(fetchUsers({
+        
+        const params: any = {
             page: 1,
-            limit: 10,
+            limit: pageSize,
             search: searchTerm,
-        }));
+        };
+
+        // Add role filter if not 'all'
+        if (roleFilter !== 'all') {
+            params.role = roleFilter;
+        }
+
+        // Add isActive filter if not 'all'
+        if (statusFilter !== 'all') {
+            params.isActive = statusFilter === 'active';
+        }
+
+        dispatch(fetchUsers(params));
     };
 
     const renderUsersGrid = () => {
@@ -311,7 +333,7 @@ const Users: React.FC = () => {
             </div>
 
             {/* Stats Cards */}
-            <UserStats users={users} totalUsers={pagination.total} />
+            <UserStats stats={stats} />
 
             {/* Search and Filters */}
             <Card>
@@ -402,26 +424,20 @@ const Users: React.FC = () => {
             {renderContent()}
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
-                <div className="flex justify-center space-x-2">
-                    <Button
-                        variant="secondary"
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                    >
-                        Trước
-                    </Button>
-                    <span className="flex items-center px-4">
-                        Trang {currentPage} / {pagination.totalPages}
-                    </span>
-                    <Button
-                        variant="secondary"
-                        onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-                        disabled={currentPage === pagination.totalPages}
-                    >
-                        Sau
-                    </Button>
-                </div>
+            {pagination.total > 0 && (
+                <Card>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.total}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(pageSize) => {
+                            setPageSize(pageSize);
+                            setCurrentPage(1);
+                        }}
+                    />
+                </Card>
             )}
 
             {/* User Detail Dialog */}

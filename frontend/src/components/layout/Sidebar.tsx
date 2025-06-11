@@ -11,17 +11,19 @@ import {
     Warehouse,
     BarChart3,
     LogOut,
-    Settings
+    Settings,
+    Tag
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { cn } from '../../lib/utils';
 
 const allMenuItems = [
-    { icon: Home, label: 'Tổng quan', path: '/' },
+    { icon: Home, label: 'Tổng quan', path: '/dashboard' },
     { icon: Users, label: 'Khách hàng', path: '/customers' },
     { icon: UserCheck, label: 'Đại lý', path: '/agents' },
     { icon: Package, label: 'Sản phẩm', path: '/products' },
+    { icon: Tag, label: 'Danh mục sản phẩm', path: '/categories' },
     { icon: ShoppingCart, label: 'Đơn hàng', path: '/orders' },
     { icon: Warehouse, label: 'Kho hàng', path: '/stock' },
     { icon: BarChart3, label: 'Thống kê', path: '/statistics' },
@@ -32,6 +34,8 @@ export const Sidebar: React.FC = () => {
     const location = useLocation();
     const dispatch = useDispatch();
     const { user: currentAuthUser } = useSelector((state: RootState) => state.auth);
+    
+    console.log('Sidebar render - current location:', location.pathname);
     
     // Kiểm tra quyền admin với fallback
     const localStorageUser = JSON.parse(localStorage.getItem('user') || 'null');
@@ -45,7 +49,7 @@ export const Sidebar: React.FC = () => {
     };
 
     return (
-        <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
+        <div className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col sticky top-0">
             {/* Logo */}
             <div className="p-6 border-b border-gray-200">
                 <h1 className="text-xl font-bold text-gray-800">
@@ -65,6 +69,9 @@ export const Sidebar: React.FC = () => {
                             <li key={item.path}>
                                 <Link
                                     to={item.path}
+                                    onClick={() => {
+                                        console.log('Navigation clicked:', item.path, item.label);
+                                    }}
                                     className={cn(
                                         "flex items-center px-4 py-3 rounded-lg transition-colors duration-200",
                                         isActive

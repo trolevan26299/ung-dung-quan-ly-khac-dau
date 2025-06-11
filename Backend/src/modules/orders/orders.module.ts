@@ -6,6 +6,7 @@ import { Order, OrderSchema } from '../../schemas/order.schema';
 import { Product, ProductSchema } from '../../schemas/product.schema';
 import { Customer, CustomerSchema } from '../../schemas/customer.schema';
 import { Agent, AgentSchema } from '../../schemas/agent.schema';
+import { User, UserSchema } from '../../schemas/user.schema';
 import { StockModule } from '../stock/stock.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { StockModule } from '../stock/stock.module';
       { name: Product.name, schema: ProductSchema },
       { name: Customer.name, schema: CustomerSchema },
       { name: Agent.name, schema: AgentSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     StockModule,
   ],

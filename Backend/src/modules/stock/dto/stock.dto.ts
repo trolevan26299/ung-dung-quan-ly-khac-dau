@@ -6,11 +6,11 @@ import { TransactionType } from '../../../types/common.types';
 export class CreateStockTransactionDto {
   @ApiProperty({ description: 'ID sản phẩm' })  
   @IsMongoId()
-  productId: string;
+  product: string;
 
   @ApiProperty({ description: 'Loại giao dịch', enum: TransactionType })
   @IsEnum(TransactionType)
-  transactionType: TransactionType;
+  type: TransactionType;
 
   @ApiProperty({ description: 'Số lượng' })
   @Type(() => Number)

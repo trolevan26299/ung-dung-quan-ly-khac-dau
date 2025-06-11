@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { ordersApi } from '../../services/api';
-import type { Order, CreateOrderRequest } from '../../types';
+import type { Order, CreateOrderRequest, OrderQuery } from '../../types';
 
 interface OrdersState {
   orders: Order[];
@@ -10,6 +10,7 @@ interface OrdersState {
   searchTerm: string;
   statusFilter: string;
   paymentFilter: string;
+  lastUpdated: number;
   pagination: {
     page: number;
     limit: number;
@@ -26,6 +27,7 @@ const initialState: OrdersState = {
   searchTerm: '',
   statusFilter: '',
   paymentFilter: '',
+  lastUpdated: 0,
   pagination: {
     page: 1,
     limit: 10,
@@ -37,11 +39,26 @@ const initialState: OrdersState = {
 // Async thunks
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async (params: { page?: number; limit?: number; search?: string; status?: string; paymentStatus?: string } = {}, { rejectWithValue }) => {
+  async (params: OrderQuery = {}, { rejectWithValue }) => {
     try {
-      const response = await ordersApi.getOrders(params);
+      // Loại bỏ các tham số rỗng
+      const cleanParams: any = {};
+      if (params.page) cleanParams.page = params.page;
+      if (params.limit) cleanParams.limit = params.limit;
+      if (params.search && params.search.trim()) cleanParams.search = params.search.trim();
+      if (params.status && params.status.trim()) cleanParams.status = params.status.trim();
+      if (params.paymentStatus && params.paymentStatus.trim()) cleanParams.paymentStatus = params.paymentStatus.trim();
+      if (params.customerId && params.customerId.trim()) cleanParams.customerId = params.customerId.trim();
+      if (params.agentId && params.agentId.trim()) cleanParams.agentId = params.agentId.trim();
+      if (params.dateFrom && params.dateFrom.trim()) cleanParams.dateFrom = params.dateFrom.trim();
+      if (params.dateTo && params.dateTo.trim()) cleanParams.dateTo = params.dateTo.trim();
+      
+      console.log('📤 API Call params:', cleanParams);
+      const response = await ordersApi.getOrders(cleanParams);
+      console.log('📥 API Response:', response);
       return response;
     } catch (error: any) {
+      console.error('❌ API Error:', error);
       return rejectWithValue(error.response?.data?.message || 'Lấy danh sách đơn hàng thất bại');
     }
   }
@@ -173,12 +190,22 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateOrder.fulfilled, (state, action) => {
+        console.log('🔄 Update Order Fulfilled:', action.payload);
         state.isLoading = false;
         const index = state.orders.findIndex(o => o._id === action.payload._id);
+        console.log('📍 Found order at index:', index);
         if (index !== -1) {
+          console.log('📝 Updating order in state...');
           state.orders[index] = action.payload;
         }
-        state.currentOrder = action.payload;
+        // Update currentOrder nếu đang xem order này
+        if (state.currentOrder && state.currentOrder._id === action.payload._id) {
+          console.log('👁️ Updating currentOrder in state...');
+          state.currentOrder = action.payload;
+        }
+        // Update timestamp to force re-render
+        state.lastUpdated = Date.now();
+        console.log('✅ Orders state after update:', state.orders);
       })
       .addCase(updateOrder.rejected, (state, action) => {
         state.isLoading = false;
@@ -209,4 +236,5 @@ export const {
   clearError, 
   clearOrders 
 } = ordersSlice.actions;
-export default ordersSlice.reducer; 
+
+export default ordersSlice.reducer;

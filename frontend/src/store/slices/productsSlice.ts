@@ -85,6 +85,7 @@ const productsSlice = createSlice({
   reducers: {
     setSearchTerm: (state, action: PayloadAction<string>) => {
       state.searchTerm = action.payload;
+      state.pagination.page = 1;
     },
     setCurrentProduct: (state, action: PayloadAction<Product | null>) => {
       state.currentProduct = action.payload;
@@ -95,6 +96,13 @@ const productsSlice = createSlice({
     clearProducts: (state) => {
       state.products = [];
       state.pagination = initialState.pagination;
+    },
+    setPage: (state, action: PayloadAction<number>) => {
+      state.pagination.page = action.payload;
+    },
+    setPageSize: (state, action: PayloadAction<number>) => {
+      state.pagination.limit = action.payload;
+      state.pagination.page = 1;
     },
   },
   extraReducers: (builder) => {
@@ -125,7 +133,6 @@ const productsSlice = createSlice({
       })
       .addCase(createProduct.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.products.unshift(action.payload);
         state.pagination.total += 1;
       })
       .addCase(createProduct.rejected, (state, action) => {
@@ -156,7 +163,6 @@ const productsSlice = createSlice({
       })
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.products = state.products.filter(p => p._id !== action.payload);
         state.pagination.total -= 1;
       })
       .addCase(deleteProduct.rejected, (state, action) => {
@@ -166,5 +172,5 @@ const productsSlice = createSlice({
   },
 });
 
-export const { setSearchTerm, setCurrentProduct, clearError, clearProducts } = productsSlice.actions;
+export const { setSearchTerm, setCurrentProduct, clearError, clearProducts, setPage, setPageSize } = productsSlice.actions;
 export default productsSlice.reducer; 

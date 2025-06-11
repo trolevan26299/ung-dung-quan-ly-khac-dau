@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { StockTransaction, StockTransactionDocument } from '../../schemas/stock-transaction.schema';
@@ -13,43 +13,114 @@ export class StockService {
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
   ) {}
 
+  // Helper method để cleanup và fix bad userId data 
+  private async fixSystemUserIds(): Promise<void> {
+    try {
+      // Tìm hoặc tạo system user
+      let systemUser = await this.productModel.db.collection('users').findOne({ username: 'system' });
+      
+      if (!systemUser) {
+        const result = await this.productModel.db.collection('users').insertOne({
+          username: 'system',
+          fullName: 'System User',
+          password: 'system',
+          role: 'admin',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        systemUser = { _id: result.insertedId };
+      }
+
+      // Update all stock transactions với userId = 'system' thành system user ObjectId
+      await this.stockTransactionModel.updateMany(
+        { userId: 'system' },
+        { userId: systemUser._id }
+      ).exec();
+
+      console.log('✅ Fixed system userId in stock transactions');
+    } catch (error) {
+      console.error('❌ Error fixing system userId:', error);
+    }
+  }
+
   // Tạo giao dịch kho
   async createTransaction(createStockTransactionDto: CreateStockTransactionDto, userId: string, userName: string): Promise<StockTransaction> {
-    const product = await this.productModel.findById(createStockTransactionDto.productId);
+    const product = await this.productModel.findById(createStockTransactionDto.product);
     if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
 
     const stockBefore = product.stockQuantity;
     let quantity = createStockTransactionDto.quantity;
+    let stockAfter: number;
     
-    // Với export và adjustment âm, quantity sẽ là số âm
-    if (createStockTransactionDto.transactionType === TransactionType.EXPORT) {
-      quantity = -Math.abs(quantity);
+    // Xử lý logic khác nhau cho từng loại giao dịch
+    if (createStockTransactionDto.type === TransactionType.ADJUSTMENT) {
+      // Điều chỉnh: set trực tiếp số lượng tồn kho mới
+      stockAfter = quantity;
+      quantity = stockAfter - stockBefore; // Tính số lượng thay đổi để lưu vào transaction
+    } else {
+      // Nhập/Xuất kho: cộng/trừ như cũ
+      if (createStockTransactionDto.type === TransactionType.EXPORT) {
+        quantity = -Math.abs(quantity);
+      }
+      stockAfter = stockBefore + quantity;
     }
 
-    const stockAfter = stockBefore + quantity;
     if (stockAfter < 0) {
-      throw new Error('Số lượng tồn kho không đủ');
+      throw new Error('Số lượng tồn kho không thể âm');
     }
 
-    // Cập nhật tồn kho
+    // Chuẩn bị update data
+    const updateData: any = { stockQuantity: stockAfter };
+
+    // Cập nhật giá nhập trung bình cho giao dịch nhập kho
+    if (createStockTransactionDto.type === TransactionType.IMPORT && createStockTransactionDto.unitPrice !== undefined && createStockTransactionDto.unitPrice !== null) {
+      const currentAvgPrice = product.avgImportPrice || 0;
+      const totalCurrentValue = stockBefore * currentAvgPrice;
+      const newImportValue = Math.abs(quantity) * createStockTransactionDto.unitPrice;
+      const newAvgImportPrice = stockBefore === 0 ? 
+        createStockTransactionDto.unitPrice : 
+        (totalCurrentValue + newImportValue) / stockAfter;
+      
+      // Debug log
+      console.log('=== DEBUG AVG IMPORT PRICE ===');
+      console.log('Product:', product.name);
+      console.log('Stock before:', stockBefore);
+      console.log('Current avg price:', currentAvgPrice);
+      console.log('Total current value:', totalCurrentValue);
+      console.log('New quantity:', Math.abs(quantity));
+      console.log('New unit price:', createStockTransactionDto.unitPrice);
+      console.log('New import value:', newImportValue);
+      console.log('Stock after:', stockAfter);
+      console.log('New avg import price:', newAvgImportPrice);
+      console.log('================================');
+      
+      updateData.avgImportPrice = newAvgImportPrice;
+    }
+
+    // Cập nhật sản phẩm
     await this.productModel.findByIdAndUpdate(
-      createStockTransactionDto.productId,
-      { stockQuantity: stockAfter }
+      createStockTransactionDto.product,
+      updateData
     );
 
     // Tạo transaction record
     const transaction = new this.stockTransactionModel({
-      ...createStockTransactionDto,
-      quantity,
+      productId: createStockTransactionDto.product,
       productCode: product.code,
       productName: product.name,
+      transactionType: createStockTransactionDto.type,
+      quantity,
+      unitPrice: createStockTransactionDto.type === TransactionType.IMPORT ? (createStockTransactionDto.unitPrice || 0) : 0,
       userId,
       userName,
       stockBefore,
       stockAfter,
-      totalValue: Math.abs(quantity) * (createStockTransactionDto.unitPrice || 0)
+      reason: createStockTransactionDto.reason,
+      notes: createStockTransactionDto.notes,
+      totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? (Math.abs(quantity) * (createStockTransactionDto.unitPrice || 0)) : 0
     });
 
     return transaction.save();
@@ -217,6 +288,9 @@ export class StockService {
     const { page = 1, limit = 10, search, transactionType, productId, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
+    // Fix any bad userId data first
+    await this.fixSystemUserIds();
+
     const filter: any = {};
 
     if (search) {
@@ -246,31 +320,66 @@ export class StockService {
       }
     }
 
-    const [data, total] = await Promise.all([
-      this.stockTransactionModel
-        .find(filter)
-        .sort({ transactionDate: -1 })
-        .skip(skip)
-        .limit(limit)
-        .exec(),
-      this.stockTransactionModel.countDocuments(filter),
-    ]);
+    try {
+      const [data, total] = await Promise.all([
+        this.stockTransactionModel
+          .find(filter)
+          .populate('userId', 'username fullName role')
+          .sort({ transactionDate: -1 })
+          .skip(skip)
+          .limit(limit)
+          .exec(),
+        this.stockTransactionModel.countDocuments(filter),
+      ]);
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      console.error('❌ Error in getStockReport:', error);
+      // Fallback: return data without populate if populate fails
+      const [data, total] = await Promise.all([
+        this.stockTransactionModel
+          .find(filter)
+          .sort({ transactionDate: -1 })
+          .skip(skip)
+          .limit(limit)
+          .exec(),
+        this.stockTransactionModel.countDocuments(filter),
+      ]);
+
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
   }
 
   // Lấy lịch sử giao dịch của sản phẩm
   async getProductTransactionHistory(productId: string): Promise<StockTransaction[]> {
-    return this.stockTransactionModel
-      .find({ productId })
-      .sort({ transactionDate: -1 })
-      .exec();
+    await this.fixSystemUserIds();
+    
+    try {
+      return this.stockTransactionModel
+        .find({ productId })
+        .populate('userId', 'username fullName role')
+        .sort({ transactionDate: -1 })
+        .exec();
+    } catch (error) {
+      console.error('❌ Error in getProductTransactionHistory:', error);
+      // Fallback: return data without populate if populate fails
+      return this.stockTransactionModel
+        .find({ productId })
+        .sort({ transactionDate: -1 })
+        .exec();
+    }
   }
 
   // Thống kê tồn kho

@@ -10,6 +10,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { StockModule } from './modules/stock/stock.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/khac_dau_db'),
+    CategoriesModule,
     AuthModule,
     UsersModule,
     CustomersModule,
@@ -27,5 +29,6 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
     StatisticsModule,
     InvoicesModule,
   ],
+  controllers: [],
 })
-export class AppModule {} 
+export class AppModule {}

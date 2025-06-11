@@ -67,6 +67,29 @@ export interface CreateAgentRequest {
   notes?: string;
 }
 
+// Category types
+export interface Category {
+  _id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  productCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
 // Product types
 export interface Product {
   _id: string;
@@ -74,9 +97,10 @@ export interface Product {
   name: string;
   category: string;
   unit: string;
-  currentStock: number;
-  averageImportPrice: number;
-  sellingPrice: number;
+  stockQuantity: number;
+  minStock: number;
+  avgImportPrice: number;
+  currentPrice: number;
   notes?: string;
   isActive: boolean;
   createdAt: string;
@@ -88,7 +112,7 @@ export interface CreateProductRequest {
   name: string;
   category: string;
   unit: string;
-  sellingPrice: number;
+  currentPrice: number;
   notes?: string;
 }
 
@@ -121,31 +145,39 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-  customer?: string;
-  agent?: string;
+  customerId?: string;
+  agentId?: string;
   items: {
-    product: string;
+    productId: string;
     quantity: number;
     unitPrice: number;
   }[];
-  vatRate: number;
-  shippingFee: number;
   paymentStatus: 'pending' | 'completed' | 'debt';
+  vat?: number;
+  shippingFee?: number;
   notes?: string;
 }
 
 // Stock types
 export interface StockTransaction {
   _id: string;
-  product: Product;
+  productId: string;
+  productCode: string;
+  productName: string;
   type: 'import' | 'export' | 'adjustment';
+  transactionType: 'import' | 'export' | 'adjustment';
   quantity: number;
   unitPrice?: number;
-  totalPrice?: number;
+  totalValue?: number;
   notes?: string;
-  order?: string;
-  createdBy: User;
+  userId: string | User;
+  userName: string;
+  orderId?: string;
+  reason?: string;
+  stockBefore?: number;
+  stockAfter?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateStockTransactionRequest {
@@ -222,4 +254,16 @@ export interface UpdateUserRequest {
   phone?: string;
   role?: 'admin' | 'employee';
   isActive?: boolean;
+}
+
+export interface OrderQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  paymentStatus?: string;
+  customerId?: string;
+  agentId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 } 

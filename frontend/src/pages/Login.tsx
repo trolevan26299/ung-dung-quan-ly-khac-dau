@@ -75,7 +75,7 @@ export const Login: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 pb-4">
                                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
                                     Mật khẩu
                                 </label>
@@ -100,7 +100,7 @@ export const Login: React.FC = () => {
                                 </div>
                             </div>
 
-                            <Button
+                            <Button 
                                 type="submit"
                                 className="w-full"
                                 disabled={isLoading || !username || !password}
@@ -119,12 +119,6 @@ export const Login: React.FC = () => {
                             </Button>
                         </form>
 
-                        <div className="mt-6 text-center text-sm text-gray-500">
-                            <p>Tài khoản mặc định:</p>
-                            <p className="font-mono bg-gray-100 px-2 py-1 rounded mt-1">
-                                tamtin / tamtin2025
-                            </p>
-                        </div>
                     </CardContent>
                 </Card>
             </div>

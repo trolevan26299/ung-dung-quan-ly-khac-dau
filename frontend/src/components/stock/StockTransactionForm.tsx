@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Portal } from '../ui/Portal';
-import { X } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { AppDispatch, RootState } from '../../store';
-import { fetchProducts } from '../../store/slices/productsSlice';
+import { X, User } from 'lucide-react';
+import { RootState } from '../../store';
 import type { CreateStockTransactionRequest, StockTransaction, Product } from '../../types';
 import { productsApi } from '../../services/api';
 
@@ -28,8 +26,8 @@ interface FormErrors {
 interface FormData {
     product: string;
     type: 'import' | 'export' | 'adjustment';
-    quantity: number;
-    unitPrice: number; // Required in form
+    quantity: string; // Changed to string to allow empty input
+    unitPrice: string; // Changed to string to allow empty input  
     notes: string;
 }
 
@@ -40,11 +38,13 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
     onSubmit,
     isLoading = false
 }) => {
+    const { user } = useSelector((state: RootState) => state.auth);
+    
     const [formData, setFormData] = useState<FormData>({
         product: '',
         type: 'import',
-        quantity: 0,
-        unitPrice: 0,
+        quantity: '',
+        unitPrice: '',
         notes: ''
     });
 
@@ -60,18 +60,18 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
     useEffect(() => {
         if (transaction) {
             setFormData({
-                product: transaction.product._id,
+                product: transaction.productId,
                 type: transaction.type,
-                quantity: transaction.quantity,
-                unitPrice: transaction.unitPrice || 0,
+                quantity: transaction.quantity.toString(),
+                unitPrice: (transaction.unitPrice || 0).toString(),
                 notes: transaction.notes || ''
             });
         } else {
             setFormData({
                 product: '',
                 type: 'import',
-                quantity: 0,
-                unitPrice: 0,
+                quantity: '',
+                unitPrice: '',
                 notes: ''
             });
         }
@@ -94,12 +94,17 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
             newErrors.product = 'Vui lòng chọn sản phẩm';
         }
 
-        if (formData.quantity <= 0) {
+        const quantity = parseFloat(formData.quantity);
+        if (!formData.quantity || isNaN(quantity) || quantity <= 0) {
             newErrors.quantity = 'Số lượng phải lớn hơn 0';
         }
 
-        if (formData.unitPrice < 0) {
-            newErrors.unitPrice = 'Đơn giá không được âm';
+        // Chỉ validate unitPrice cho nhập kho
+        if (formData.type === 'import') {
+            const unitPrice = parseFloat(formData.unitPrice);
+            if (!formData.unitPrice || isNaN(unitPrice) || unitPrice < 0) {
+                newErrors.unitPrice = 'Đơn giá phải >= 0';
+            }
         }
 
         setErrors(newErrors);
@@ -112,48 +117,89 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
             setFormData({
                 ...formData,
                 product: productId,
-                unitPrice: formData.type === 'import' ? 0 : product.sellingPrice
+                unitPrice: formData.type === 'import' ? '' : product.currentPrice.toString()
             });
         }
         if (errors.product) {
-            setErrors(prev => ({ ...prev, product: undefined }));
+            setErrors({
+                ...errors,
+                product: ''
+            });
         }
     };
 
     const handleTypeChange = (type: 'import' | 'export' | 'adjustment') => {
         const product = products.find(p => p._id === formData.product);
-        setFormData({
-            ...formData,
-            type,
-            unitPrice: type === 'import' ? 0 : (product?.sellingPrice || 0)
-        });
+        
+        console.log('🔄 Type changed to:', type);
+        
+        if (type === 'adjustment') {
+            console.log('🔧 Setting adjustment mode...');
+            setFormData({
+                ...formData,
+                type,
+                unitPrice: '0', // Set 0 nhưng sẽ ẩn UI
+                notes: 'Điều chỉnh số lượng tồn kho'
+            });
+        } else if (type === 'export') {
+            console.log('📤 Setting export mode...');
+            setFormData({
+                ...formData,
+                type,
+                unitPrice: '0', // Xuất kho không có giá
+                notes: 'Xuất kho'
+            });
+        } else {
+            console.log('🏪 Setting normal mode...');
+            setFormData({
+                ...formData,
+                type,
+                unitPrice: type === 'import' ? '' : (product?.currentPrice.toString() || ''),
+                notes: formData.notes === 'Điều chỉnh số lượng tồn kho' || formData.notes === 'Xuất kho' ? '' : formData.notes
+            });
+        }
     };
 
-    const handleNumberChange = (field: 'quantity' | 'unitPrice', value: number) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    const handleNumberChange = (field: 'quantity' | 'unitPrice', value: string) => {
+        // Chỉ cho phép số, dấu chấm
+        const sanitizedValue = value.replace(/[^0-9.]/g, '');
+        
+        // Đảm bảo chỉ có một dấu chấm
+        const parts = sanitizedValue.split('.');
+        const cleanValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : sanitizedValue;
+        
+        setFormData(prev => ({ ...prev, [field]: cleanValue }));
+        
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: undefined }));
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
-            // Convert to API format
-            const submitData: CreateStockTransactionRequest = {
-                product: formData.product,
-                type: formData.type,
-                quantity: formData.quantity,
-                unitPrice: formData.unitPrice,
-                notes: formData.notes
-            };
-            onSubmit(submitData);
+            try {
+                // Convert to API format
+                const submitData: CreateStockTransactionRequest = {
+                    product: formData.product,
+                    type: formData.type,
+                    quantity: parseFloat(formData.quantity),
+                    unitPrice: parseFloat(formData.unitPrice) || 0,
+                    notes: formData.notes
+                };
+
+                onSubmit(submitData);
+            } catch (error) {
+                console.error('Error submitting transaction:', error);
+            }
         }
     };
 
     if (!isOpen) return null;
 
-    const totalValue = formData.quantity * formData.unitPrice;
+    const quantity = parseFloat(formData.quantity) || 0;
+    const unitPrice = parseFloat(formData.unitPrice) || 0;
+    const totalValue = quantity * unitPrice;
 
     return (
         <Portal>
@@ -180,6 +226,26 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                            <div className="flex items-center gap-2 text-sm text-blue-700">
+                                <User className="w-4 h-4" />
+                                <span className="font-medium">Người tạo giao dịch:</span>
+                            </div>
+                            <div className="mt-1 text-sm">
+                                <div className="font-medium text-blue-800">
+                                    {transaction ? transaction.userName : user?.fullName || 'Không xác định'}
+                                </div>
+                                <div className="text-blue-600">
+                                    {transaction ? `ID: ${transaction.userId}` : `@${user?.username || 'unknown'}`}
+                                </div>
+                                {transaction && (
+                                    <div className="text-xs text-blue-500 mt-1">
+                                        Tạo lúc: {new Date(transaction.createdAt).toLocaleString('vi-VN')}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Sản phẩm *
@@ -193,7 +259,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                 <option value="">Chọn sản phẩm</option>
                                 {products.map(product => (
                                     <option key={product._id} value={product._id}>
-                                        {product.name} - Tồn: {product.currentStock}
+                                        {product.name} - Tồn: {product.stockQuantity}
                                     </option>
                                 ))}
                             </select>
@@ -215,18 +281,28 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                 <option value="export">Xuất kho</option>
                                 <option value="adjustment">Điều chỉnh</option>
                             </select>
+                            {formData.type === 'adjustment' && (
+                                <p className="text-xs text-blue-600 mt-1">
+                                    💡 Điều chỉnh để đặt lại số lượng tồn kho thành giá trị cụ thể
+                                </p>
+                            )}
+                            {formData.type === 'export' && (
+                                <p className="text-xs text-green-600 mt-1">
+                                    💡 Xuất kho để giảm tồn kho (chuyển kho, hàng hỏng, sử dụng nội bộ...)
+                                </p>
+                            )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Số lượng *
+                                {formData.type === 'adjustment' ? 'Số lượng tồn kho mới *' : 'Số lượng *'}
                             </label>
                             <Input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 value={formData.quantity}
-                                onChange={(e) => handleNumberChange('quantity', Number(e.target.value))}
-                                placeholder="Nhập số lượng"
-                                min="1"
+                                onChange={(e) => handleNumberChange('quantity', e.target.value)}
+                                placeholder={formData.type === 'adjustment' ? 'Nhập số lượng tồn kho mới' : 'Nhập số lượng'}
                                 className={errors.quantity ? 'border-red-500' : ''}
                             />
                             {errors.quantity && (
@@ -234,23 +310,24 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                             )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Đơn giá *
-                            </label>
-                            <Input
-                                type="number"
-                                value={formData.unitPrice}
-                                onChange={(e) => handleNumberChange('unitPrice', Number(e.target.value))}
-                                placeholder="Nhập đơn giá"
-                                min="0"
-                                step="1000"
-                                className={errors.unitPrice ? 'border-red-500' : ''}
-                            />
-                            {errors.unitPrice && (
-                                <p className="text-red-500 text-xs mt-1">{errors.unitPrice}</p>
-                            )}
-                        </div>
+                        {formData.type === 'import' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Đơn giá *
+                                </label>
+                                <Input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formData.unitPrice}
+                                    onChange={(e) => handleNumberChange('unitPrice', e.target.value)}
+                                    placeholder="Nhập đơn giá"
+                                    className={errors.unitPrice ? 'border-red-500' : ''}
+                                />
+                                {errors.unitPrice && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.unitPrice}</p>
+                                )}
+                            </div>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -268,11 +345,28 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                         <div className="bg-gray-50 p-3 rounded-lg">
                             <div className="text-sm">
                                 <div className="flex justify-between">
-                                    <span>Tổng giá trị:</span>
+                                    <span>
+                                        {formData.type === 'adjustment' 
+                                            ? 'Tồn kho sẽ được đặt thành:' 
+                                            : formData.type === 'import'
+                                                ? 'Tổng giá trị nhập:'
+                                                : 'Số lượng xuất:'
+                                        }
+                                    </span>
                                     <span className="font-medium">
-                                        {totalValue.toLocaleString('vi-VN')}₫
+                                        {formData.type === 'adjustment' 
+                                            ? `${quantity} sản phẩm`
+                                            : formData.type === 'import'
+                                                ? `${totalValue.toLocaleString('vi-VN')}₫`
+                                                : `${quantity} sản phẩm`
+                                        }
                                     </span>
                                 </div>
+                                {formData.type === 'export' && (
+                                    <div className="flex justify-between mt-1 text-xs text-gray-500">
+                                        <span>📦 Chỉ giảm tồn kho, không có giá trị</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

@@ -15,23 +15,16 @@ import { Stock } from './pages/Stock';
 import { Statistics } from './pages/Statistics';
 import { useSelector } from 'react-redux';
 import { RootState } from './store';
-
-// Protected Route component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
+import { Categories } from './pages/Categories';
 
 // App Router component
 const AppRouter: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
+  console.log('AppRouter render - isAuthenticated:', isAuthenticated);
+
   if (!isAuthenticated) {
+    console.log('User not authenticated, redirecting to login');
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -40,6 +33,7 @@ const AppRouter: React.FC = () => {
     );
   }
 
+  console.log('User authenticated, loading main app');
   return (
     <Layout>
       <Routes>
@@ -48,6 +42,7 @@ const AppRouter: React.FC = () => {
         <Route path="/customers" element={<Customers />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/categories" element={<Categories />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/stock" element={<Stock />} />
         <Route path="/statistics" element={<Statistics />} />

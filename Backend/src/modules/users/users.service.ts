@@ -130,6 +130,27 @@ export class UsersService {
     await this.userModel.findByIdAndDelete(id);
   }
 
+  async getStats() {
+    const [
+      totalUsers,
+      adminCount,
+      employeeCount,
+      activeCount
+    ] = await Promise.all([
+      this.userModel.countDocuments(),
+      this.userModel.countDocuments({ role: USER_ROLES.ADMIN }),
+      this.userModel.countDocuments({ role: USER_ROLES.EMPLOYEE }),
+      this.userModel.countDocuments({ isActive: true })
+    ]);
+
+    return {
+      totalUsers,
+      adminCount,
+      employeeCount,
+      activeCount
+    };
+  }
+
   private toResponseDto(user: UserDocument): UserResponseDto {
     return {
       _id: user._id.toString(),

@@ -1,12 +1,20 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { usersApi } from '../../services/api';
-import type { User, CreateUserRequest, UpdateUserRequest, PaginationParams, PaginatedResponse } from '../../types';
+import type { User, CreateUserRequest, UpdateUserRequest, PaginationParams } from '../../types';
 
 // Async thunks
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
   async (params?: PaginationParams) => {
     const response = await usersApi.getUsers(params);
+    return response;
+  }
+);
+
+export const fetchUserStats = createAsyncThunk(
+  'users/fetchUserStats',
+  async () => {
+    const response = await usersApi.getUserStats();
     return response;
   }
 );
@@ -47,6 +55,12 @@ interface UsersState {
     limit: number;
     totalPages: number;
   };
+  stats: {
+    totalUsers: number;
+    adminCount: number;
+    employeeCount: number;
+    activeCount: number;
+  } | null;
 }
 
 const initialState: UsersState = {
@@ -60,6 +74,7 @@ const initialState: UsersState = {
     limit: 10,
     totalPages: 0,
   },
+  stats: null,
 };
 
 const usersSlice = createSlice({
@@ -112,6 +127,11 @@ const usersSlice = createSlice({
         state.error = action.error.message || 'Lỗi khi tải danh sách người dùng';
       })
       
+      // Fetch user stats
+      .addCase(fetchUserStats.fulfilled, (state, action) => {
+        state.stats = action.payload;
+      })
+      
       // Create user
       .addCase(createUser.pending, (state) => {
         state.isLoading = true;
@@ -121,6 +141,18 @@ const usersSlice = createSlice({
         state.isLoading = false;
         state.users.unshift(action.payload);
         state.pagination.total += 1;
+        // Update stats
+        if (state.stats) {
+          state.stats.totalUsers += 1;
+          if (action.payload.role === 'admin') {
+            state.stats.adminCount += 1;
+          } else if (action.payload.role === 'employee') {
+            state.stats.employeeCount += 1;
+          }
+          if (action.payload.isActive) {
+            state.stats.activeCount += 1;
+          }
+        }
       })
       .addCase(createUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -134,12 +166,32 @@ const usersSlice = createSlice({
       })
       .addCase(updateUser.fulfilled, (state, action: PayloadAction<User>) => {
         state.isLoading = false;
+        const oldUser = state.users.find(user => user._id === action.payload._id);
         const index = state.users.findIndex(user => user._id === action.payload._id);
         if (index !== -1) {
           state.users[index] = action.payload;
         }
         if (state.currentUser?._id === action.payload._id) {
           state.currentUser = action.payload;
+        }
+        
+        // Update stats if role or active status changed
+        if (state.stats && oldUser) {
+          // Role changes
+          if (oldUser.role !== action.payload.role) {
+            if (oldUser.role === 'admin') state.stats.adminCount -= 1;
+            if (oldUser.role === 'employee') state.stats.employeeCount -= 1;
+            if (action.payload.role === 'admin') state.stats.adminCount += 1;
+            if (action.payload.role === 'employee') state.stats.employeeCount += 1;
+          }
+          // Active status changes
+          if (oldUser.isActive !== action.payload.isActive) {
+            if (action.payload.isActive) {
+              state.stats.activeCount += 1;
+            } else {
+              state.stats.activeCount -= 1;
+            }
+          }
         }
       })
       .addCase(updateUser.rejected, (state, action) => {
@@ -154,10 +206,24 @@ const usersSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action: PayloadAction<string>) => {
         state.isLoading = false;
+        const deletedUser = state.users.find(user => user._id === action.payload);
         state.users = state.users.filter(user => user._id !== action.payload);
         state.pagination.total -= 1;
         if (state.currentUser?._id === action.payload) {
           state.currentUser = null;
+        }
+        
+        // Update stats
+        if (state.stats && deletedUser) {
+          state.stats.totalUsers -= 1;
+          if (deletedUser.role === 'admin') {
+            state.stats.adminCount -= 1;
+          } else if (deletedUser.role === 'employee') {
+            state.stats.employeeCount -= 1;
+          }
+          if (deletedUser.isActive) {
+            state.stats.activeCount -= 1;
+          }
         }
       })
       .addCase(deleteUser.rejected, (state, action) => {

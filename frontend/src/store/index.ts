@@ -7,6 +7,8 @@ import ordersSlice from './slices/ordersSlice';
 import stockSlice from './slices/stockSlice';
 import statisticsSlice from './slices/statisticsSlice';
 import usersSlice from './slices/usersSlice';
+import categoriesSlice from './slices/categoriesSlice';
+import dashboardSlice from './slices/dashboardSlice';
 
 export const store = configureStore({
   reducer: {
@@ -15,9 +17,11 @@ export const store = configureStore({
     customers: customersSlice,
     agents: agentsSlice,
     products: productsSlice,
+    categories: categoriesSlice,
     orders: ordersSlice,
     stock: stockSlice,
     statistics: statisticsSlice,
+    dashboard: dashboardSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
