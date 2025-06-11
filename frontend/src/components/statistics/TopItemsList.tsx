@@ -11,7 +11,7 @@ export function TopItemsList<T>({ title, items, renderItem }: TopItemsListProps<
         <div className="space-y-4">
             <h3 className="font-medium text-gray-900">{title}</h3>
             <div className="space-y-3">
-                {items.length === 0 ? (
+                {!items || items.length === 0 ? (
                     <p className="text-gray-500 text-sm">Chưa có dữ liệu</p>
                 ) : (
                     items.map((item, index) => renderItem(item, index))

@@ -9,6 +9,18 @@ interface RevenueChartProps {
 }
 
 export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
+    // Kiểm tra data trước khi sử dụng
+    if (!data || data.length === 0) {
+        return (
+            <div className="space-y-4">
+                <h3 className="font-medium text-gray-900">Doanh thu theo tháng</h3>
+                <div className="text-center text-gray-500 py-8">
+                    Chưa có dữ liệu doanh thu
+                </div>
+            </div>
+        );
+    }
+
     const maxRevenue = Math.max(...data.map(d => d.revenue));
 
     return (
