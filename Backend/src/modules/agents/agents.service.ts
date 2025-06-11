@@ -17,25 +17,108 @@ export class AgentsService {
   }
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Agent>> {
-    const { page = 1, limit = 10, search } = query;
+    // Parse số một cách rõ ràng để tránh lỗi aggregation
+    const page = parseInt(String(query.page || 1), 10);
+    const limit = parseInt(String(query.limit || 10), 10);
+    const search = query.search;
+    
     const skip = (page - 1) * limit;
 
-    const filter: any = {};
+    // Build match filter
+    const matchFilter: any = {};
     if (search) {
-      filter.$or = [
+      matchFilter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
       ];
     }
 
-    const [data, total] = await Promise.all([
-      this.agentModel.find(filter).skip(skip).limit(limit).exec(),
-      this.agentModel.countDocuments(filter),
+    // Aggregation pipeline với lookup orders
+    const pipeline: any[] = [
+      { $match: matchFilter },
+      {
+        $addFields: {
+          // Convert _id to string for comparison
+          agentIdString: { $toString: '$_id' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { agentId: '$_id', agentIdStr: '$agentIdString' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$agentId', '$$agentId'] },
+                    { $eq: [{ $toString: '$agentId' }, '$$agentIdStr'] },
+                    { $eq: ['$agentId', '$$agentIdStr'] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'agentOrders'
+        }
+      },
+      {
+        $addFields: {
+          // Chỉ tính các đơn hàng active (không bị hủy)
+          activeOrders: {
+            $filter: {
+              input: '$agentOrders',
+              cond: { $ne: ['$$this.status', 'cancelled'] }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          totalOrders: { $size: '$activeOrders' },
+          totalAmount: {
+            $sum: {
+              $map: {
+                input: '$activeOrders',
+                as: 'order',
+                in: '$$order.totalAmount'
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          agentOrders: 0, // Loại bỏ array orders để giảm dung lượng
+          activeOrders: 0,
+          agentIdString: 0
+        }
+      }
+    ];
+
+    // Get paginated data
+    const paginatedPipeline = [
+      ...pipeline,
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    // Get total count
+    const countPipeline = [
+      ...pipeline,
+      { $count: 'total' }
+    ];
+
+    const [dataResult, countResult] = await Promise.all([
+      this.agentModel.aggregate(paginatedPipeline).exec(),
+      this.agentModel.aggregate(countPipeline).exec()
     ]);
 
+    const total = countResult[0]?.total || 0;
+
     return {
-      data,
+      data: dataResult,
       total,
       page,
       limit,
@@ -83,6 +166,9 @@ export class AgentsService {
 
   // Lấy đại lý có doanh số cao nhất
   async getTopAgents(limit: number = 5): Promise<any[]> {
+    // Đảm bảo limit là số
+    const limitNum = parseInt(String(limit), 10);
+    
     return this.agentModel.aggregate([
       { $match: {} },
       {
@@ -98,19 +184,29 @@ export class AgentsService {
           totalSales: {
             $sum: {
               $map: {
-                input: { $filter: { input: '$orders', cond: { $eq: ['$$this.status', 'active'] } } },
+                input: { 
+                  $filter: { 
+                    input: '$orders', 
+                    cond: { $ne: ['$$this.status', 'cancelled'] } 
+                  } 
+                },
                 as: 'order',
                 in: '$$order.totalAmount'
               }
             }
           },
           totalOrders: {
-            $size: { $filter: { input: '$orders', cond: { $eq: ['$$this.status', 'active'] } } }
+            $size: { 
+              $filter: { 
+                input: '$orders', 
+                cond: { $ne: ['$$this.status', 'cancelled'] } 
+              } 
+            }
           }
         }
       },
       { $sort: { totalSales: -1 } },
-      { $limit: limit },
+      { $limit: limitNum },
       {
         $project: {
           name: 1,

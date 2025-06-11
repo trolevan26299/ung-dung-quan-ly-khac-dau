@@ -36,7 +36,12 @@ export class AgentsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
   findAll(@Query() query: PaginationQuery) {
-    return this.agentsService.findAll(query);
+    const transformedQuery = {
+      ...query,
+      page: query.page ? parseInt(String(query.page), 10) : undefined,
+      limit: query.limit ? parseInt(String(query.limit), 10) : undefined,
+    };
+    return this.agentsService.findAll(transformedQuery);
   }
 
   @Get('top')
