@@ -45,7 +45,7 @@ export const Login: React.FC = () => {
                             <span className="text-2xl">🖋️</span>
                         </div>
                         <CardTitle className="text-2xl font-bold text-gray-900">
-                            Khắc Dấu Pro
+                            Khắc Dấu TT
                         </CardTitle>
                         <CardDescription>
                             Đăng nhập vào hệ thống quản lý
