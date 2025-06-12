@@ -7,6 +7,7 @@ on:
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
 jobs:
   build-and-push:
@@ -43,7 +44,7 @@ jobs:
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/khacdau-frontend:latest
         build-args: |
-          REACT_APP_API_URL=http://khacdau-backend:8085
+          REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

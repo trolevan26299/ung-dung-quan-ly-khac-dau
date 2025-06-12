@@ -12,8 +12,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build argument cho API URL (gọi backend qua container name)
-ARG REACT_APP_API_URL=http://khacdau-backend:8085
+# Build argument cho API URL - lấy từ GitHub Secrets
+ARG REACT_APP_API_URL
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 # Build ứng dụng
