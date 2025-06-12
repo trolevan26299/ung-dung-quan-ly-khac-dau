@@ -28,7 +28,7 @@ async function bootstrap() {
   
   await authService.createDefaultAdmin();
 
-  const port = process.env.PORT || 8080;
+  const port = process.env.PORT || 8085;
   await app.listen(port);
   
   console.log('🚀 Server is running on: http://localhost:' + port);

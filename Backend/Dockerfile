@@ -1,53 +1,44 @@
-# Backend Dockerfile
-FROM node:18-alpine AS builder
+# Build stage
+FROM node:18-alpine as build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package.json và package-lock.json
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Cài đặt tất cả dependencies (bao gồm devDependencies để build)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build ứng dụng
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:18-alpine as production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
-# Create app directory
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
-
-# Copy package files
+# Copy package.json và package-lock.json
 COPY package*.json ./
 
-# Install only production dependencies
+# Chỉ cài đặt production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built application from builder stage
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+# Copy built application từ build stage
+COPY --from=build /app/dist ./dist
 
-# Change to non-root user
+# Tạo user non-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nestjs -u 1001
+
+# Chuyển ownership cho user nestjs
+RUN chown -R nestjs:nodejs /app
 USER nestjs
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8085
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node dist/health-check.js || exit 1
-
-# Start the application
-ENTRYPOINT ["dumb-init", "--"]
+# Khởi chạy ứng dụng
 CMD ["node", "dist/main"] 
