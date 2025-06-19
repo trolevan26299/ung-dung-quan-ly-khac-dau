@@ -7,6 +7,8 @@ import { X, User } from 'lucide-react';
 import { RootState } from '../../store';
 import type { CreateStockTransactionRequest, StockTransaction, Product } from '../../types';
 import { productsApi } from '../../services/api';
+import { formatTableDateTime } from '../../lib/utils';
+import { useToast } from '../../contexts/ToastContext';
 
 interface StockTransactionFormProps {
     transaction?: StockTransaction;
@@ -39,6 +41,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
     isLoading = false
 }) => {
     const { user } = useSelector((state: RootState) => state.auth);
+    const { error } = useToast();
     
     const [formData, setFormData] = useState<FormData>({
         product: '',
@@ -50,6 +53,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
 
     const [products, setProducts] = useState<Product[]>([]);
     const [errors, setErrors] = useState<FormErrors>({});
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -80,10 +84,13 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
 
     const loadProducts = async () => {
         try {
-            const response = await productsApi.getProducts({ limit: 100 });
+            const response = await productsApi.getProducts({ 
+                page: 1, 
+                limit: 1000 // Lấy tối đa 1000 sản phẩm để hiển thị tất cả
+            });
             setProducts(response.data);
         } catch (error) {
-            console.error('Error loading products:', error);
+            // Silently handle error
         }
     };
 
@@ -131,10 +138,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
     const handleTypeChange = (type: 'import' | 'export' | 'adjustment') => {
         const product = products.find(p => p._id === formData.product);
         
-        console.log('🔄 Type changed to:', type);
-        
         if (type === 'adjustment') {
-            console.log('🔧 Setting adjustment mode...');
             setFormData({
                 ...formData,
                 type,
@@ -142,7 +146,6 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 notes: 'Điều chỉnh số lượng tồn kho'
             });
         } else if (type === 'export') {
-            console.log('📤 Setting export mode...');
             setFormData({
                 ...formData,
                 type,
@@ -150,7 +153,6 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 notes: 'Xuất kho'
             });
         } else {
-            console.log('🏪 Setting normal mode...');
             setFormData({
                 ...formData,
                 type,
@@ -188,9 +190,19 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                     notes: formData.notes
                 };
 
-                onSubmit(submitData);
-            } catch (error) {
-                console.error('Error submitting transaction:', error);
+                await onSubmit(submitData);
+                
+                setFormData({
+                    product: '',
+                    type: 'import',
+                    quantity: '',
+                    unitPrice: '',
+                    notes: ''
+                });
+            } catch (err) {
+                error('Có lỗi xảy ra khi tạo giao dịch');
+            } finally {
+                setLoading(false);
             }
         }
     };
@@ -240,7 +252,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                 </div>
                                 {transaction && (
                                     <div className="text-xs text-blue-500 mt-1">
-                                        Tạo lúc: {new Date(transaction.createdAt).toLocaleString('vi-VN')}
+                                        Tạo lúc: {formatTableDateTime(transaction.createdAt)}
                                     </div>
                                 )}
                             </div>
@@ -376,7 +388,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                 variant="secondary"
                                 onClick={onClose}
                                 className="flex-1"
-                                disabled={isLoading}
+                                disabled={loading}
                             >
                                 Hủy
                             </Button>
@@ -384,9 +396,9 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                 type="submit"
                                 variant="default"
                                 className="flex-1"
-                                disabled={isLoading}
+                                disabled={loading}
                             >
-                                {isLoading ? 'Đang xử lý...' : (transaction ? 'Cập nhật' : 'Thêm mới')}
+                                {loading ? 'Đang xử lý...' : (transaction ? 'Cập nhật' : 'Thêm mới')}
                             </Button>
                         </div>
                     </form>

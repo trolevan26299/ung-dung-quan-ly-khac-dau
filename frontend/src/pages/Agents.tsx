@@ -48,6 +48,7 @@ export const Agents: React.FC = () => {
         try {
             await dispatch(createAgent(data)).unwrap();
             setIsFormOpen(false);
+            setSelectedAgent(null);
             success('Tạo thành công', `Đại lý "${data.name}" đã được tạo`);
             // Refresh current page
             dispatch(fetchAgents({
@@ -56,7 +57,6 @@ export const Agents: React.FC = () => {
                 search: searchTerm
             }));
         } catch (error: any) {
-            console.error('Error creating agent:', error);
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo đại lý');
         }
     };
@@ -65,7 +65,6 @@ export const Agents: React.FC = () => {
         if (!selectedAgent) return;
 
         try {
-            console.log('Updating agent with data:', data);
             await dispatch(updateAgent({
                 id: selectedAgent._id,
                 data
@@ -80,7 +79,6 @@ export const Agents: React.FC = () => {
                 search: searchTerm
             }));
         } catch (error: any) {
-            console.error('Error updating agent:', error);
             showError('Cập nhật thất bại', error.message || 'Có lỗi xảy ra khi cập nhật đại lý');
         }
     };
@@ -95,20 +93,19 @@ export const Agents: React.FC = () => {
             confirmVariant: 'destructive'
         });
 
-        if (confirmed) {
-            try {
-                await dispatch(deleteAgent(id)).unwrap();
-                success('Đã xóa', `Đại lý "${agentToDelete?.name || ''}" đã được xóa`);
-                // Refresh current page
-                dispatch(fetchAgents({
-                    page: pagination.page,
-                    limit: pagination.limit,
-                    search: searchTerm
-                }));
-            } catch (error: any) {
-                console.error('Error deleting agent:', error);
-                showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa đại lý');
-            }
+        if (!confirmed) return;
+
+        try {
+            await dispatch(deleteAgent(id)).unwrap();
+            success('Đã xóa', `Đại lý "${agentToDelete?.name || ''}" đã được xóa`);
+            // Refresh current page
+            dispatch(fetchAgents({
+                page: pagination.page,
+                limit: pagination.limit,
+                search: searchTerm
+            }));
+        } catch (error: any) {
+            showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa đại lý');
         }
     };
 

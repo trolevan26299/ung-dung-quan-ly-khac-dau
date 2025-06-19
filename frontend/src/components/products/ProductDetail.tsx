@@ -1,8 +1,7 @@
 import React from 'react';
 import { X, Package, Tag, DollarSign, Hash, Calendar } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { Portal } from '../ui/Portal';
-import { formatCurrency, formatDate, safeString, safeNumber } from '../../lib/utils';
+import { formatCurrency, formatDate} from '../../lib/utils';
 import type { Product } from '../../types';
 
 interface ProductDetailProps {

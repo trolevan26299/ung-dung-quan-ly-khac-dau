@@ -40,6 +40,7 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center text-sm text-gray-500">
                     <Calendar className="w-4 h-4 mr-2" />
                     {new Date().toLocaleDateString('vi-VN', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',

@@ -37,7 +37,6 @@ export const DashboardStats: React.FC = () => {
     const { 
         stats, 
         totalCustomers, 
-        totalAgents, 
         totalProducts, 
         customerStats,
         isLoading 

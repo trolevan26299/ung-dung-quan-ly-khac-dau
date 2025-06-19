@@ -80,7 +80,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             const response = await categoriesApi.getActiveCategories();
             setCategories(response);
         } catch (error) {
-            console.error('Error loading categories:', error);
+            // Silently handle error
         }
     };
 

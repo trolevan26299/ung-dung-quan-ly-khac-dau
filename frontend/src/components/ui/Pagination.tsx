@@ -82,9 +82,6 @@ export const Pagination: React.FC<PaginationProps> = ({
             const pageNumber = Number(page);
             const isActive = Number(currentPage) === pageNumber;
             
-            // Debug log
-            console.log(`Page ${pageNumber}: isActive = ${isActive}, currentPage = ${currentPage} (type: ${typeof currentPage})`);
-            
             return (
               <div
                 key={pageNumber}

@@ -47,12 +47,10 @@ const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
 
     // Update selected label when value changes from outside
     React.useEffect(() => {
-        console.log('Select value changed:', value, 'items:', items); // Debug log
         if (!value) {
             setSelectedLabel('');
         } else if (value && items.length > 0) {
             const item = items.find(item => item.value === value);
-            console.log('Found item:', item); // Debug log
             if (item) {
                 setSelectedLabel(item.label);
             }
@@ -122,7 +120,6 @@ const SelectContent: React.FC<SelectContentProps> = ({ children }) => {
             if (React.isValidElement(child)) {
                 const props = child.props as any;
                 if (props.value && props.children) {
-                    // Extract text content from children
                     let label = '';
                     if (typeof props.children === 'string') {
                         label = props.children;
@@ -139,7 +136,6 @@ const SelectContent: React.FC<SelectContentProps> = ({ children }) => {
                 }
             }
         });
-        console.log('Collected items:', itemsData); // Debug log
         setItems(itemsData);
     }, [children, setItems]);
 

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, ShoppingCart, Search, Filter, Grid, List, Calendar, X } from 'lucide-react';
+import { Plus, ShoppingCart, Search, Grid, List, X, Download } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
@@ -15,9 +15,11 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { DatePicker } from '../components/ui/date-picker';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { useModal, usePagination, useConfirm } from '../hooks';
+import { usePagination, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import type { CreateOrderRequest, Order, OrderQuery } from '../types';
+import * as XLSX from 'xlsx';
+import { formatTableDate } from '../lib/utils';
 
 type ViewMode = 'grid' | 'table';
 
@@ -47,8 +49,6 @@ export const Orders: React.FC = () => {
     const [dateToObj, setDateToObj] = useState<Date | undefined>();
 
     // Hooks
-    const formModal = useModal<Order>();
-    const detailModal = useModal<Order>();
     const paginationHook = usePagination(10);
     
     // Extract function to avoid dependency issues
@@ -83,19 +83,6 @@ export const Orders: React.FC = () => {
             dateTo: dateTo || undefined
         };
         
-        console.log('🔍 useEffect: Calling fetchOrders triggered by dependency change');
-        console.log('📋 Dependencies values:', {
-            searchTerm,
-            statusFilter, 
-            paymentFilter,
-            dateFrom,
-            dateTo,
-            currentPage: paginationHook.pagination.currentPage,
-            limit: paginationHook.pagination.limit
-        });
-        console.log('🔍 Calling fetchOrders with params:', queryParams);
-        console.log('📅 Date values:', { dateFrom, dateTo });
-        console.log('🔤 Search values:', { localSearchTerm, searchTerm });
         dispatch(fetchOrders(queryParams));
     }, [dispatch, searchTerm, statusFilter, paymentFilter, dateFrom, dateTo, paginationHook.pagination.currentPage, paginationHook.pagination.limit]);
 
@@ -126,7 +113,6 @@ export const Orders: React.FC = () => {
 
     useEffect(() => {
         if (error) {
-            console.error('Orders error:', error);
             setTimeout(() => dispatch(clearError()), 5000);
         }
     }, [error, dispatch]);
@@ -145,9 +131,8 @@ export const Orders: React.FC = () => {
             await dispatch(createOrder(data)).unwrap();
             setIsFormOpen(false);
             setEditingOrder(null);
-            success('Tạo thành công', 'Đơn hàng mới đã được tạo');
+            success('Tạo thành công', `Đơn hàng đã được tạo`);
         } catch (error: any) {
-            console.error('Create order error:', error);
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo đơn hàng');
         }
     };
@@ -161,7 +146,6 @@ export const Orders: React.FC = () => {
             setEditingOrder(null);
             success('Cập nhật thành công', `Đơn hàng "#${editingOrder.orderNumber}" đã được cập nhật`);
         } catch (error: any) {
-            console.error('Update order error:', error);
             showError('Cập nhật thất bại', error.message || 'Có lỗi xảy ra khi cập nhật đơn hàng');
         }
     };
@@ -190,27 +174,16 @@ export const Orders: React.FC = () => {
     };
 
     const handleEditOrder = async (order: Order) => {
-        console.log('🔧 Edit order clicked:', order);
-        console.log('🔧 Order customer:', order.customer);
-        console.log('🔧 Order agent:', order.agent);
-        console.log('🔧 Order items:', order.items);
-        console.log('🔧 Order VAT rate:', order.vatRate);
-        console.log('🔧 Order shipping fee:', order.shippingFee);
-        
-        // Kiểm tra nếu đơn hàng đã hủy
         if (order.status === 'cancelled') {
             showError('Không thể chỉnh sửa', 'Đơn hàng đã hủy không thể chỉnh sửa');
             return;
         }
         
         try {
-            console.log('🔄 Fetching full order data...');
             const fullOrder = await dispatch(fetchOrderById(order._id)).unwrap();
-            console.log('✅ Full order data:', fullOrder);
             setEditingOrder(fullOrder);
             setIsFormOpen(true);
         } catch (error: any) {
-            console.error('❌ Error fetching order:', error);
             showError('Không thể tải thông tin đơn hàng', error.message || 'Có lỗi xảy ra');
         }
     };
@@ -231,22 +204,72 @@ export const Orders: React.FC = () => {
     };
 
     const handleResetFilters = () => {
-        console.log('🔄 Reset all filters');
+        dispatch(setSearchTerm(''));
+        dispatch(setStatusFilter(''));
+        dispatch(setPaymentFilter(''));
         setLocalSearchTerm('');
         setDateFrom('');
         setDateTo('');
         setDateFromObj(undefined);
         setDateToObj(undefined);
-        dispatch(setSearchTerm(''));
-        dispatch(setStatusFilter(''));
-        dispatch(setPaymentFilter(''));
+        paginationHook.resetPagination();
     };
 
-    const statusOptions = [
-        { value: 'all', label: 'Tất cả trạng thái', count: orders.length },
-        { value: 'active', label: 'Đang hoạt động', count: orders.filter(o => o.status === 'active').length },
-        { value: 'cancelled', label: 'Đã hủy', count: orders.filter(o => o.status === 'cancelled').length },
-    ];
+    const handleExportExcel = () => {
+        try {
+            const excelData = orders.map((order, index) => ({
+                'Mã đơn hàng': order.orderNumber || '',
+                'Tên khách hàng - SĐT': order.customer 
+                    ? `${order.customer.name || ''} - ${order.customer.phone || ''}`
+                    : 'N/A',
+                'Tên đại lý': order.agent?.name || 'N/A',
+                'Ngày tạo': formatTableDate(order.createdAt),
+                'Sản phẩm': order.items?.map(item => {
+                    const productName = item.productName || 'N/A';
+                    const quantity = item.quantity || 0;
+                    const unitPrice = item.unitPrice || 0;
+                    return `${productName} (SL: ${quantity}, Giá: ${unitPrice.toLocaleString('vi-VN')}₫)`;
+                }).join('; ') || 'N/A',
+                'Tổng tiền': (order.totalAmount || 0).toLocaleString('vi-VN') + '₫',
+                'VAT (tiền)': (order.vatAmount || 0).toLocaleString('vi-VN') + '₫',
+                'Phí vận chuyển': (order.shippingFee || 0).toLocaleString('vi-VN') + '₫',
+                'Ghi chú': order.notes || '',
+                'Trạng thái thanh toán': order.paymentStatus === 'completed' ? 'Đã thanh toán' : 
+                                       order.paymentStatus === 'pending' ? 'Chưa thanh toán' : 'Công nợ',
+                'Trạng thái đơn hàng': order.status === 'active' ? 'Hoàn thành' : 'Đã hủy'
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+
+            const colWidths = [
+                { wch: 15 },  // Mã đơn hàng
+                { wch: 25 },  // Tên khách hàng - SDT
+                { wch: 20 },  // Tên đại lý
+                { wch: 15 },  // Ngày tạo
+                { wch: 40 },  // Sản phẩm
+                { wch: 15 },  // Tổng tiền
+                { wch: 15 },  // VAT (tiền)
+                { wch: 15 },  // Phí vận chuyển
+                { wch: 30 },  // Ghi chú
+                { wch: 18 },  // Trạng thái thanh toán
+                { wch: 18 }   // Trạng thái đơn hàng
+            ];
+            ws['!cols'] = colWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Danh sách đơn hàng');
+
+            const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+            const today = new Date(vietnamNow).toISOString().split('T')[0];
+            const fileName = `DanhSachDonHang_${today}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+
+            success('Xuất Excel thành công', `File ${fileName} đã được tải xuống`);
+        } catch (error) {
+            showError('Xuất Excel thất bại', 'Có lỗi xảy ra khi xuất file Excel');
+        }
+    };
 
     const renderOrdersGrid = () => {
         if (isLoading && orders.length === 0) {
@@ -336,7 +359,7 @@ export const Orders: React.FC = () => {
                     <div className="flex flex-col xl:flex-row items-start xl:items-center gap-6">
                         
                         {/* Search Input - Full width on mobile, flexible on desktop */}
-                        <div className="w-full xl:flex-1 xl:max-w-lg">
+                        <div className="w-full xl:w-80">
                           
                             <div className="relative">
                                 <Input
@@ -344,7 +367,6 @@ export const Orders: React.FC = () => {
                                     placeholder="Nhập tên khách hàng, đại lý, số đơn hàng..."
                                     value={localSearchTerm}
                                     onChange={(e) => {
-                                        console.log('🔍 Local search changed:', e.target.value);
                                         setLocalSearchTerm(e.target.value);
                                     }}
                                     className="pl-10 h-12 text-sm font-medium border-gray-300 focus:border-blue-500 focus:ring-blue-500"
@@ -361,18 +383,16 @@ export const Orders: React.FC = () => {
                                     <DatePicker
                                         date={dateFromObj}
                                         onDateChange={(date: Date | undefined) => {
-                                            console.log('📅 DateFrom changed:', date);
                                             setDateFromObj(date);
                                             setDateFrom(date ? date.toISOString().split('T')[0] : '');
                                         }}
                                         placeholder="Từ ngày"
                                         className="w-full xl:w-52"
                                     />
-                                    <span className="text-gray-500 text-sm px-2 font-medium flex-shrink-0">đến</span>
+                                    <span className="text-gray-500 text-sm px-2 font-medium flex-shrink-0"> - </span>
                                     <DatePicker
                                         date={dateToObj}
                                         onDateChange={(date: Date | undefined) => {
-                                            console.log('📅 DateTo changed:', date);
                                             setDateToObj(date);
                                             setDateTo(date ? date.toISOString().split('T')[0] : '');
                                         }}
@@ -389,12 +409,26 @@ export const Orders: React.FC = () => {
                             <select
                                 value={paymentFilter}
                                 onChange={(e) => dispatch(setPaymentFilter(e.target.value))}
-                                className="w-full xl:w-60 h-12 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
+                                className="w-full xl:w-55 h-12 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
                             >
                                 <option value="">🏷️ Tất cả trạng thái</option>
                                 <option value="completed">✅ Đã thanh toán</option>
                                 <option value="pending">⏳ Chưa thanh toán</option>
                                 <option value="debt">💰 Công nợ</option>
+                            </select>
+                        </div>
+
+                        {/* Order Status */}
+                        <div className="w-full xl:w-auto">
+                          
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => dispatch(setStatusFilter(e.target.value))}
+                                className="w-full xl:w-55 h-12 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
+                            >
+                                <option value="">📋 Tất cả đơn hàng</option>
+                                <option value="active">🟢 Hoàn thành</option>
+                                <option value="cancelled">🔴 Đã hủy</option>
                             </select>
                         </div>
                         
@@ -407,10 +441,22 @@ export const Orders: React.FC = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleResetFilters}
-                                    className="flex items-center gap-2 h-12 px-6 whitespace-nowrap border-gray-300 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all font-medium"
+                                    className="flex items-center gap-2 h-12 px-3 whitespace-nowrap border-gray-300 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all font-medium"
                                 >
                                     <X className="h-4 w-4" />
-                                    Reset Filter
+                                    Reset 
+                                </Button>
+
+                                {/* Export Excel Button */}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleExportExcel}
+                                    className="flex items-center gap-2 h-12 px-6 whitespace-nowrap border-green-300 hover:bg-green-50 hover:border-green-400 hover:text-green-700 transition-all font-medium"
+                                    disabled={orders.length === 0}
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Excel
                                 </Button>
 
                                 {/* View Toggle */}

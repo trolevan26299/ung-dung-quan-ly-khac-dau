@@ -4,7 +4,6 @@ import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { Phone, MapPin, FileText, ShoppingBag, Eye, Edit, Trash2 } from 'lucide-react';
 import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
-import { useToast } from '../../contexts/ToastContext';
 
 interface AgentCardProps {
     agent: Agent;
@@ -19,7 +18,6 @@ export const AgentCard: React.FC<AgentCardProps> = ({
     onEdit,
     onDelete
 }) => {
-    const { success, error } = useToast();
 
     const handleDelete = () => {
         onDelete(agent._id);

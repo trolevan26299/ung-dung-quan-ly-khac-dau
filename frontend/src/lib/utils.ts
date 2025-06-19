@@ -11,21 +11,38 @@ export function formatCurrency(amount: number | undefined | null): string {
   return amount.toLocaleString('vi-VN') + ' ₫';
 }
 
-// Format date to Vietnamese format
-export function formatDate(dateString: string | undefined | null): string {
+// Format date to Vietnamese format with Vietnam timezone
+export const formatDate = (dateString: string, includeTime = false): string => {
   if (!dateString) return '';
-  try {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  } catch {
-    return '';
+  
+  const date = new Date(dateString);
+  
+  if (includeTime) {
+    return date.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
-}
+  
+  return date.toLocaleDateString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
 
-// Format datetime to Vietnamese format
+// Format datetime to Vietnamese format with Vietnam timezone
 export function formatDateTime(dateString: string | undefined | null): string {
   if (!dateString) return '';
   try {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -67,5 +84,39 @@ export function safeGet<T>(obj: any, path: string, defaultValue: T): T {
     return result;
   } catch {
     return defaultValue;
+  }
+}
+
+// Format date trong table với múi giờ Việt Nam
+export function formatTableDate(dateString: string | undefined | null): string {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch {
+    return '-';
+  }
+}
+
+// Format datetime trong table với múi giờ Việt Nam
+export function formatTableDateTime(dateString: string | undefined | null): string {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return '-';
   }
 } 

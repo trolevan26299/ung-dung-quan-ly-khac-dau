@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
 import { RootState, AppDispatch } from '../../store';
 import { fetchRecentOrders } from '../../store/slices/dashboardSlice';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, formatTableDate } from '../../lib/utils';
 
 const DASHBOARD_STATUS_COLORS = {
     completed: 'text-green-600 bg-green-100',
@@ -71,7 +71,7 @@ export const RecentOrders: React.FC = () => {
                                     <p className="font-medium text-gray-900">{order.orderNumber}</p>
                                     <p className="text-sm text-gray-500">{order.customer?.name || 'N/A'}</p>
                                     <p className="text-xs text-gray-400">
-                                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
+                                        {formatTableDate(order.createdAt)}
                                     </p>
                                 </div>
                                 <div className="text-right">

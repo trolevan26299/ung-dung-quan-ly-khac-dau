@@ -5,6 +5,7 @@ import { StockTransaction, StockTransactionDocument } from '../../schemas/stock-
 import { Product, ProductDocument } from '../../schemas/product.schema';
 import { CreateStockTransactionDto, ImportStockDto, AdjustStockDto, StockReportQueryDto } from './dto/stock.dto';
 import { PaginationResult, TransactionType } from '../../types/common.types';
+import { TimezoneUtil } from '../../utils/timezone.util';
 
 @Injectable()
 export class StockService {
@@ -26,8 +27,8 @@ export class StockService {
           password: 'system',
           role: 'admin',
           isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          createdAt: TimezoneUtil.nowInVietnam(),
+          updatedAt: TimezoneUtil.nowInVietnam()
         });
         systemUser = { _id: result.insertedId };
       }
@@ -83,19 +84,6 @@ export class StockService {
       const newAvgImportPrice = stockBefore === 0 ? 
         createStockTransactionDto.unitPrice : 
         (totalCurrentValue + newImportValue) / stockAfter;
-      
-      // Debug log
-      console.log('=== DEBUG AVG IMPORT PRICE ===');
-      console.log('Product:', product.name);
-      console.log('Stock before:', stockBefore);
-      console.log('Current avg price:', currentAvgPrice);
-      console.log('Total current value:', totalCurrentValue);
-      console.log('New quantity:', Math.abs(quantity));
-      console.log('New unit price:', createStockTransactionDto.unitPrice);
-      console.log('New import value:', newImportValue);
-      console.log('Stock after:', stockAfter);
-      console.log('New avg import price:', newAvgImportPrice);
-      console.log('================================');
       
       updateData.avgImportPrice = newAvgImportPrice;
     }
@@ -210,7 +198,7 @@ export class StockService {
   }
 
   // Xuất kho (cho đơn hàng)
-  async exportStock(productId: string, quantity: number, orderId: string, userId: string, userName: string): Promise<StockTransaction> {
+  async exportStock(productId: string, quantity: number, orderId: string, userId: string, userName: string, unitPrice?: number): Promise<StockTransaction> {
     const product = await this.productModel.findById(productId);
     if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
@@ -228,6 +216,10 @@ export class StockService {
       stockQuantity: stockAfter
     });
 
+    // Sử dụng unitPrice từ đơn hàng nếu có, nếu không thì dùng giá hiện tại của sản phẩm
+    const priceToUse = unitPrice || product.currentPrice || 0;
+    const totalValue = priceToUse * quantity;
+
     // Tạo transaction record
     const transaction = new this.stockTransactionModel({
       productId,
@@ -235,8 +227,8 @@ export class StockService {
       productName: product.name,
       transactionType: TransactionType.EXPORT,
       quantity: -quantity, // Số âm cho xuất kho
-      unitPrice: 0,
-      totalValue: 0,
+      unitPrice: priceToUse,
+      totalValue: totalValue,
       orderId,
       userId,
       userName,
@@ -310,13 +302,11 @@ export class StockService {
       filter.productId = productId;
     }
 
+    // Date filter
     if (startDate || endDate) {
-      filter.transactionDate = {};
-      if (startDate) {
-        filter.transactionDate.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        filter.transactionDate.$lte = new Date(endDate);
+      const dateFilter = TimezoneUtil.createDateRangeFilter(startDate, endDate);
+      if (dateFilter.createdAt) {
+        filter.transactionDate = dateFilter.createdAt;
       }
     }
 

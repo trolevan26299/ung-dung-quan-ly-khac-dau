@@ -31,11 +31,7 @@ export const Customers: React.FC = () => {
     const {
         pagination: paginationState,
         params,
-        goToPage,
-        goToNextPage,
-        goToPreviousPage,
         setSearch,
-        updatePagination
     } = usePagination();
     const formModal = useModal<Customer>();
     const detailModal = useModal<Customer>();
@@ -76,14 +72,11 @@ export const Customers: React.FC = () => {
     // Handlers
     const handleCreateCustomer = async (data: CreateCustomerRequest) => {
         try {
-            console.log('Creating customer with data:', data);
             await dispatch(createCustomer(data)).unwrap();
             formModal.closeModal();
-            // Refresh current page to show new customer
             refreshCustomers();
             success('Tạo thành công', `Khách hàng "${data.name}" đã được tạo`);
         } catch (error: any) {
-            console.error('Error creating customer:', error);
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo khách hàng');
         }
     };
@@ -92,41 +85,34 @@ export const Customers: React.FC = () => {
         if (!formModal.selectedItem) return;
 
         try {
-            console.log('Updating customer with data:', data);
             await dispatch(updateCustomer({
                 id: formModal.selectedItem._id,
                 data
             })).unwrap();
             formModal.closeModal();
-            // Refresh current page
             refreshCustomers();
             success('Cập nhật thành công', `Khách hàng "${data.name}" đã được cập nhật`);
         } catch (error: any) {
-            console.error('Error updating customer:', error);
             showError('Cập nhật thất bại', error.message || 'Có lỗi xảy ra khi cập nhật khách hàng');
         }
     };
 
     const handleDeleteCustomer = async (id: string) => {
-        const customerToDelete = customers.find(customer => customer._id === id);
         const confirmed = await confirm({
-            title: 'Xóa khách hàng',
-            message: `Bạn có chắc chắn muốn xóa khách hàng "${customerToDelete?.name || ''}"?`,
+            title: 'Xác nhận xóa',
+            message: 'Bạn có chắc chắn muốn xóa khách hàng này? Hành động này không thể hoàn tác.',
             confirmText: 'Xóa',
-            cancelText: 'Hủy',
-            confirmVariant: 'destructive'
+            cancelText: 'Hủy'
         });
 
-        if (!confirmed) return;
-
-        try {
-            await dispatch(deleteCustomer(id)).unwrap();
-            // Refresh current page
-            refreshCustomers();
-            success('Đã xóa', `Khách hàng "${customerToDelete?.name || ''}" đã được xóa`);
-        } catch (error: any) {
-            console.error('Error deleting customer:', error);
-            showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa khách hàng');
+        if (confirmed) {
+            try {
+                await dispatch(deleteCustomer(id)).unwrap();
+                refreshCustomers();
+                success('Đã xóa khách hàng thành công');
+            } catch (error: any) {
+                showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa khách hàng');
+            }
         }
     };
 

@@ -11,6 +11,7 @@ import {
     TableRow,
 } from '../ui/table';
 import { Eye, Edit, Trash2 } from 'lucide-react';
+import { formatTableDate } from '../../lib/utils';
 
 interface UserTableProps {
     users: User[];
@@ -72,7 +73,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                                 {user.isActive ? 'Kích hoạt' : 'Vô hiệu hóa'}
                             </Badge>
                         </TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</TableCell>
+                        <TableCell>{formatTableDate(user.createdAt)}</TableCell>
                         <TableCell>
                             <div className="flex justify-end space-x-2">
                                 <div className="flex space-x-1">

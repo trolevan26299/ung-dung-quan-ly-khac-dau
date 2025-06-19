@@ -13,13 +13,24 @@ interface StatisticsState {
   refreshKey: number;
 }
 
+const getVietnamStartOfMonth = (): string => {
+    const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const date = new Date(vietnamNow);
+    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+};
+
+const getVietnamCurrentDate = (): string => {
+    const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+    return new Date(vietnamNow).toISOString().split('T')[0];
+};
+
 const initialState: StatisticsState = {
   statistics: null,
   isLoading: false,
   error: null,
   dateRange: {
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: getVietnamStartOfMonth(),
+    endDate: getVietnamCurrentDate(),
   },
   refreshKey: 0,
 };

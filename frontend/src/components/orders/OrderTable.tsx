@@ -1,8 +1,7 @@
 import React from 'react';
 import { Eye, Edit, Trash2, ShoppingCart, Calendar, DollarSign, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { EmptyState } from '../common';
-import { formatCurrency, safeString, safeNumber } from '../../lib/utils';
+import { formatCurrency, safeString, safeNumber, formatTableDate } from '../../lib/utils';
 import type { Order } from '../../types';
 
 interface OrderTableProps {
@@ -177,7 +176,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                         <div className="flex items-center">
                                             <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
-                                                {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
+                                                {formatTableDate(order.createdAt)}
                                             </span>
                                         </div>
                                     </td>

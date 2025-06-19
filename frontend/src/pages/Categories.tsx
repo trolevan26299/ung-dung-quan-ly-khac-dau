@@ -64,31 +64,29 @@ export const Categories: React.FC = () => {
             await dispatch(createCategory(data)).unwrap();
             closeFormModal();
             toast.success('Tạo danh mục thành công');
-            // Refresh the list
-            dispatch(fetchCategories({
+            await dispatch(fetchCategories({
                 page: storePagination.page,
                 limit: storePagination.limit,
                 ...(debouncedSearchTerm && { search: debouncedSearchTerm })
             }));
         } catch (error: any) {
-            console.error('Error creating category:', error);
             toast.error(error.message || 'Tính năng tạo danh mục đang phát triển');
         }
     };
 
-    const handleUpdateCategory = async (id: string, data: UpdateCategoryRequest) => {
+    const handleUpdateCategory = async (data: CreateCategoryRequest) => {
+        if (!selectedCategory) return;
+
         try {
-            await dispatch(updateCategory({ id, data })).unwrap();
+            await dispatch(updateCategory({ id: selectedCategory._id, data })).unwrap();
             closeFormModal();
             toast.success('Cập nhật danh mục thành công');
-            // Refresh the list
-            dispatch(fetchCategories({
+            await dispatch(fetchCategories({
                 page: storePagination.page,
                 limit: storePagination.limit,
                 ...(debouncedSearchTerm && { search: debouncedSearchTerm })
             }));
         } catch (error: any) {
-            console.error('Error updating category:', error);
             toast.error(error.message || 'Tính năng cập nhật danh mục đang phát triển');
         }
     };
@@ -99,21 +97,19 @@ export const Categories: React.FC = () => {
         try {
             await dispatch(deleteCategory(id)).unwrap();
             toast.success('Xóa danh mục thành công');
-            // Refresh the list
-            dispatch(fetchCategories({
+            await dispatch(fetchCategories({
                 page: storePagination.page,
                 limit: storePagination.limit,
                 ...(debouncedSearchTerm && { search: debouncedSearchTerm })
             }));
         } catch (error: any) {
-            console.error('Error deleting category:', error);
             toast.error(error.message || 'Tính năng xóa danh mục đang phát triển');
         }
     };
 
     const handleSubmitForm = (data: CreateCategoryRequest) => {
         if (selectedCategory) {
-            handleUpdateCategory(selectedCategory._id, data);
+            handleUpdateCategory(data);
         } else {
             handleCreateCategory(data);
         }
@@ -121,14 +117,6 @@ export const Categories: React.FC = () => {
 
     const handleSearch = (searchValue: string) => {
         dispatch(setSearchTerm(searchValue));
-    };
-
-    const handlePageChange = (page: number) => {
-        dispatch(setPage(page));
-    };
-
-    const handlePageSizeChange = (pageSize: number) => {
-        dispatch(setPageSize(pageSize));
     };
 
     return (

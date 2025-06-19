@@ -1,6 +1,5 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
-import { X } from "lucide-react"
 import { Portal } from './Portal';
 
 interface DialogProps {

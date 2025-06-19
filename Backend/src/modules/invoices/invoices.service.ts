@@ -5,6 +5,7 @@ import { Invoice, InvoiceDocument } from '../../schemas/invoice.schema';
 import { Order, OrderDocument } from '../../schemas/order.schema';
 import { CreateInvoiceDto, InvoiceQueryDto } from './dto/invoice.dto';
 import { PaginationResult } from '../../types/common.types';
+import { TimezoneUtil } from '../../utils/timezone.util';
 
 @Injectable()
 export class InvoicesService {
@@ -55,7 +56,7 @@ export class InvoicesService {
       customerTaxCode: (order.customerId as any)?.taxCode || '',
       agentName: (order.agentId as any)?.name || '',
       employeeName,
-      invoiceDate: new Date(),
+      invoiceDate: TimezoneUtil.nowInVietnam(),
       subtotal,
       vat: vatAmount,
       shippingFee,
@@ -94,12 +95,9 @@ export class InvoicesService {
     }
 
     if (startDate || endDate) {
-      filter.invoiceDate = {};
-      if (startDate) {
-        filter.invoiceDate.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        filter.invoiceDate.$lte = new Date(endDate);
+      const dateFilter = TimezoneUtil.createDateRangeFilter(startDate, endDate);
+      if (dateFilter.createdAt) {
+        filter.invoiceDate = dateFilter.createdAt;
       }
     }
 
@@ -169,7 +167,7 @@ export class InvoicesService {
       id,
       {
         isPrinted: true,
-        printedAt: new Date(),
+        printedAt: TimezoneUtil.nowInVietnam(),
         printedBy
       },
       { new: true }
@@ -230,9 +228,10 @@ export class InvoicesService {
     const filter: any = {};
     
     if (startDate || endDate) {
-      filter.invoiceDate = {};
-      if (startDate) filter.invoiceDate.$gte = startDate;
-      if (endDate) filter.invoiceDate.$lte = endDate;
+      const dateFilter = TimezoneUtil.createDateRangeFilter(startDate, endDate);
+      if (dateFilter.createdAt) {
+        filter.invoiceDate = dateFilter.createdAt;
+      }
     }
 
     const stats = await this.invoiceModel.aggregate([

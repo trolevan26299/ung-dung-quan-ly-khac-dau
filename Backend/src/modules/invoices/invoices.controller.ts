@@ -15,6 +15,7 @@ import { Response } from 'express';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto, InvoiceQueryDto } from './dto/invoice.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TimezoneUtil } from '../../utils/timezone.util';
 
 @ApiTags('Invoices')
 @Controller('invoices')
@@ -180,7 +181,7 @@ export class InvoicesController {
                     <h4>Thông tin hóa đơn:</h4>
                     <p><strong>Mã hóa đơn:</strong> ${invoice.invoiceCode}</p>
                     <p><strong>Mã đơn hàng:</strong> ${invoice.orderCode}</p>
-                    <p><strong>Ngày xuất:</strong> ${new Date(invoice.invoiceDate).toLocaleDateString('vi-VN')}</p>
+                    <p><strong>Ngày xuất:</strong> ${TimezoneUtil.formatToVietnamTime(new Date(invoice.invoiceDate))}</p>
                     <p><strong>Nhân viên:</strong> ${invoice.employeeName}</p>
                 </div>
                 <div class="info-block">
@@ -266,7 +267,7 @@ export class InvoicesController {
 
             <div class="footer">
                 <p>Cảm ơn quý khách đã sử dụng dịch vụ của chúng tôi!</p>
-                <p>Hóa đơn được in lúc: ${new Date().toLocaleString('vi-VN')}</p>
+                <p>Hóa đơn được in lúc: ${TimezoneUtil.formatToVietnamTime(new Date(), true)}</p>
             </div>
         </div>
 

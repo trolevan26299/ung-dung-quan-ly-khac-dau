@@ -9,6 +9,7 @@ import { User, UserDocument } from '../../schemas/user.schema';
 import { CreateOrderDto, UpdateOrderDto, OrderQueryDto } from './dto/order.dto';
 import { PaginationResult, OrderStatus, PaymentStatus } from '../../types/common.types';
 import { StockService } from '../stock/stock.service';
+import { TimezoneUtil } from '../../utils/timezone.util';
 
 @Injectable()
 export class OrdersService {
@@ -151,7 +152,8 @@ export class OrdersService {
         item.quantity,
         savedOrder._id.toString(),
         employeeId,
-        employeeName
+        employeeName,
+        item.unitPrice
       );
     }
 
@@ -204,16 +206,8 @@ export class OrdersService {
 
     // Date filter
     if (dateFrom || dateTo) {
-      filter.createdAt = {};
-      if (dateFrom) {
-        filter.createdAt.$gte = new Date(dateFrom);
-      }
-      if (dateTo) {
-        // Set to end of day
-        const endDate = new Date(dateTo);
-        endDate.setHours(23, 59, 59, 999);
-        filter.createdAt.$lte = endDate;
-      }
+      const dateFilter = TimezoneUtil.createDateRangeFilter(dateFrom, dateTo);
+      filter = { ...filter, ...dateFilter };
     }
 
     // Search logic
@@ -381,13 +375,18 @@ export class OrdersService {
           const exportQty = newQty - currentQty;
           console.log(`📤 Exporting stock for product ${productId}: ${exportQty} units`);
           
+          // Lấy unitPrice từ item tương ứng
+          const itemData = updateOrderDto.items.find(item => item.productId === productId);
+          const unitPrice = itemData?.unitPrice || 0;
+          
           const systemUserId = await this.getSystemUserId();
           await this.stockService.exportStock(
             productId,
             exportQty,
             id,
             systemUserId,
-            'System Order Update'
+            'System Order Update',
+            unitPrice // Truyền unitPrice từ order item
           );
         }
       }
@@ -508,28 +507,39 @@ export class OrdersService {
 
   // Thống kê đơn hàng
   async getOrderStats(startDate?: Date, endDate?: Date): Promise<any> {
-    const now = new Date();
+    const now = TimezoneUtil.nowInVietnam();
     let currentPeriodStart: Date;
     let currentPeriodEnd: Date;
     let previousPeriodStart: Date;
     let previousPeriodEnd: Date;
 
     if (startDate && endDate) {
-      // Nếu có date range custom
-      currentPeriodStart = startDate;
-      currentPeriodEnd = endDate;
+      // Nếu có date range custom - chuyển về UTC cho MongoDB
+      currentPeriodStart = TimezoneUtil.startOfDayVietnam(startDate);
+      currentPeriodEnd = TimezoneUtil.endOfDayVietnam(endDate);
       
       // Tính period trước có cùng độ dài
       const periodLength = endDate.getTime() - startDate.getTime();
-      previousPeriodEnd = new Date(startDate.getTime() - 1);
-      previousPeriodStart = new Date(previousPeriodEnd.getTime() - periodLength);
-    } else {
-      // Mặc định: tháng hiện tại vs tháng trước
-      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      currentPeriodEnd = now;
+      const previousEndDate = new Date(startDate.getTime() - 1);
+      const previousStartDate = new Date(previousEndDate.getTime() - periodLength);
       
-      previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0); // Last day of previous month
+      previousPeriodStart = TimezoneUtil.startOfDayVietnam(previousStartDate);
+      previousPeriodEnd = TimezoneUtil.endOfDayVietnam(previousEndDate);
+    } else {
+      // Mặc định: tháng hiện tại vs tháng trước (theo múi giờ VN)
+      const vietnamDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+      
+      // Tháng hiện tại
+      const currentMonthStart = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth(), 1);
+      currentPeriodStart = TimezoneUtil.startOfDayVietnam(currentMonthStart);
+      currentPeriodEnd = TimezoneUtil.endOfDayVietnam(now);
+      
+      // Tháng trước
+      const previousMonthStart = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth() - 1, 1);
+      const previousMonthEnd = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth(), 0);
+      
+      previousPeriodStart = TimezoneUtil.startOfDayVietnam(previousMonthStart);
+      previousPeriodEnd = TimezoneUtil.endOfDayVietnam(previousMonthEnd);
     }
 
     const filter: any = { status: OrderStatus.ACTIVE };

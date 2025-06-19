@@ -22,86 +22,85 @@ type PeriodOption = {
   getEndDate: () => Date;
 };
 
+// Helper function để tạo date với múi giờ Việt Nam
+const createVietnamDate = (dateOffset = 0): Date => {
+  const now = new Date();
+  const vietnamTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+  vietnamTime.setDate(vietnamTime.getDate() + dateOffset);
+  return vietnamTime;
+};
+
+const createVietnamDateFromMonthYear = (year: number, month: number, day = 1): Date => {
+  const date = new Date();
+  const vietnamTime = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+  vietnamTime.setFullYear(year, month, day);
+  return vietnamTime;
+};
+
 const periodOptions: PeriodOption[] = [
   {
     value: 'today',
     label: 'Hôm nay',
-    getStartDate: () => new Date(),
-    getEndDate: () => new Date(),
+    getStartDate: () => createVietnamDate(0),
+    getEndDate: () => createVietnamDate(0),
   },
   {
     value: 'yesterday',
     label: 'Hôm qua',
-    getStartDate: () => {
-      const date = new Date();
-      date.setDate(date.getDate() - 1);
-      return date;
-    },
-    getEndDate: () => {
-      const date = new Date();
-      date.setDate(date.getDate() - 1);
-      return date;
-    },
+    getStartDate: () => createVietnamDate(-1),
+    getEndDate: () => createVietnamDate(-1),
   },
   {
     value: 'last7days',
     label: '7 ngày qua',
-    getStartDate: () => {
-      const date = new Date();
-      date.setDate(date.getDate() - 7);
-      return date;
-    },
-    getEndDate: () => new Date(),
+    getStartDate: () => createVietnamDate(-7),
+    getEndDate: () => createVietnamDate(0),
   },
   {
     value: 'last30days',
     label: '30 ngày qua',
-    getStartDate: () => {
-      const date = new Date();
-      date.setDate(date.getDate() - 30);
-      return date;
-    },
-    getEndDate: () => new Date(),
+    getStartDate: () => createVietnamDate(-30),
+    getEndDate: () => createVietnamDate(0),
   },
   {
     value: 'thisMonth',
     label: 'Tháng này',
     getStartDate: () => {
-      const date = new Date();
-      return new Date(date.getFullYear(), date.getMonth(), 1);
+      const vietnamTime = createVietnamDate(0);
+      return createVietnamDateFromMonthYear(vietnamTime.getFullYear(), vietnamTime.getMonth(), 1);
     },
-    getEndDate: () => new Date(),
+    getEndDate: () => createVietnamDate(0),
   },
   {
     value: 'lastMonth',
     label: 'Tháng trước',
     getStartDate: () => {
-      const date = new Date();
-      return new Date(date.getFullYear(), date.getMonth() - 1, 1);
+      const vietnamTime = createVietnamDate(0);
+      return createVietnamDateFromMonthYear(vietnamTime.getFullYear(), vietnamTime.getMonth() - 1, 1);
     },
     getEndDate: () => {
-      const date = new Date();
-      return new Date(date.getFullYear(), date.getMonth(), 0);
+      const vietnamTime = createVietnamDate(0);
+      return createVietnamDateFromMonthYear(vietnamTime.getFullYear(), vietnamTime.getMonth(), 0);
     },
   },
   {
     value: 'thisQuarter',
     label: 'Quý này',
     getStartDate: () => {
-      const date = new Date();
-      const quarter = Math.floor(date.getMonth() / 3);
-      return new Date(date.getFullYear(), quarter * 3, 1);
+      const vietnamTime = createVietnamDate(0);
+      const quarter = Math.floor(vietnamTime.getMonth() / 3);
+      return createVietnamDateFromMonthYear(vietnamTime.getFullYear(), quarter * 3, 1);
     },
-    getEndDate: () => new Date(),
+    getEndDate: () => createVietnamDate(0),
   },
   {
     value: 'thisYear',
     label: 'Năm này',
     getStartDate: () => {
-      const date = new Date();
-      return new Date(date.getFullYear(), 0, 1);
+      const vietnamTime = createVietnamDate(0);
+      return createVietnamDateFromMonthYear(vietnamTime.getFullYear(), 0, 1);
     },
-    getEndDate: () => new Date(),
+    getEndDate: () => createVietnamDate(0),
   },
 ];
 
@@ -112,7 +111,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     onEndDateChange
 }) => {
     const [selectedPeriod, setSelectedPeriod] = useState<string>('thisMonth');
-    const today = new Date().toISOString().split('T')[0];
 
     const handlePeriodChange = (periodValue: string) => {
         setSelectedPeriod(periodValue);

@@ -14,6 +14,7 @@ import {
   OrderStatus,
   PaymentStatus 
 } from '../../types/common.types';
+import { TimezoneUtil } from '../../utils/timezone.util';
 
 @Injectable()
 export class StatisticsService {
@@ -408,34 +409,40 @@ export class StatisticsService {
 
     if (!period) return {};
 
-    const now = new Date();
     let startDate: Date;
-    let endDate: Date = period.endDate || now;
+    const now = TimezoneUtil.nowInVietnam();
+    const vietnamDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
 
     if (period.startDate) {
       startDate = period.startDate;
     } else {
       switch (period.period) {
         case 'day':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          startDate = TimezoneUtil.startOfDayVietnam(vietnamDate);
           break;
         case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          startDate = new Date(vietnamDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+          startDate = TimezoneUtil.startOfDayVietnam(startDate);
           break;
         case 'month':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          startDate = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth(), 1);
+          startDate = TimezoneUtil.startOfDayVietnam(startDate);
           break;
         case 'quarter':
-          const quarterStart = Math.floor(now.getMonth() / 3) * 3;
-          startDate = new Date(now.getFullYear(), quarterStart, 1);
+          const quarterStart = Math.floor(vietnamDate.getMonth() / 3) * 3;
+          startDate = new Date(vietnamDate.getFullYear(), quarterStart, 1);
+          startDate = TimezoneUtil.startOfDayVietnam(startDate);
           break;
         case 'year':
-          startDate = new Date(now.getFullYear(), 0, 1);
+          startDate = new Date(vietnamDate.getFullYear(), 0, 1);
+          startDate = TimezoneUtil.startOfDayVietnam(startDate);
           break;
         default:
-          return {};
+          startDate = TimezoneUtil.startOfDayVietnam(vietnamDate);
       }
     }
+
+    const endDate = period.endDate || TimezoneUtil.endOfDayVietnam(now);
 
     const filter = {
       createdAt: {
@@ -725,5 +732,29 @@ export class StatisticsService {
     ];
 
     return this.orderModel.aggregate(pipeline);
+  }
+
+  // Lấy dữ liệu doanh thu theo năm
+  async getYearlyRevenue(year?: number): Promise<any[]> {
+    const currentYear = year || new Date(TimezoneUtil.nowInVietnam().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })).getFullYear();
+
+    return this.orderModel.aggregate([
+      {
+        $match: {
+          status: OrderStatus.ACTIVE,
+          paymentStatus: PaymentStatus.COMPLETED,
+          $gte: new Date(currentYear, 0, 1),
+          $lt: new Date(currentYear + 1, 0, 1)
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$createdAt' },
+          totalRevenue: { $sum: '$totalAmount' },
+          totalOrders: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
   }
 } 

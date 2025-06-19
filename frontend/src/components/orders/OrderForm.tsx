@@ -22,6 +22,7 @@ interface OrderItem {
     productId: string;
     productName: string;
     quantity: number;
+    unitPrice: number;
     totalPrice: number;
 }
 
@@ -49,25 +50,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     const [errors, setErrors] = useState<any>({});
 
     useEffect(() => {
-        console.log('🔍 OrderForm useEffect triggered', { order, isOpen });
-        
-        if (order) {
-            console.log('📝 Loading order for edit:', order);
-            console.log('📋 Order items:', order.items);
-            console.log('👥 Customer:', order.customer);
-            console.log('🏢 Agent:', order.agent);
-            
-            // Debug each item
-            order.items.forEach((item, index) => {
-                console.log(`🔍 Item ${index}:`, {
-                    item,
-                    hasProduct: !!item.product,
-                    hasProductName: !!item.productName,
-                    productType: typeof item.product,
-                    productValue: item.product
-                });
-            });
-            
+        if (order && isOpen) {
             setFormData({
                 customerId: order.customer?._id || '',
                 agentId: order.agent?._id || '',
@@ -76,38 +59,27 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                     quantity: item.quantity,
                     unitPrice: item.unitPrice
                 })),
-                vat: order.vatRate,
-                shippingFee: order.shippingFee,
+                vat: order.vatRate || 0,
+                shippingFee: order.shippingFee || 0,
                 notes: order.notes || '',
-                paymentStatus: order.paymentStatus
+                paymentStatus: order.paymentStatus || 'pending'
             });
 
-            const mappedOrderItems = order.items.filter(item => item.product).map(item => ({
+            const mappedOrderItemsDisplay = order.items.filter(item => item.product).map(item => ({
                 productId: typeof item.product === 'string' ? item.product : (item.product as any)?._id || '',
                 productName: item.productName || (typeof item.product === 'object' ? (item.product as any)?.name : 'Sản phẩm không xác định'),
                 quantity: item.quantity,
+                unitPrice: item.unitPrice,
                 totalPrice: item.quantity * item.unitPrice
             }));
             
-            console.log('🔍 Filtered items (with product):', order.items.filter(item => item.product));
-            console.log('📦 Mapped orderItems:', mappedOrderItems);
-            
-            setOrderItems(mappedOrderItems);
-            
-            console.log('✅ Form data set:', {
-                customerId: order.customer?._id || '',
-                agentId: order.agent?._id || '',
-                vat: order.vatRate,
-                shippingFee: order.shippingFee,
-                items: order.items.length
-            });
+            setOrderItems(mappedOrderItemsDisplay);
         } else {
-            console.log('🆕 Creating new order form');
             setFormData({
                 customerId: '',
                 agentId: '',
                 items: [],
-                vat: 0,
+                vat: 10,
                 shippingFee: 0,
                 notes: '',
                 paymentStatus: 'pending'
@@ -143,20 +115,28 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 productId: product._id,
                 productName: product.name,
                 quantity: 1,
+                unitPrice: 0, // Đặt 0 để user tự nhập
                 totalPrice: 0 // Đặt 0 để user tự nhập
             };
             setOrderItems([...orderItems, newItem]);
         }
     };
 
-    const updateOrderItem = (index: number, field: 'quantity' | 'totalPrice', value: number) => {
+    const updateOrderItem = (index: number, field: 'quantity' | 'unitPrice' | 'totalPrice', value: number) => {
         const newItems = [...orderItems];
         
         // Đảm bảo giá trị không âm
         if (field === 'quantity') {
             newItems[index][field] = Math.max(1, value);
+        } else if (field === 'unitPrice') {
+            newItems[index][field] = Math.max(0, value);
         } else if (field === 'totalPrice') {
             newItems[index][field] = Math.max(0, value);
+        }
+        
+        // Tự động tính totalPrice khi thay đổi quantity hoặc unitPrice
+        if (field === 'quantity' || field === 'unitPrice') {
+            newItems[index].totalPrice = newItems[index].quantity * newItems[index].unitPrice;
         }
         
         setOrderItems(newItems);
@@ -182,8 +162,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             if (item.quantity <= 0) {
                 newErrors[`quantity_${index}`] = 'Số lượng phải lớn hơn 0';
             }
-            if (item.totalPrice <= 0) {
-                newErrors[`totalPrice_${index}`] = 'Tổng tiền phải lớn hơn 0';
+            if (item.unitPrice <= 0) {
+                newErrors[`unitPrice_${index}`] = 'Đơn giá phải lớn hơn 0';
             }
         });
 
@@ -217,7 +197,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 items: orderItems.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
-                    unitPrice: item.totalPrice / item.quantity
+                    unitPrice: item.unitPrice
                 }))
             };
             onSubmit(orderData);
@@ -333,7 +313,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                 <div className="flex-1">
                                                     <p className="font-medium">{item.productName}</p>
                                                 </div>
+                                                
+                                                {/* Số lượng */}
                                                 <div className="flex items-center space-x-2">
+                                                    <span className="text-sm text-gray-600 w-16">Số lượng:</span>
                                                     <Button
                                                         type="button"
                                                         variant="secondary"
@@ -350,9 +333,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                         className={`w-20 text-center ${errors[`quantity_${index}`] ? 'border-red-500' : ''}`}
                                                         min="1"
                                                     />
-                                                    {errors[`quantity_${index}`] && (
-                                                        <p className="text-red-500 text-xs mt-1">{errors[`quantity_${index}`]}</p>
-                                                    )}
                                                     <Button
                                                         type="button"
                                                         variant="secondary"
@@ -362,21 +342,35 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                     </Button>
+                                                    {errors[`quantity_${index}`] && (
+                                                        <p className="text-red-500 text-xs mt-1">{errors[`quantity_${index}`]}</p>
+                                                    )}
                                                 </div>
+                                                
+                                                {/* Đơn giá */}
                                                 <div className="w-40">
                                                     <Input
                                                         type="number"
-                                                        value={item.totalPrice === 0 ? '' : item.totalPrice}
-                                                        onChange={(e) => updateOrderItem(index, 'totalPrice', parseFloat(e.target.value) || 0)}
-                                                        placeholder="Nhập tổng tiền"
-                                                        className={`text-right ${errors[`totalPrice_${index}`] ? 'border-red-500' : ''}`}
+                                                        value={item.unitPrice === 0 ? '' : item.unitPrice}
+                                                        onChange={(e) => updateOrderItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                        placeholder="Nhập đơn giá"
+                                                        className={`text-right ${errors[`unitPrice_${index}`] ? 'border-red-500' : ''}`}
                                                         min="0"
                                                         step="1000"
                                                     />
-                                                    {errors[`totalPrice_${index}`] && (
-                                                        <p className="text-red-500 text-xs mt-1">{errors[`totalPrice_${index}`]}</p>
+                                                    {errors[`unitPrice_${index}`] && (
+                                                        <p className="text-red-500 text-xs mt-1">{errors[`unitPrice_${index}`]}</p>
                                                     )}
                                                 </div>
+                                                
+                                                {/* Tổng tiền (tự động tính) */}
+                                                <div className="w-40">
+                                                 
+                                                    <div className="p-2 bg-gray-100 rounded border text-right font-medium">
+                                                        {item.totalPrice.toLocaleString('vi-VN')}₫
+                                                    </div>
+                                                </div>
+                                                
                                                 <Button
                                                     type="button"
                                                     variant="danger"
@@ -524,4 +518,4 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             </div>
         </Portal>
     );
-}; 
+};

@@ -41,25 +41,14 @@ export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
   async (params: OrderQuery = {}, { rejectWithValue }) => {
     try {
-      // Loại bỏ các tham số rỗng
-      const cleanParams: any = {};
-      if (params.page) cleanParams.page = params.page;
-      if (params.limit) cleanParams.limit = params.limit;
-      if (params.search && params.search.trim()) cleanParams.search = params.search.trim();
-      if (params.status && params.status.trim()) cleanParams.status = params.status.trim();
-      if (params.paymentStatus && params.paymentStatus.trim()) cleanParams.paymentStatus = params.paymentStatus.trim();
-      if (params.customerId && params.customerId.trim()) cleanParams.customerId = params.customerId.trim();
-      if (params.agentId && params.agentId.trim()) cleanParams.agentId = params.agentId.trim();
-      if (params.dateFrom && params.dateFrom.trim()) cleanParams.dateFrom = params.dateFrom.trim();
-      if (params.dateTo && params.dateTo.trim()) cleanParams.dateTo = params.dateTo.trim();
+      const cleanParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      );
       
-      console.log('📤 API Call params:', cleanParams);
       const response = await ordersApi.getOrders(cleanParams);
-      console.log('📥 API Response:', response);
       return response;
     } catch (error: any) {
-      console.error('❌ API Error:', error);
-      return rejectWithValue(error.response?.data?.message || 'Lấy danh sách đơn hàng thất bại');
+      return rejectWithValue(error.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách đơn hàng');
     }
   }
 );
@@ -190,22 +179,17 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateOrder.fulfilled, (state, action) => {
-        console.log('🔄 Update Order Fulfilled:', action.payload);
         state.isLoading = false;
         const index = state.orders.findIndex(o => o._id === action.payload._id);
-        console.log('📍 Found order at index:', index);
         if (index !== -1) {
-          console.log('📝 Updating order in state...');
           state.orders[index] = action.payload;
         }
         // Update currentOrder nếu đang xem order này
         if (state.currentOrder && state.currentOrder._id === action.payload._id) {
-          console.log('👁️ Updating currentOrder in state...');
           state.currentOrder = action.payload;
         }
         // Update timestamp to force re-render
         state.lastUpdated = Date.now();
-        console.log('✅ Orders state after update:', state.orders);
       })
       .addCase(updateOrder.rejected, (state, action) => {
         state.isLoading = false;

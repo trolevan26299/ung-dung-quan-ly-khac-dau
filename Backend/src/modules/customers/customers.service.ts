@@ -5,6 +5,7 @@ import { Customer, CustomerDocument } from '../../schemas/customer.schema';
 import { Agent, AgentDocument } from '../../schemas/agent.schema';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { PaginationQuery, PaginationResult } from '../../types/common.types';
+import { TimezoneUtil } from '../../utils/timezone.util';
 
 @Injectable()
 export class CustomersService {
@@ -267,36 +268,35 @@ export class CustomersService {
     ]);
   }
 
-  // Thống kê khách hàng với % thay đổi
+  // Thống kê khách hàng
   async getCustomerStats(): Promise<any> {
-    const now = new Date();
-    
+    // Lấy tổng số khách hàng
+    const totalCustomers = await this.customerModel.countDocuments();
+
+    // Thống kê theo tháng hiện tại và tháng trước với múi giờ Việt Nam
+    const now = TimezoneUtil.nowInVietnam();
+    const vietnamDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+
     // Tháng hiện tại
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEnd = now;
-    
+    const currentMonthStart = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth(), 1);
+    const currentMonthFilter = TimezoneUtil.createDateRangeFilter(
+      currentMonthStart.toISOString(),
+      now.toISOString()
+    );
+
     // Tháng trước
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    const previousMonthStart = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(vietnamDate.getFullYear(), vietnamDate.getMonth(), 0);
+    const previousMonthFilter = TimezoneUtil.createDateRangeFilter(
+      previousMonthStart.toISOString(),
+      previousMonthEnd.toISOString()
+    );
 
     // Đếm khách hàng tháng hiện tại
-    const currentMonthCustomers = await this.customerModel.countDocuments({
-      createdAt: {
-        $gte: currentMonthStart,
-        $lte: currentMonthEnd
-      }
-    });
+    const currentMonthCustomers = await this.customerModel.countDocuments(currentMonthFilter);
 
     // Đếm khách hàng tháng trước
-    const previousMonthCustomers = await this.customerModel.countDocuments({
-      createdAt: {
-        $gte: previousMonthStart,
-        $lte: previousMonthEnd
-      }
-    });
-
-    // Tổng khách hàng
-    const totalCustomers = await this.customerModel.countDocuments();
+    const previousMonthCustomers = await this.customerModel.countDocuments(previousMonthFilter);
 
     // Tính % thay đổi
     const calculatePercentageChange = (current: number, previous: number): number => {

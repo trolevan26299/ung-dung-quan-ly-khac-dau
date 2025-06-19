@@ -37,7 +37,6 @@ export const Products: React.FC = () => {
 
     useEffect(() => {
         if (error) {
-            console.error('Products error:', error);
             setTimeout(() => dispatch(clearError()), 5000);
         }
     }, [error, dispatch]);
@@ -45,17 +44,15 @@ export const Products: React.FC = () => {
     const handleCreateProduct = async (data: CreateProductRequest) => {
         try {
             await dispatch(createProduct(data)).unwrap();
-            // Refresh danh sách sau khi tạo thành công
-            await dispatch(fetchProducts({ 
+            handleCloseForm();
+            // Refresh current page
+            dispatch(fetchProducts({ 
                 page: pagination.page, 
                 limit: pagination.limit, 
                 search: searchTerm 
             }));
-            setIsFormOpen(false);
-            setEditingProduct(null);
             success('Tạo thành công', `Sản phẩm "${data.name}" đã được tạo`);
         } catch (error: any) {
-            console.error('Create product error:', error);
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo sản phẩm');
         }
     };
@@ -65,11 +62,15 @@ export const Products: React.FC = () => {
 
         try {
             await dispatch(updateProduct({ id: editingProduct._id, data })).unwrap();
-            setIsFormOpen(false);
-            setEditingProduct(null);
+            handleCloseForm();
+            // Refresh current page
+            dispatch(fetchProducts({ 
+                page: pagination.page, 
+                limit: pagination.limit, 
+                search: searchTerm 
+            }));
             success('Cập nhật thành công', `Sản phẩm "${data.name}" đã được cập nhật`);
         } catch (error: any) {
-            console.error('Update product error:', error);
             showError('Cập nhật thất bại', error.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
         }
     };
@@ -88,15 +89,14 @@ export const Products: React.FC = () => {
 
         try {
             await dispatch(deleteProduct(id)).unwrap();
-            // Refresh danh sách sau khi xóa thành công
-            await dispatch(fetchProducts({ 
+            // Refresh current page
+            dispatch(fetchProducts({ 
                 page: pagination.page, 
                 limit: pagination.limit, 
                 search: searchTerm 
             }));
             success('Đã xóa', `Sản phẩm "${productToDelete?.name || ''}" đã được xóa`);
         } catch (error: any) {
-            console.error('Error deleting product:', error);
             showError('Lỗi', error.message || 'Có lỗi xảy ra khi xóa sản phẩm');
         }
     };

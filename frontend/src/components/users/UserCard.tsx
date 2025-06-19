@@ -1,8 +1,9 @@
 import React from 'react';
-import { User, Settings, Eye, Edit, Trash2, Shield, UserX } from 'lucide-react';
+import { User, Eye, Edit, Trash2, Shield, UserX } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import type { User as UserType } from '../../types';
+import { formatTableDate } from '../../lib/utils';
 
 interface UserCardProps {
     user: UserType;
@@ -108,7 +109,7 @@ export const UserCard: React.FC<UserCardProps> = ({
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">Tạo lúc:</span>
                             <span className="text-sm text-gray-700">
-                                {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                                {formatTableDate(user.createdAt)}
                             </span>
                         </div>
                     )}

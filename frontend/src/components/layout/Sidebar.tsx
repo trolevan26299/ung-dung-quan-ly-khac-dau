@@ -43,8 +43,6 @@ export const Sidebar: React.FC = () => {
     const { user: currentAuthUser } = useSelector((state: RootState) => state.auth);
     const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
     
-    console.log('Sidebar render - current location:', location.pathname);
-    
     // Kiểm tra quyền admin với fallback
     const localStorageUser = JSON.parse(localStorage.getItem('user') || 'null');
     const isAdmin = currentAuthUser?.role === 'admin' || localStorageUser?.role === 'admin';
@@ -86,18 +84,15 @@ export const Sidebar: React.FC = () => {
                             <li key={item.path}>
                                 <Link
                                     to={item.path}
-                                    onClick={() => {
-                                        console.log('Navigation clicked:', item.path, item.label);
-                                    }}
                                     className={cn(
-                                        "flex items-center px-4 py-3 rounded-lg transition-colors duration-200",
+                                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-gray-100",
                                         isActive
-                                            ? "bg-primary-50 text-primary-600 border-r-2 border-primary-600"
-                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                            ? "bg-primary-50 text-primary-600 border border-primary-200"
+                                            : "text-gray-700 hover:text-gray-900"
                                     )}
                                 >
-                                    <Icon className="w-5 h-5 mr-3" />
-                                    <span className="font-medium">{item.label}</span>
+                                    <Icon className="h-4 w-4" />
+                                    {item.label}
                                 </Link>
                             </li>
                         );
@@ -136,18 +131,15 @@ export const Sidebar: React.FC = () => {
                                         <li key={item.path}>
                                             <Link
                                                 to={item.path}
-                                                onClick={() => {
-                                                    console.log('Settings navigation clicked:', item.path, item.label);
-                                                }}
                                                 className={cn(
-                                                    "flex items-center px-4 py-2 rounded-lg transition-colors duration-200 text-sm",
+                                                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-gray-100",
                                                     isActive
-                                                        ? "bg-primary-100 text-primary-700 border-r-2 border-primary-600"
-                                                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                                        ? "bg-primary-50 text-primary-600 border border-primary-200"
+                                                        : "text-gray-700 hover:text-gray-900"
                                                 )}
                                             >
-                                                <Icon className="w-4 h-4 mr-3" />
-                                                <span className="font-medium">{item.label}</span>
+                                                <Icon className="h-4 w-4" />
+                                                {item.label}
                                             </Link>
                                         </li>
                                     );

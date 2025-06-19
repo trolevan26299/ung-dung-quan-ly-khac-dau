@@ -3,6 +3,7 @@ import { Button } from '../ui/Button';
 import { X, ArrowUpCircle, ArrowDownCircle, RefreshCw } from 'lucide-react';
 import { Portal } from '../ui/Portal';
 import { StockTransaction } from '../../types';
+import { formatTableDateTime } from '../../lib/utils';
 
 interface StockTransactionDetailProps {
     transaction: StockTransaction | null;
@@ -158,7 +159,7 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                     Ngày thực hiện
                                 </label>
                                 <p className="text-gray-900">
-                                    {new Date(transaction.createdAt).toLocaleString('vi-VN')}
+                                    {formatTableDateTime(transaction.createdAt)}
                                 </p>
                             </div>
 

@@ -42,7 +42,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     // Fetch agents when form opens
     useEffect(() => {
         if (isOpen) {
-            dispatch(fetchAgents({ page: 1, limit: 100 })); // Get all agents
+            dispatch(fetchAgents({ page: 1, limit: 1000 })); // Lấy tối đa 1000 đại lý để hiển thị tất cả
         }
     }, [isOpen, dispatch]);
 
@@ -129,12 +129,9 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Form data before submit:', formData);
+        
         if (validateForm()) {
-            console.log('Form validation passed, submitting:', formData);
             onSubmit(formData);
-        } else {
-            console.log('Form validation failed, errors:', errors);
         }
     };
 

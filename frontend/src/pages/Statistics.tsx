@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { statisticsApi } from '../services/api';
 import type { Statistics as StatisticsType } from '../types';
+import { formatTableDate } from '../lib/utils';
 
 // Statistics Components
 import { StatisticsCards } from '../components/statistics/StatisticsCards';
@@ -26,13 +27,19 @@ export const Statistics: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     // Date range state - mặc định là "tháng này"
-    const [startDate, setStartDate] = useState(() => {
-        const date = new Date();
+    const getStartOfCurrentMonth = (): string => {
+        const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+        const date = new Date(vietnamNow);
         return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-    });
-    const [endDate, setEndDate] = useState(() => {
-        return new Date().toISOString().split('T')[0];
-    });
+    };
+
+    const getCurrentDate = (): string => {
+        const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+        return new Date(vietnamNow).toISOString().split('T')[0];
+    };
+
+    const [startDate, setStartDate] = useState(() => getStartOfCurrentMonth());
+    const [endDate, setEndDate] = useState(() => getCurrentDate());
 
     const fetchStatistics = async () => {
         setIsLoading(true);
@@ -101,7 +108,7 @@ export const Statistics: React.FC = () => {
                             />
                         </div>
                         <div className="text-sm text-gray-500">
-                            Dữ liệu từ {new Date(startDate).toLocaleDateString('vi-VN')} đến {new Date(endDate).toLocaleDateString('vi-VN')}
+                            Dữ liệu từ {formatTableDate(startDate)} đến {formatTableDate(endDate)}
                         </div>
                     </div>
                 </CardContent>

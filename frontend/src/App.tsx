@@ -21,10 +21,7 @@ import { Categories } from './pages/Categories';
 const AppRouter: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  console.log('AppRouter render - isAuthenticated:', isAuthenticated);
-
   if (!isAuthenticated) {
-    console.log('User not authenticated, redirecting to login');
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -33,7 +30,6 @@ const AppRouter: React.FC = () => {
     );
   }
 
-  console.log('User authenticated, loading main app');
   return (
     <Layout>
       <Routes>

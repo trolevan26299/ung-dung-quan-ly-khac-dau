@@ -6,9 +6,6 @@ import {
     TrendingUp,
     TrendingDown,
     AlertTriangle,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    RefreshCw,
     Package,
     Grid,
     List
@@ -20,15 +17,13 @@ import { stockApi, productsApi } from '../services/api';
 import type { StockTransaction, CreateStockTransactionRequest, Product } from '../types';
 import { useModal } from '../hooks/useModal';
 import { useDebounce } from '../hooks/useDebounce';
-import { Pagination } from '../components/common/Pagination';
 import { EmptyState } from '../components/common/EmptyState';
 import { StockTransactionForm } from '../components/stock/StockTransactionForm';
 import { StockTransactionDetail } from '../components/stock/StockTransactionDetail';
 import { StockTransactionCard } from '../components/stock/StockTransactionCard';
 import { StockTransactionTable } from '../components/stock/StockTransactionTable';
 import { ProductStockCard } from '../components/stock/ProductStockCard';
-import { formatCurrency} from '../lib/utils';
-import { Portal } from '../components/ui/Portal';
+import { formatCurrency } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 
 // Product Stock Table Component
@@ -166,22 +161,19 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
                         <select
                             value={pagination.limit}
                             onChange={(e) => {
-                                console.log('Dropdown onChange triggered with value:', e.target.value);
-                                console.log('onLimitChange function:', onLimitChange);
+                                const newLimit = parseInt(e.target.value);
                                 if (onLimitChange) {
-                                    onLimitChange(Number(e.target.value));
-                                } else {
-                                    console.error('onLimitChange is not defined!');
+                                    onLimitChange(newLimit);
                                 }
                             }}
-                            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            className="border rounded px-2 py-1 text-sm"
                         >
                             <option value={10}>10</option>
-                            <option value={25}>25</option>
+                            <option value={20}>20</option>
                             <option value={50}>50</option>
                             <option value={100}>100</option>
                         </select>
-                        <span className="text-sm text-gray-700">mục</span>
+                        <span className="text-sm text-gray-600">mục/trang</span>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -244,433 +236,6 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
 };
 
 type ViewMode = 'grid' | 'table';
-
-// Stock Transaction Form Modal
-interface StockFormProps {
-    transaction?: StockTransaction;
-    isOpen: boolean;
-    onClose: () => void;
-    onSubmit: (data: CreateStockTransactionRequest) => void;
-    isLoading?: boolean;
-}
-
-const StockForm: React.FC<StockFormProps> = ({
-    transaction,
-    isOpen,
-    onClose,
-    onSubmit,
-    isLoading = false
-}) => {
-    const [formData, setFormData] = useState<CreateStockTransactionRequest>({
-        product: '',
-        type: 'import',
-        quantity: 0,
-        unitPrice: 0,
-        notes: ''
-    });
-
-    const [products, setProducts] = useState<Product[]>([]);
-
-    useEffect(() => {
-        if (isOpen) {
-            loadProducts();
-        }
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (transaction) {
-            setFormData({
-                product: transaction.productId,
-                type: transaction.type,
-                quantity: transaction.quantity,
-                unitPrice: transaction.unitPrice,
-                notes: transaction.notes || ''
-            });
-        } else {
-            setFormData({
-                product: '',
-                type: 'import',
-                quantity: 0,
-                unitPrice: 0,
-                notes: ''
-            });
-        }
-    }, [transaction, isOpen]);
-
-    // Xử lý logic khi type thay đổi
-    useEffect(() => {
-        console.log('🔍 Form type changed to:', formData.type);
-        if (formData.type === 'adjustment') {
-            console.log('🔧 Setting adjustment defaults...');
-            setFormData(prev => ({
-                ...prev,
-                unitPrice: 0,
-                notes: prev.notes || 'Chỉnh sửa số lượng tồn kho khi có sai lệch'
-            }));
-        }
-    }, [formData.type]);
-
-    const loadProducts = async () => {
-        try {
-            const response = await productsApi.getProducts({ limit: 100 });
-            setProducts(response.data);
-        } catch (error) {
-            console.error('Error loading products:', error);
-        }
-    };
-
-    const handleProductChange = (productId: string) => {
-        const product = products.find(p => p._id === productId);
-        if (product) {
-            setFormData({
-                ...formData,
-                product: productId,
-                unitPrice: formData.type === 'import' ? 0 : product.currentPrice
-            });
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSubmit(formData);
-    };
-
-    if (!isOpen) return null;
-
-    // Debug log
-    console.log('📋 Form Data:', formData);
-    console.log('🎯 Is Adjustment:', formData.type === 'adjustment');
-
-    return (
-        <Portal>
-            <div 
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    width: '100vw',
-                    height: '100vh'
-                }}
-            >
-                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                    <h2 className="text-xl font-bold mb-4">
-                        {transaction ? 'Cập nhật giao dịch kho' : 'Thêm giao dịch kho'}
-                    </h2>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Sản phẩm *
-                            </label>
-                            <select
-                                value={formData.product}
-                                onChange={(e) => handleProductChange(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                required
-                            >
-                                <option value="">Chọn sản phẩm</option>
-                                {products.map(product => (
-                                    <option key={product._id} value={product._id}>
-                                        {product.name} - Tồn: {product.stockQuantity}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Loại giao dịch *
-                            </label>
-                            <select
-                                value={formData.type}
-                                onChange={(e) => {
-                                    const type = e.target.value as any;
-                                    console.log('🔄 Type changed to:', type);
-                                    
-                                    if (type === 'adjustment') {
-                                        console.log('🔧 Setting adjustment mode...');
-                                        setFormData({ 
-                                            ...formData, 
-                                            type,
-                                            unitPrice: 0,
-                                            notes: 'Chỉnh sửa số lượng tồn kho khi có sai lệch'
-                                        });
-                                    } else {
-                                        console.log('🏪 Setting normal mode...');
-                                        setFormData({ 
-                                            ...formData, 
-                                            type,
-                                            notes: formData.notes === 'Chỉnh sửa số lượng tồn kho khi có sai lệch' ? '' : formData.notes
-                                        });
-                                    }
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                required
-                            >
-                                <option value="import">Nhập kho</option>
-                                <option value="export">Xuất kho</option>
-                                <option value="adjustment">Điều chỉnh</option>
-                            </select>
-                            {formData.type === 'adjustment' && (
-                                <p className="text-xs text-blue-600 mt-1">
-                                    💡 Điều chỉnh dùng để sửa sai lệch tồn kho, không ảnh hưởng giá trung bình
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Số lượng *
-                            </label>
-                            <Input
-                                type="number"
-                                value={formData.quantity}
-                                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                                placeholder="Nhập số lượng"
-                                min="1"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Đơn giá {formData.type !== 'adjustment' && '*'}
-                                {formData.type === 'adjustment' && (
-                                    <span className="text-xs text-gray-500 ml-2">(Tự động = 0 cho điều chỉnh)</span>
-                                )}
-                            </label>
-                            <Input
-                                type="number"
-                                value={formData.unitPrice}
-                                onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
-                                placeholder={formData.type === 'adjustment' ? '0 (tự động)' : 'Nhập đơn giá'}
-                                min="0"
-                                disabled={formData.type === 'adjustment'}
-                                required={formData.type !== 'adjustment'}
-                                style={{
-                                    backgroundColor: formData.type === 'adjustment' ? '#f3f4f6' : 'white',
-                                    cursor: formData.type === 'adjustment' ? 'not-allowed' : 'text',
-                                    opacity: formData.type === 'adjustment' ? 0.6 : 1
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Ghi chú
-                            </label>
-                            <textarea
-                                value={formData.notes}
-                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                placeholder="Nhập ghi chú (tùy chọn)"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                rows={3}
-                            />
-                        </div>
-
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="text-sm">
-                                <div className="flex justify-between">
-                                    <span>
-                                        {formData.type === 'adjustment' ? 'Điều chỉnh tồn kho:' : 'Tổng giá trị:'}
-                                    </span>
-                                    <span className="font-medium">
-                                        {formData.type === 'adjustment' 
-                                            ? `${formData.quantity > 0 ? '+' : ''}${formData.quantity} sản phẩm`
-                                            : formatCurrency(formData.quantity * (formData.unitPrice || 0))
-                                        }
-                                    </span>
-                                </div>
-                                {formData.type === 'adjustment' && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Không có giá trị tài chính cho giao dịch điều chỉnh
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex space-x-3 pt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onClose}
-                                className="flex-1"
-                                disabled={isLoading}
-                            >
-                                Hủy
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="flex-1"
-                                disabled={isLoading || !formData.product || !formData.quantity || (formData.type !== 'adjustment' && !formData.unitPrice)}
-                            >
-                                {isLoading ? 'Đang xử lý...' : (transaction ? 'Cập nhật' : 'Thêm mới')}
-                            </Button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </Portal>
-    );
-};
-
-// Stock Transaction Detail Modal
-interface StockDetailProps {
-    transaction: StockTransaction | null;
-    isOpen: boolean;
-    onClose: () => void;
-}
-
-const StockDetail: React.FC<StockDetailProps> = ({ transaction, isOpen, onClose }) => {
-    if (!isOpen || !transaction) return null;
-
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'import': return <ArrowUpCircle className="w-4 h-4 text-green-600" />;
-            case 'export': return <ArrowDownCircle className="w-4 h-4 text-red-600" />;
-            case 'adjustment': return <RefreshCw className="w-4 h-4 text-blue-600" />;
-            default: return <Package2 className="w-4 h-4" />;
-        }
-    };
-
-    const getTypeText = (type: string) => {
-        switch (type) {
-            case 'import': return 'Nhập kho';
-            case 'export': return 'Xuất kho';
-            case 'adjustment': return 'Điều chỉnh';
-            default: return type;
-        }
-    };
-
-    const getTypeColor = (type: string) => {
-        switch (type) {
-            case 'import': return 'text-green-600 bg-green-100';
-            case 'export': return 'text-red-600 bg-red-100';
-            case 'adjustment': return 'text-blue-600 bg-blue-100';
-            default: return 'text-gray-600 bg-gray-100';
-        }
-    };
-
-    return (
-        <Portal>
-            <div 
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    width: '100vw',
-                    height: '100vh'
-                }}
-            >
-                <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold">Chi tiết giao dịch kho</h2>
-                        <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-2">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(transaction.type)}`}>
-                                {getTypeIcon(transaction.type)}
-                                <span className="ml-1">{getTypeText(transaction.type)}</span>
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Sản phẩm</label>
-                                <p className="font-medium">{transaction.productName || 'N/A'}</p>
-                                <p className="text-sm text-gray-600">Mã: {transaction.productCode || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Số lượng</label>
-                                <p className="font-medium text-lg">{transaction.quantity}</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Đơn giá</label>
-                                <p className="font-medium">
-                                    {(transaction.transactionType === 'import' || transaction.type === 'import')
-                                        ? formatCurrency(transaction.unitPrice)
-                                        : '-'
-                                    }
-                                </p>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Tổng giá trị</label>
-                                <p className="font-bold text-green-600">
-                                    {(transaction.transactionType === 'import' || transaction.type === 'import')
-                                        ? formatCurrency((transaction.quantity || 0) * (transaction.unitPrice || 0))
-                                        : '-'
-                                    }
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Tồn kho trước</label>
-                                <p className="font-medium">-</p>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Tồn kho sau</label>
-                                <p className="font-medium">-</p>
-                            </div>
-                        </div>
-
-                        {transaction.notes && (
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Ghi chú</label>
-                                <p className="font-medium">{transaction.notes}</p>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Người thực hiện</label>
-                                <div className="mt-1">
-                                    <p className="font-medium text-gray-900">
-                                        {typeof transaction.userId === 'object' 
-                                            ? transaction.userId.fullName 
-                                            : transaction.userName || 'N/A'}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        @{typeof transaction.userId === 'object' 
-                                            ? transaction.userId.username 
-                                            : `ID: ${transaction.userId}`}
-                                    </p>
-                                    {typeof transaction.userId === 'object' && transaction.userId.role && (
-                                        <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-                                            transaction.userId.role === 'admin' 
-                                                ? 'bg-purple-100 text-purple-800' 
-                                                : 'bg-blue-100 text-blue-800'
-                                        }`}>
-                                            {transaction.userId.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-gray-500">Ngày thực hiện</label>
-                                <p className="font-medium text-gray-900 mt-1">
-                                    {new Date(transaction.createdAt).toLocaleString('vi-VN')}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </Portal>
-    );
-};
 
 // Enhanced Pagination Component với limit dropdown cho grid mode
 interface EnhancedPaginationProps {
@@ -809,7 +374,6 @@ export const Stock: React.FC = () => {
         isOpen: isFormOpen,
         selectedItem: selectedTransaction,
         openCreateModal,
-        openEditModal,
         closeModal: closeFormModal
     } = useModal<StockTransaction>();
 
@@ -841,10 +405,6 @@ export const Stock: React.FC = () => {
         fetchProducts();
     }, [productPagination.currentPage, productPagination.limit, debouncedSearchTerm, activeTab]);
 
-    // Debug useEffect để log khi productPagination thay đổi
-    useEffect(() => {
-        console.log('productPagination state changed to:', productPagination);
-    }, [productPagination]);
 
     const fetchTransactions = async () => {
         try {
@@ -853,11 +413,9 @@ export const Stock: React.FC = () => {
             const fetchParams = {
                 page: transactionPagination.currentPage,
                 limit: transactionPagination.limit,
-                ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
-                ...(typeFilter && { type: typeFilter })
+                ...(typeFilter && { transactionType: typeFilter }),
+                ...(debouncedSearchTerm && { search: debouncedSearchTerm })
             };
-            console.log('fetchTransactions called with params:', fetchParams);
-            console.log('transactionPagination state:', transactionPagination);
             const response = await stockApi.getStockTransactions(fetchParams);
             setTransactions(response.data);
             setTransactionPagination(prev => ({
@@ -866,7 +424,6 @@ export const Stock: React.FC = () => {
                 totalPages: response.totalPages || Math.ceil(response.total / prev.limit)
             }));
         } catch (error) {
-            console.error('Error fetching transactions:', error);
             setError('Có lỗi xảy ra khi tải dữ liệu');
         } finally {
             setIsLoading(false);
@@ -882,8 +439,6 @@ export const Stock: React.FC = () => {
                 limit: productPagination.limit,
                 ...(debouncedSearchTerm && { search: debouncedSearchTerm })
             };
-            console.log('fetchProducts called with params:', fetchParams);
-            console.log('productPagination state:', productPagination);
             const response = await productsApi.getProducts(fetchParams);
             setProducts(response.data);
             setProductPagination(prev => ({
@@ -892,7 +447,6 @@ export const Stock: React.FC = () => {
                 totalPages: response.totalPages || Math.ceil(response.total / prev.limit)
             }));
         } catch (error) {
-            console.error('Error fetching products:', error);
             setError('Có lỗi xảy ra khi tải dữ liệu');
         } finally {
             setIsLoading(false);
@@ -901,31 +455,21 @@ export const Stock: React.FC = () => {
 
     const fetchStats = async () => {
         try {
-            // Lấy tất cả transactions gần đây để tính thống kê hôm nay
             const todayResponse = await stockApi.getStockTransactions({
-                limit: 1000 // lấy nhiều để đảm bảo có đủ
+                limit: 1000
             });
             
-            console.log('All transactions:', todayResponse.data);
-            
-            // Lọc transactions hôm nay
-            const today = new Date().toDateString();
-            console.log('Today string:', today);
+            const today = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+            const todayString = new Date(today).toDateString();
             
             const todayTransactions = todayResponse.data.filter(t => {
                 const transactionDate = new Date(t.createdAt).toDateString();
-                console.log('Transaction date:', transactionDate, 'Type:', t.transactionType);
-                return transactionDate === today;
+                return transactionDate === todayString;
             });
-            
-            console.log('Today transactions:', todayTransactions);
             
             const todayImports = todayTransactions.filter(t => t.transactionType === 'import').length;
             const todayExports = todayTransactions.filter(t => t.transactionType === 'export').length;
             
-            console.log('Today imports:', todayImports, 'Today exports:', todayExports);
-            
-            // Lấy tất cả products để tính lowStock
             const allProductsResponse = await productsApi.getProducts({ limit: 1000 });
             const allProducts = allProductsResponse.data;
             const lowStockProducts = allProducts.filter(product => 
@@ -939,7 +483,7 @@ export const Stock: React.FC = () => {
                 lowStockProducts
             });
         } catch (error) {
-            console.error('Error fetching stats:', error);
+            // Silently handle stats error
         }
     };
 
@@ -951,14 +495,12 @@ export const Stock: React.FC = () => {
             if (activeTab === 'transactions') {
                 fetchTransactions();
             }
-            fetchProducts(); // Always refresh products to update stock
-            fetchStats(); // Refresh stats after transaction
-            // Show success toast
+            fetchProducts();
+            fetchStats();
             const typeText = data.type === 'import' ? 'Nhập kho' : 
                             data.type === 'export' ? 'Xuất kho' : 'Điều chỉnh';
             success(`${typeText} thành công!`);
         } catch (error) {
-            console.error('Error creating transaction:', error);
             setError('Có lỗi xảy ra khi tạo giao dịch');
             showError('Có lỗi xảy ra khi tạo giao dịch');
         } finally {
@@ -1031,30 +573,24 @@ export const Stock: React.FC = () => {
 
     // Product pagination handlers with limit change
     const handleProductLimitChange = (limit: number) => {
-        console.log('handleProductLimitChange called with limit:', limit);
-        console.log('Current productPagination BEFORE update:', productPagination);
         setProductPagination(prev => {
             const newState = { 
                 ...prev, 
                 limit, 
                 currentPage: 1 
             };
-            console.log('NEW productPagination state:', newState);
             return newState;
         });
     };
 
     // Transaction pagination handlers with limit change
     const handleTransactionLimitChange = (limit: number) => {
-        console.log('handleTransactionLimitChange called with limit:', limit);
-        console.log('Current transactionPagination BEFORE update:', transactionPagination);
         setTransactionPagination(prev => {
             const newState = { 
                 ...prev, 
                 limit, 
                 currentPage: 1 
             };
-            console.log('NEW transactionPagination state:', newState);
             return newState;
         });
     };

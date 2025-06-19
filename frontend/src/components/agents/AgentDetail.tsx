@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MapPin, Users, FileText, X } from 'lucide-react';
+import { Phone, MapPin, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Portal } from '../ui/Portal';
 import { formatCurrency, formatDate, safeString, safeNumber } from '../../lib/utils';
