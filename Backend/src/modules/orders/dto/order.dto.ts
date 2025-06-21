@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum, IsArray, IsMongoId, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { PaymentStatus, OrderStatus } from '../../../types/common.types';
 
 export class OrderItemDto {
@@ -22,11 +22,13 @@ export class OrderItemDto {
 export class CreateOrderDto {
   @ApiProperty({ description: 'ID khách hàng', required: false })
   @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   @IsMongoId()
   customerId?: string;
 
   @ApiProperty({ description: 'ID đại lý', required: false })
   @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   @IsMongoId()
   agentId?: string;
 
@@ -39,6 +41,11 @@ export class CreateOrderDto {
   @ApiProperty({ description: 'Trạng thái thanh toán', enum: PaymentStatus })
   @IsEnum(PaymentStatus)
   paymentStatus: PaymentStatus;
+
+  @ApiProperty({ description: 'Phương thức thanh toán', enum: ['company_account', 'personal_account', 'cash'], required: false })
+  @IsOptional()
+  @IsEnum(['company_account', 'personal_account', 'cash'])
+  paymentMethod?: string;
 
   @ApiProperty({ description: 'VAT', required: false })
   @IsOptional()
@@ -85,6 +92,11 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsEnum(PaymentStatus)
   paymentStatus?: PaymentStatus;
+
+  @ApiProperty({ description: 'Phương thức thanh toán', enum: ['company_account', 'personal_account', 'cash'], required: false })
+  @IsOptional()
+  @IsEnum(['company_account', 'personal_account', 'cash'])
+  paymentMethod?: string;
 
   @ApiProperty({ description: 'VAT', required: false })
   @IsOptional()
@@ -139,11 +151,13 @@ export class OrderQueryDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   @IsMongoId()
   customerId?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Transform(({ value }) => value === '' ? undefined : value)
   @IsMongoId()
   agentId?: string;
 

@@ -59,6 +59,9 @@ export class Order {
   @Prop({ required: true, enum: Object.values(PAYMENT_STATUS), default: PAYMENT_STATUS.PENDING })
   paymentStatus: string;
 
+  @Prop({ enum: ['company_account', 'personal_account', 'cash'], default: 'personal_account' })
+  paymentMethod?: string;
+
   @Prop({ min: 0, default: 0 })
   paidAmount: number;
 

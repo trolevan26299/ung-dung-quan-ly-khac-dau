@@ -41,10 +41,49 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto, employeeId: string, employeeName: string): Promise<Order> {
-    // Nếu không có customerId, tạo customer mặc định cho bán lẻ
+    // Xử lý customer
     let customerId = createOrderDto.customerId;
-    if (!customerId) {
-      // Tìm customer "Khách lẻ" đã có
+    
+    if (!customerId && createOrderDto.customerName?.trim()) {
+      // Tạo customer mới từ thông tin nhập vào
+      const newCustomerData: any = {
+        name: createOrderDto.customerName.trim(),
+        address: '', // Để trống, có thể cập nhật sau
+        agentId: createOrderDto.agentId || null,
+        agentName: createOrderDto.agentName || ''
+      };
+
+      // Chỉ thêm phone nếu có giá trị
+      if (createOrderDto.customerPhone?.trim()) {
+        newCustomerData.phone = createOrderDto.customerPhone.trim();
+      }
+
+      // Nếu có agentId, lấy tên agent
+      if (createOrderDto.agentId) {
+        const agent = await this.agentModel.findById(createOrderDto.agentId);
+        if (agent) {
+          newCustomerData.agentId = agent._id;
+          newCustomerData.agentName = agent.name;
+        }
+      } else {
+        // Tìm hoặc tạo agent mặc định
+        let defaultAgent = await this.agentModel.findOne({ name: 'Bán lẻ' });
+        if (!defaultAgent) {
+          defaultAgent = await this.agentModel.create({
+            name: 'Bán lẻ',
+            phone: '0000000000',
+            address: 'Cửa hàng',
+            notes: 'Agent mặc định cho bán lẻ'
+          });
+        }
+        newCustomerData.agentId = defaultAgent._id;
+        newCustomerData.agentName = defaultAgent.name;
+      }
+
+      const newCustomer = await this.customerModel.create(newCustomerData);
+      customerId = newCustomer._id.toString();
+    } else if (!customerId) {
+      // Nếu không có customerId và không có customerName, tạo customer mặc định cho bán lẻ
       let defaultCustomer = await this.customerModel.findOne({ name: 'Khách lẻ' });
       
       if (!defaultCustomer) {
@@ -138,6 +177,7 @@ export class OrdersService {
       shippingFee,
       totalAmount,
       paymentStatus: createOrderDto.paymentStatus,
+      paymentMethod: createOrderDto.paymentMethod || 'personal_account',
       notes: createOrderDto.notes,
       createdBy: employeeId,
       status: OrderStatus.ACTIVE,
