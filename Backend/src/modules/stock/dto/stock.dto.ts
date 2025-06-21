@@ -24,6 +24,13 @@ export class CreateStockTransactionDto {
   @Min(0)
   unitPrice?: number;
 
+  @ApiProperty({ description: 'VAT (%)', required: false, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  vat?: number;
+
   @ApiProperty({ description: 'Lý do giao dịch', required: false })
   @IsOptional()
   @IsString()
@@ -52,6 +59,13 @@ export class ImportStockDto {
   @IsNumber()
   @Min(0)
   unitPrice: number;
+
+  @ApiProperty({ description: 'VAT (%)', required: false, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  vat?: number;
 
   @ApiProperty({ description: 'Lý do nhập hàng', required: false })
   @IsOptional()

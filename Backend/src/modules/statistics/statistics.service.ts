@@ -85,14 +85,140 @@ export class StatisticsService {
       completedRevenue: 0
     };
 
-    // Tính lợi nhuận ước tính (30% doanh thu hoàn thành)
-    const totalProfit = result.completedRevenue * 0.3;
+    // Tính lợi nhuận thực tế dựa trên giá nhập - sử dụng logic tương tự getRevenueByPeriod
+    const profitStats = await this.orderModel.aggregate([
+      { $match: filter },
+      { $unwind: '$items' },
+      {
+        $addFields: {
+          'items.productObjectId': {
+            $cond: {
+              if: { $type: '$items.productId' },
+              then: {
+                $cond: {
+                  if: { $eq: [{ $type: '$items.productId' }, 'objectId'] },
+                  then: '$items.productId',
+                  else: { $toObjectId: '$items.productId' }
+                }
+              },
+              else: null
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.productObjectId',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: null,
+          totalCost: {
+            $sum: {
+              $multiply: [
+                '$items.quantity',
+                { $ifNull: ['$product.avgImportPrice', 0] }
+              ]
+            }
+          },
+          totalSalesValue: {
+            $sum: {
+              $multiply: ['$items.quantity', '$items.unitPrice']
+            }
+          },
+          // Debug: count products found
+          productsFound: {
+            $sum: {
+              $cond: [{ $ne: ['$product', null] }, 1, 0]
+            }
+          },
+          totalItems: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const profitResult = profitStats[0] || {
+      totalCost: 0,
+      totalSalesValue: 0,
+      productsFound: 0,
+      totalItems: 0
+    };
+
+    console.log('🔍 Profit Debug Enhanced:', {
+      filter,
+      profitStatsLength: profitStats.length,
+      profitStats,
+      profitResult,
+      totalCost: profitResult.totalCost,
+      totalSalesValue: profitResult.totalSalesValue,
+      productsFound: profitResult.productsFound,
+      totalItems: profitResult.totalItems
+    });
+
+    // Debug: Kiểm tra có orders nào match filter không
+    const ordersCount = await this.orderModel.countDocuments(filter);
+    console.log('📊 Orders matching filter:', ordersCount);
+
+    // Debug: Kiểm tra orders có items không và có productId hợp lệ không
+    const ordersWithItems = await this.orderModel.find(filter).select('items').limit(2);
+    console.log('📦 Sample orders with items:', JSON.stringify(ordersWithItems, null, 2));
+
+    // Debug: Kiểm tra aggregation từng bước
+    const stepByStep = await this.orderModel.aggregate([
+      { $match: filter },
+      { $unwind: '$items' },
+      { $limit: 3 },
+      {
+        $addFields: {
+          'items.productObjectId': {
+            $cond: {
+              if: { $type: '$items.productId' },
+              then: {
+                $cond: {
+                  if: { $eq: [{ $type: '$items.productId' }, 'objectId'] },
+                  then: '$items.productId',
+                  else: { $toObjectId: '$items.productId' }
+                }
+              },
+              else: null
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.productObjectId', 
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      {
+        $project: {
+          'items.productId': 1,
+          'items.productObjectId': 1,
+          'items.quantity': 1,
+          'items.unitPrice': 1,
+          'product.avgImportPrice': 1,
+          'product.name': 1,
+          createdAt: 1
+        }
+      }
+    ]);
+    console.log('🔍 Step by step debug:', JSON.stringify(stepByStep, null, 2));
+
+    const totalProfit = profitResult.totalSalesValue - profitResult.totalCost;
 
     return {
       totalOrders: result.totalOrders,
       totalRevenue: result.totalRevenue, // Tổng tất cả đơn hàng
       totalDebt: result.totalDebt,
-      totalProfit // Lợi nhuận chỉ từ đơn hoàn thành
+      totalProfit: Math.max(0, totalProfit) // Lợi nhuận thực tế, không âm
     };
   }
 
@@ -241,7 +367,9 @@ export class StatisticsService {
         break;
     }
 
-    return this.orderModel.aggregate([
+    // Tối ưu: Sử dụng aggregation để tính profit luôn thay vì loop
+    // Lấy doanh thu theo tháng
+    const revenueData = await this.orderModel.aggregate([
       { $match: matchCondition },
       {
         $group: {
@@ -249,7 +377,6 @@ export class StatisticsService {
           totalRevenue: { $sum: '$totalAmount' },
           totalOrders: { $sum: 1 },
           avgOrderValue: { $avg: '$totalAmount' },
-          // Thêm phân tích theo trạng thái payment
           completedRevenue: {
             $sum: {
               $cond: [{ $eq: ['$paymentStatus', PaymentStatus.COMPLETED] }, '$totalAmount', 0]
@@ -264,6 +391,72 @@ export class StatisticsService {
       },
       { $sort: { '_id': 1 } }
     ]);
+
+    // Tính lợi nhuận riêng cho từng tháng
+    const profitData = await this.orderModel.aggregate([
+      { $match: matchCondition },
+      { $unwind: '$items' },
+      {
+        $addFields: {
+          'items.productObjectId': {
+            $cond: {
+              if: { $type: '$items.productId' },
+              then: {
+                $cond: {
+                  if: { $eq: [{ $type: '$items.productId' }, 'objectId'] },
+                  then: '$items.productId',
+                  else: { $toObjectId: '$items.productId' }
+                }
+              },
+              else: null
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.productObjectId',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: groupBy,
+          totalCost: {
+            $sum: {
+              $multiply: [
+                '$items.quantity',
+                { $ifNull: ['$product.avgImportPrice', 0] }
+              ]
+            }
+          },
+          totalSalesValue: {
+            $sum: {
+              $multiply: ['$items.quantity', '$items.unitPrice']
+            }
+          }
+        }
+      }
+    ]);
+
+    // Kết hợp doanh thu và lợi nhuận
+    const result = revenueData.map(monthRevenue => {
+      const monthProfit = profitData.find(p => p._id === monthRevenue._id);
+      const profit = monthProfit 
+        ? Math.max(0, monthProfit.totalSalesValue - monthProfit.totalCost)
+        : 0;
+
+      return {
+        ...monthRevenue,
+        profit
+      };
+    });
+
+    console.log('📊 Revenue by period result:', result);
+    return result;
   }
 
   // Top khách hàng
@@ -414,7 +607,7 @@ export class StatisticsService {
     const vietnamDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
 
     if (period.startDate) {
-      startDate = period.startDate;
+      startDate = TimezoneUtil.startOfDayVietnam(period.startDate);
     } else {
       switch (period.period) {
         case 'day':
@@ -442,7 +635,9 @@ export class StatisticsService {
       }
     }
 
-    const endDate = period.endDate || TimezoneUtil.endOfDayVietnam(now);
+    const endDate = period.endDate 
+      ? TimezoneUtil.endOfDayVietnam(period.endDate)
+      : TimezoneUtil.endOfDayVietnam(now);
 
     const filter = {
       createdAt: {
@@ -538,12 +733,11 @@ export class StatisticsService {
     }
 
     // Fill data thực từ rawData nếu có
-    // Revenue bao gồm tất cả đơn hàng (đã thanh toán + công nợ)
     if (rawData && rawData.length > 0) {
       rawData.forEach(item => {
         if (item._id && item._id >= 1 && item._id <= 12) {
           const revenue = item.totalRevenue || 0; // Tổng doanh thu bao gồm cả công nợ
-          const profit = (item.completedRevenue || 0) * 0.3; // Lợi nhuận chỉ từ doanh thu đã thu được
+          const profit = item.profit || 0; // Lợi nhuận thực tế đã tính
           monthsMap.set(item._id, {
             month: `Tháng ${item._id}`,
             revenue,

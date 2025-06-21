@@ -76,14 +76,22 @@ export class StockService {
     // Chuẩn bị update data
     const updateData: any = { stockQuantity: stockAfter };
 
-    // Cập nhật giá nhập trung bình cho giao dịch nhập kho
-    if (createStockTransactionDto.type === TransactionType.IMPORT && createStockTransactionDto.unitPrice !== undefined && createStockTransactionDto.unitPrice !== null) {
+    // Tính giá có VAT cho nhập kho
+    let finalUnitPrice = createStockTransactionDto.unitPrice || 0;
+    let totalImportValue = 0;
+    
+    if (createStockTransactionDto.type === TransactionType.IMPORT && finalUnitPrice > 0) {
+      const vatRate = createStockTransactionDto.vat || 0;
+      const vatAmount = finalUnitPrice * (vatRate / 100);
+      finalUnitPrice = finalUnitPrice + vatAmount; // Giá đã bao gồm VAT
+      
+      // Cập nhật giá nhập trung bình
       const currentAvgPrice = product.avgImportPrice || 0;
       const totalCurrentValue = stockBefore * currentAvgPrice;
-      const newImportValue = Math.abs(quantity) * createStockTransactionDto.unitPrice;
+      totalImportValue = Math.abs(quantity) * finalUnitPrice;
       const newAvgImportPrice = stockBefore === 0 ? 
-        createStockTransactionDto.unitPrice : 
-        (totalCurrentValue + newImportValue) / stockAfter;
+        finalUnitPrice : 
+        (totalCurrentValue + totalImportValue) / stockAfter;
       
       updateData.avgImportPrice = newAvgImportPrice;
     }
@@ -101,14 +109,15 @@ export class StockService {
       productName: product.name,
       transactionType: createStockTransactionDto.type,
       quantity,
-      unitPrice: createStockTransactionDto.type === TransactionType.IMPORT ? (createStockTransactionDto.unitPrice || 0) : 0,
+      unitPrice: createStockTransactionDto.type === TransactionType.IMPORT ? finalUnitPrice : 0,
+      vat: createStockTransactionDto.vat || 0,
       userId,
       userName,
       stockBefore,
       stockAfter,
       reason: createStockTransactionDto.reason,
       notes: createStockTransactionDto.notes,
-      totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? (Math.abs(quantity) * (createStockTransactionDto.unitPrice || 0)) : 0
+      totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? totalImportValue : 0
     });
 
     return transaction.save();
@@ -124,12 +133,17 @@ export class StockService {
     const stockBefore = product.stockQuantity;
     const stockAfter = stockBefore + importStockDto.quantity;
 
+    // Tính giá có VAT
+    const vatRate = importStockDto.vat || 0;
+    const vatAmount = importStockDto.unitPrice * (vatRate / 100);
+    const finalUnitPrice = importStockDto.unitPrice + vatAmount; // Giá đã bao gồm VAT
+
     // Cập nhật giá nhập trung bình
     const currentAvgPrice = product.avgImportPrice || 0;
     const totalCurrentValue = stockBefore * currentAvgPrice;
-    const newImportValue = importStockDto.quantity * importStockDto.unitPrice;
+    const newImportValue = importStockDto.quantity * finalUnitPrice;
     const newAvgImportPrice = stockBefore === 0 ? 
-      importStockDto.unitPrice : 
+      finalUnitPrice : 
       (totalCurrentValue + newImportValue) / stockAfter;
 
     // Cập nhật sản phẩm
@@ -145,7 +159,8 @@ export class StockService {
       productName: product.name,
       transactionType: TransactionType.IMPORT,
       quantity: importStockDto.quantity,
-      unitPrice: importStockDto.unitPrice,
+      unitPrice: finalUnitPrice, // Giá đã bao gồm VAT
+      vat: vatRate,
       totalValue: newImportValue,
       userId,
       userName,

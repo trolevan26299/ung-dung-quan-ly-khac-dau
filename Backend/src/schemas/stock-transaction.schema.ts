@@ -24,6 +24,9 @@ export class StockTransaction {
   unitPrice: number; // Giá đơn vị (cho nhập kho)
 
   @Prop({ default: 0 })
+  vat: number; // VAT (%) áp dụng cho nhập kho
+
+  @Prop({ default: 0 })
   totalValue: number; // Tổng giá trị
 
   @Prop({ type: Types.ObjectId, ref: 'Order' })
