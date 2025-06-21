@@ -16,6 +16,7 @@ interface OrderFormProps {
     customers: Customer[];
     agents: Agent[];
     products: Product[];
+    onAgentChange?: (agentId: string) => void;
 }
 
 interface OrderItem {
@@ -34,25 +35,86 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     isLoading = false,
     customers,
     agents,
-    products
+    products,
+    onAgentChange
 }) => {
     const [formData, setFormData] = useState<CreateOrderRequest>({
         customerId: '',
+        customerName: '',
+        customerPhone: '',
         agentId: '',
         items: [],
         vat: 0,
         shippingFee: 0,
         notes: '',
-        paymentStatus: 'pending'
+        paymentStatus: 'pending',
+        paymentMethod: 'personal_account'
     });
 
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [errors, setErrors] = useState<any>({});
+    const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+    const [customerSearchValue, setCustomerSearchValue] = useState('');
+
+    // Filter customers by selected agent
+    const getCustomersByAgent = (agentId: string) => {
+        if (!agentId) return customers;
+        return customers.filter(customer => customer.agentId === agentId);
+    };
+
+    // Handle agent selection
+    const handleAgentChange = (agentId: string) => {
+        setFormData({ 
+            ...formData, 
+            agentId,
+            customerId: '', // Reset customer when agent changes
+            customerName: '',
+            customerPhone: ''
+        });
+        setCustomerSearchValue('');
+        const agentCustomers = getCustomersByAgent(agentId || '');
+        setFilteredCustomers(agentCustomers);
+        if (onAgentChange) {
+            onAgentChange(agentId);
+        }
+    };
+
+    // Handle customer search and selection
+    const handleCustomerSearch = (value: string) => {
+        setCustomerSearchValue(value);
+        setFormData({ ...formData, customerName: value, customerId: '' });
+        
+        if (value.length > 0) {
+            const agentCustomers = getCustomersByAgent(formData.agentId || '');
+            const filtered = agentCustomers.filter(customer => 
+                customer.name.toLowerCase().includes(value.toLowerCase()) ||
+                (customer.phone && customer.phone.includes(value))
+            );
+            setFilteredCustomers(filtered);
+            setShowCustomerDropdown(true);
+        } else {
+            setShowCustomerDropdown(false);
+        }
+    };
+
+    const handleCustomerSelect = (customer: Customer) => {
+        setFormData({
+            ...formData,
+            customerId: customer._id,
+            customerName: customer.name,
+            customerPhone: customer.phone || ''
+        });
+        setCustomerSearchValue(customer.name);
+        setShowCustomerDropdown(false);
+    };
 
     useEffect(() => {
         if (order && isOpen) {
             setFormData({
                 customerId: order.customer?._id || '',
+                customerName: order.customer?.name || '',
+                customerPhone: order.customer?.phone || '',
                 agentId: order.agent?._id || '',
                 items: order.items.filter(item => item.product).map(item => ({
                     productId: typeof item.product === 'string' ? item.product : (item.product as any)?._id || '',
@@ -62,7 +124,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 vat: order.vatRate || 0,
                 shippingFee: order.shippingFee || 0,
                 notes: order.notes || '',
-                paymentStatus: order.paymentStatus || 'pending'
+                paymentStatus: order.paymentStatus || 'pending',
+                paymentMethod: order.paymentMethod || 'personal_account'
             });
 
             const mappedOrderItemsDisplay = order.items.filter(item => item.product).map(item => ({
@@ -74,20 +137,31 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             }));
             
             setOrderItems(mappedOrderItemsDisplay);
-        } else {
+            setCustomerSearchValue(order.customer?.name || '');
+        } else if (isOpen) {
+            // Chỉ reset form khi mở form mới, không phải khi customers thay đổi
             setFormData({
                 customerId: '',
+                customerName: '',
+                customerPhone: '',
                 agentId: '',
                 items: [],
                 vat: 10,
                 shippingFee: 0,
                 notes: '',
-                paymentStatus: 'pending'
+                paymentStatus: 'pending',
+                paymentMethod: 'personal_account'
             });
             setOrderItems([]);
+            setCustomerSearchValue('');
         }
         setErrors({});
     }, [order, isOpen]);
+
+    // Separate useEffect for customers to avoid form reset
+    useEffect(() => {
+        setFilteredCustomers(customers);
+    }, [customers]);
 
     const calculateTotals = () => {
         const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -149,8 +223,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     const validateForm = (): boolean => {
         const newErrors: any = {};
 
-        if (!formData.customerId) {
-            newErrors.customer = 'Vui lòng chọn khách hàng';
+        // Validate customer - either existing customer or new customer with name
+        if (!formData.customerId && !formData.customerName?.trim()) {
+            newErrors.customer = 'Vui lòng chọn khách hàng hoặc nhập tên khách hàng mới';
         }
 
         if (orderItems.length === 0) {
@@ -194,6 +269,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         if (validateForm()) {
             const orderData: CreateOrderRequest = {
                 ...formData,
+                // Không gửi customerId nếu là empty string
+                customerId: formData.customerId || undefined,
+                agentId: formData.agentId || undefined,
                 items: orderItems.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
@@ -233,37 +311,15 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Customer and Agent Selection */}
+                        {/* Agent and Customer Selection - Đổi vị trí */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Khách hàng *
-                                </label>
-                                <select
-                                    value={formData.customerId}
-                                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.customer ? 'border-red-500' : 'border-gray-300'
-                                        }`}
-                                >
-                                    <option value="">Chọn khách hàng</option>
-                                    {customers.map(customer => (
-                                        <option key={customer._id} value={customer._id}>
-                                            {customer.name} - {customer.phone}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.customer && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.customer}</p>
-                                )}
-                            </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Đại lý
                                 </label>
                                 <select
                                     value={formData.agentId}
-                                    onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
+                                    onChange={(e) => handleAgentChange(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 >
                                     <option value="">Không có đại lý</option>
@@ -273,6 +329,54 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div className="relative">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Khách hàng *
+                                </label>
+                                <Input
+                                    type="text"
+                                    value={customerSearchValue}
+                                    onChange={(e) => handleCustomerSearch(e.target.value)}
+                                    placeholder="Nhập tên hoặc SĐT khách hàng"
+                                    className={`${errors.customer ? 'border-red-500' : ''}`}
+                                    onFocus={() => {
+                                        if (filteredCustomers.length > 0) {
+                                            setShowCustomerDropdown(true);
+                                        }
+                                    }}
+                                />
+                                
+                                {/* Customer Phone Input */}
+                                <Input
+                                    type="text"
+                                    value={formData.customerPhone}
+                                    onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                                    placeholder="Số điện thoại (tùy chọn)"
+                                    className="mt-2"
+                                />
+
+                                {/* Customer Dropdown */}
+                                {showCustomerDropdown && filteredCustomers.length > 0 && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                        {filteredCustomers.map(customer => (
+                                            <button
+                                                key={customer._id}
+                                                type="button"
+                                                onClick={() => handleCustomerSelect(customer)}
+                                                className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                            >
+                                                <div className="font-medium">{customer.name}</div>
+                                                <div className="text-sm text-gray-500">{customer.phone}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {errors.customer && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.customer}</p>
+                                )}
                             </div>
                         </div>
 
@@ -387,8 +491,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                             </Card>
                         )}
 
-                        {/* VAT, Shipping and Payment Status */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* VAT, Shipping, Payment Method and Payment Status */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     VAT (%)
@@ -424,6 +528,21 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                 {errors.shippingFee && (
                                     <p className="text-red-500 text-xs mt-1">{errors.shippingFee}</p>
                                 )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Khách thanh toán
+                                </label>
+                                <select
+                                    value={formData.paymentMethod}
+                                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as any })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                >
+                                    <option value="personal_account">Tài khoản cá nhân chị Hậu</option>
+                                    <option value="company_account">Tài khoản Cty</option>
+                                    <option value="cash">Tiền mặt</option>
+                                </select>
                             </div>
 
                             <div>

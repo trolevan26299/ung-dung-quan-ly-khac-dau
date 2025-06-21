@@ -137,6 +137,7 @@ export interface Order {
   shippingFee: number;
   totalAmount: number;
   paymentStatus: 'pending' | 'completed' | 'debt';
+  paymentMethod?: 'company_account' | 'personal_account' | 'cash';
   status: 'active' | 'cancelled';
   notes?: string;
   createdBy: User;
@@ -146,6 +147,8 @@ export interface Order {
 
 export interface CreateOrderRequest {
   customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
   agentId?: string;
   items: {
     productId: string;
@@ -153,6 +156,7 @@ export interface CreateOrderRequest {
     unitPrice: number;
   }[];
   paymentStatus: 'pending' | 'completed' | 'debt';
+  paymentMethod?: 'company_account' | 'personal_account' | 'cash';
   vat?: number;
   shippingFee?: number;
   notes?: string;

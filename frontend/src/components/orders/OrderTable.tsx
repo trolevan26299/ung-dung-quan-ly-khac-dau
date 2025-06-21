@@ -73,6 +73,19 @@ export const OrderTable: React.FC<OrderTableProps> = ({
         }
     };
 
+    const getPaymentMethodText = (method?: string) => {
+        switch (method) {
+            case 'company_account':
+                return 'Tài khoản Cty';
+            case 'personal_account':
+                return 'TK cá nhân chị Hậu';
+            case 'cash':
+                return 'Tiền mặt';
+            default:
+                return 'TK cá nhân chị Hậu';
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="bg-white rounded-lg border border-gray-200">
@@ -133,6 +146,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Thanh toán
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Khách thanh toán
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Thao tác
@@ -204,6 +220,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentStatusText(order.paymentStatus)}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
+                                            {getPaymentMethodText(order.paymentMethod)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

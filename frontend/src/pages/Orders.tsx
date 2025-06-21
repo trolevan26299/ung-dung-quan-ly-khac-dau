@@ -131,6 +131,10 @@ export const Orders: React.FC = () => {
             await dispatch(createOrder(data)).unwrap();
             setIsFormOpen(false);
             setEditingOrder(null);
+            
+            // Refresh customers list để load khách hàng mới tạo
+            dispatch(fetchCustomers({ page: 1, limit: 1000 }));
+            
             success('Tạo thành công', `Đơn hàng đã được tạo`);
         } catch (error: any) {
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo đơn hàng');
@@ -190,6 +194,10 @@ export const Orders: React.FC = () => {
 
     const handleNewOrder = () => {
         setEditingOrder(null);
+        
+        // Refresh customers list để đảm bảo có data mới nhất
+        dispatch(fetchCustomers({ page: 1, limit: 1000 }));
+        
         setIsFormOpen(true);
     };
 
@@ -201,6 +209,11 @@ export const Orders: React.FC = () => {
     const handleCloseDetail = () => {
         setIsDetailOpen(false);
         dispatch(setCurrentOrder(null));
+    };
+
+    const handleAgentChange = (agentId: string) => {
+        // Không cần refresh customers ở đây vì đã được load sẵn
+        // và việc refresh sẽ làm reset form
     };
 
     const handleResetFilters = () => {
@@ -356,7 +369,7 @@ export const Orders: React.FC = () => {
             <Card className="shadow-sm border-0 shadow-md">
                 <CardContent className="p-6">
                     {/* Mobile: Stack vertically, Desktop XL: Horizontal */}
-                    <div className="flex flex-col xl:flex-row items-start xl:items-center gap-6">
+                    <div className="flex flex-col xl:flex-row items-start xl:items-center gap-2">
                         
                         {/* Search Input - Full width on mobile, flexible on desktop */}
                         <div className="w-full xl:w-80">
@@ -378,8 +391,8 @@ export const Orders: React.FC = () => {
                         {/* Date Filter */}
                         <div className="w-full xl:w-auto">
                            
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-3 flex-1 xl:flex-none">
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 flex-1 xl:flex-none">
                                     <DatePicker
                                         date={dateFromObj}
                                         onDateChange={(date: Date | undefined) => {
@@ -389,7 +402,7 @@ export const Orders: React.FC = () => {
                                         placeholder="Từ ngày"
                                         className="w-full xl:w-52"
                                     />
-                                    <span className="text-gray-500 text-sm px-2 font-medium flex-shrink-0"> - </span>
+                                    <span className="text-gray-500 text-sm px-2 font-medium flex-shrink-0">-</span>
                                     <DatePicker
                                         date={dateToObj}
                                         onDateChange={(date: Date | undefined) => {
@@ -409,12 +422,12 @@ export const Orders: React.FC = () => {
                             <select
                                 value={paymentFilter}
                                 onChange={(e) => dispatch(setPaymentFilter(e.target.value))}
-                                className="w-full xl:w-55 h-12 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
+                                className="w-full xl:w-55 h-12 px-2 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
                             >
-                                <option value="">🏷️ Tất cả trạng thái</option>
-                                <option value="completed">✅ Đã thanh toán</option>
-                                <option value="pending">⏳ Chưa thanh toán</option>
-                                <option value="debt">💰 Công nợ</option>
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="completed">Đã thanh toán</option>
+                                <option value="pending">Chưa thanh toán</option>
+                                <option value="debt">Công nợ</option>
                             </select>
                         </div>
 
@@ -424,7 +437,7 @@ export const Orders: React.FC = () => {
                             <select
                                 value={statusFilter}
                                 onChange={(e) => dispatch(setStatusFilter(e.target.value))}
-                                className="w-full xl:w-55 h-12 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
+                                className="w-full xl:w-55 h-12 px-2 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-all"
                             >
                                 <option value="">📋 Tất cả đơn hàng</option>
                                 <option value="active">🟢 Hoàn thành</option>
@@ -435,7 +448,7 @@ export const Orders: React.FC = () => {
                         {/* Action Buttons & Stats */}
                         <div className="w-full xl:w-auto">
                           
-                            <div className="flex items-center justify-between xl:justify-end gap-4">
+                            <div className="flex items-center justify-between xl:justify-end gap-2">
                                 {/* Reset Button */}
                                 <Button
                                     variant="outline"
@@ -483,7 +496,7 @@ export const Orders: React.FC = () => {
 
                                 {/* Stats Badge */}
                                 <div className="text-sm text-gray-600 font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 rounded-lg border border-blue-200 shadow-sm">
-                                    📊 <span className="text-blue-700 font-bold">{pagination.total}</span> đơn hàng
+                                    📊 <span className="text-blue-700 font-bold">{pagination.total}</span> ĐH
                                 </div>
                             </div>
                         </div>
@@ -521,6 +534,7 @@ export const Orders: React.FC = () => {
                 customers={customers}
                 agents={agents}
                 products={products}
+                onAgentChange={handleAgentChange}
             />
 
             <OrderDetail
