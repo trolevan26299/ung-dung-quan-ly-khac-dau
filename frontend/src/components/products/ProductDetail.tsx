@@ -95,15 +95,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, 
                                     </p>
                                 </div>
 
-                                <div>
-                                    <label className="text-sm text-gray-500 flex items-center mb-2">
-                                        <DollarSign className="w-4 h-4 mr-1" />
-                                        Giá bán
-                                    </label>
-                                    <p className="text-lg font-bold text-primary-600">
-                                        {formatCurrency(product.currentPrice)}
-                                    </p>
-                                </div>
+                               
 
                                 <div>
                                     <label className="text-sm text-gray-500 mb-2 block">

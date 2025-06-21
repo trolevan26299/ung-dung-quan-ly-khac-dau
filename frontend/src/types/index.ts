@@ -168,6 +168,7 @@ export interface StockTransaction {
   transactionType: 'import' | 'export' | 'adjustment';
   quantity: number;
   unitPrice?: number;
+  vat?: number;
   totalValue?: number;
   notes?: string;
   userId: string | User;
@@ -185,6 +186,7 @@ export interface CreateStockTransactionRequest {
   type: 'import' | 'export' | 'adjustment';
   quantity: number;
   unitPrice?: number;
+  vat?: number;
   notes?: string;
 }
 

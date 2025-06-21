@@ -22,6 +22,7 @@ interface FormErrors {
     product?: string;
     quantity?: string;
     unitPrice?: string;
+    vat?: string;
     notes?: string;
 }
 
@@ -30,6 +31,7 @@ interface FormData {
     type: 'import' | 'export' | 'adjustment';
     quantity: string; // Changed to string to allow empty input
     unitPrice: string; // Changed to string to allow empty input  
+    vat: string; // VAT percentage
     notes: string;
 }
 
@@ -48,6 +50,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
         type: 'import',
         quantity: '',
         unitPrice: '',
+        vat: '',
         notes: ''
     });
 
@@ -68,6 +71,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 type: transaction.type,
                 quantity: transaction.quantity.toString(),
                 unitPrice: (transaction.unitPrice || 0).toString(),
+                vat: (transaction.vat || 0).toString(),
                 notes: transaction.notes || ''
             });
         } else {
@@ -76,6 +80,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 type: 'import',
                 quantity: '',
                 unitPrice: '',
+                vat: '',
                 notes: ''
             });
         }
@@ -143,6 +148,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 ...formData,
                 type,
                 unitPrice: '0', // Set 0 nhưng sẽ ẩn UI
+                vat: '',
                 notes: 'Điều chỉnh số lượng tồn kho'
             });
         } else if (type === 'export') {
@@ -150,6 +156,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 ...formData,
                 type,
                 unitPrice: '0', // Xuất kho không có giá
+                vat: '',
                 notes: 'Xuất kho'
             });
         } else {
@@ -157,12 +164,13 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 ...formData,
                 type,
                 unitPrice: type === 'import' ? '' : (product?.currentPrice.toString() || ''),
+                vat: '',
                 notes: formData.notes === 'Điều chỉnh số lượng tồn kho' || formData.notes === 'Xuất kho' ? '' : formData.notes
             });
         }
     };
 
-    const handleNumberChange = (field: 'quantity' | 'unitPrice', value: string) => {
+    const handleNumberChange = (field: 'quantity' | 'unitPrice' | 'vat', value: string) => {
         // Chỉ cho phép số, dấu chấm
         const sanitizedValue = value.replace(/[^0-9.]/g, '');
         
@@ -187,6 +195,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                     type: formData.type,
                     quantity: parseFloat(formData.quantity),
                     unitPrice: parseFloat(formData.unitPrice) || 0,
+                    vat: parseFloat(formData.vat) || 0,
                     notes: formData.notes
                 };
 
@@ -197,6 +206,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                     type: 'import',
                     quantity: '',
                     unitPrice: '',
+                    vat: '',
                     notes: ''
                 });
             } catch (err) {
@@ -211,7 +221,10 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
 
     const quantity = parseFloat(formData.quantity) || 0;
     const unitPrice = parseFloat(formData.unitPrice) || 0;
-    const totalValue = quantity * unitPrice;
+    const vatRate = parseFloat(formData.vat) || 0;
+    const vatAmount = unitPrice * (vatRate / 100);
+    const finalUnitPrice = unitPrice + vatAmount;
+    const totalValue = quantity * finalUnitPrice;
 
     return (
         <Portal>
@@ -323,22 +336,41 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                         </div>
 
                         {formData.type === 'import' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Đơn giá *
-                                </label>
-                                <Input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={formData.unitPrice}
-                                    onChange={(e) => handleNumberChange('unitPrice', e.target.value)}
-                                    placeholder="Nhập đơn giá"
-                                    className={errors.unitPrice ? 'border-red-500' : ''}
-                                />
-                                {errors.unitPrice && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.unitPrice}</p>
-                                )}
-                            </div>
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Đơn giá *
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={formData.unitPrice}
+                                        onChange={(e) => handleNumberChange('unitPrice', e.target.value)}
+                                        placeholder="Nhập đơn giá"
+                                        className={errors.unitPrice ? 'border-red-500' : ''}
+                                    />
+                                    {errors.unitPrice && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.unitPrice}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        VAT (%)
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={formData.vat}
+                                        onChange={(e) => handleNumberChange('vat', e.target.value)}
+                                        placeholder="Nhập VAT % (tùy chọn, mặc định 0)"
+                                        className={errors.vat ? 'border-red-500' : ''}
+                                    />
+                                    {errors.vat && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.vat}</p>
+                                    )}
+                                </div>
+                            </>
                         )}
 
                         <div>
@@ -356,28 +388,46 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
 
                         <div className="bg-gray-50 p-3 rounded-lg">
                             <div className="text-sm">
-                                <div className="flex justify-between">
-                                    <span>
-                                        {formData.type === 'adjustment' 
-                                            ? 'Tồn kho sẽ được đặt thành:' 
-                                            : formData.type === 'import'
-                                                ? 'Tổng giá trị nhập:'
-                                                : 'Số lượng xuất:'
-                                        }
-                                    </span>
-                                    <span className="font-medium">
-                                        {formData.type === 'adjustment' 
-                                            ? `${quantity} sản phẩm`
-                                            : formData.type === 'import'
-                                                ? `${totalValue.toLocaleString('vi-VN')}₫`
-                                                : `${quantity} sản phẩm`
-                                        }
-                                    </span>
-                                </div>
-                                {formData.type === 'export' && (
-                                    <div className="flex justify-between mt-1 text-xs text-gray-500">
-                                        <span>📦 Chỉ giảm tồn kho, không có giá trị</span>
+                                {formData.type === 'import' && unitPrice > 0 && (
+                                    <>
+                                        <div className="flex justify-between">
+                                            <span>Đơn giá gốc:</span>
+                                            <span>{unitPrice.toLocaleString('vi-VN')}₫</span>
+                                        </div>
+                                        {vatRate > 0 && (
+                                            <div className="flex justify-between">
+                                                <span>VAT ({vatRate}%):</span>
+                                                <span>{vatAmount.toLocaleString('vi-VN')}₫</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between font-medium border-t pt-1 mt-1">
+                                            <span>Đơn giá nhập:</span>
+                                            <span>{finalUnitPrice.toLocaleString('vi-VN')}₫</span>
+                                        </div>
+                                        <div className="flex justify-between font-bold text-primary-600 border-t pt-1 mt-1">
+                                            <span>Tổng giá trị nhập:</span>
+                                            <span>{totalValue.toLocaleString('vi-VN')}₫</span>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                {formData.type === 'adjustment' && (
+                                    <div className="flex justify-between">
+                                        <span>Tồn kho sẽ được đặt thành:</span>
+                                        <span className="font-medium">{quantity} sản phẩm</span>
                                     </div>
+                                )}
+                                
+                                {formData.type === 'export' && (
+                                    <>
+                                        <div className="flex justify-between">
+                                            <span>Số lượng xuất:</span>
+                                            <span className="font-medium">{quantity} sản phẩm</span>
+                                        </div>
+                                        <div className="flex justify-between mt-1 text-xs text-gray-500">
+                                            <span>📦 Chỉ giảm tồn kho, không có giá trị</span>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
