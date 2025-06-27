@@ -139,7 +139,13 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {(transactions || []).map((transaction) => {
-                            const canEditDelete = (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment') && !transaction.orderId;
+                            // Cho phép edit/delete tất cả giao dịch import và adjustment, không phụ thuộc vào giá trị
+                            // Chỉ không cho phép với giao dịch export có orderId (từ đơn hàng)
+                            const canEditDelete = (
+                                (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment' || 
+                                 transaction.type === 'import' || transaction.type === 'adjustment')
+                                && !transaction.orderId
+                            );
 
                             return (
                                 <tr key={transaction._id} className="hover:bg-gray-50">

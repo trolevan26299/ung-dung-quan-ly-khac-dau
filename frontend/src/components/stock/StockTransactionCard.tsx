@@ -68,8 +68,15 @@ export const StockTransactionCard: React.FC<StockTransactionCardProps> = ({
     const typeConfig = getTypeColor(transaction.transactionType || transaction.type);
     const totalValue = (transaction.quantity || 0) * (transaction.unitPrice || 0);
     
-    // Chỉ cho phép edit/delete giao dịch import và adjustment, không cho phép với export có orderId
-    const canEditDelete = (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment') && !transaction.orderId;
+    // Cho phép edit/delete tất cả giao dịch import và adjustment, không phụ thuộc vào giá trị
+    // Chỉ không cho phép với giao dịch export có orderId (từ đơn hàng)
+    const canEditDelete = (
+        (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment' || 
+         transaction.type === 'import' || transaction.type === 'adjustment')
+        && !transaction.orderId
+    );
+    
+
 
     return (
         <Card className={`hover:shadow-lg transition-shadow ${typeConfig.border} ${typeConfig.bg}`}>
