@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Portal } from '../ui/Portal';
+import { Combobox } from '../ui/combobox';
 
 interface OrderFormProps {
     order?: Order | null;
@@ -312,18 +313,22 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Đại lý
                                 </label>
-                                <select
+                                <Combobox
+                                    options={[
+                                        { value: '', label: 'Không có đại lý' },
+                                        ...agents.map(agent => ({
+                                            value: agent._id,
+                                            label: agent.name,
+                                            subtitle: agent.phone,
+                                        }))
+                                    ]}
                                     value={formData.agentId}
-                                    onChange={(e) => handleAgentChange(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                >
-                                    <option value="">Không có đại lý</option>
-                                    {agents.map(agent => (
-                                        <option key={agent._id} value={agent._id}>
-                                            {agent.name} - {agent.phone}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={handleAgentChange}
+                                    placeholder="Chọn đại lý"
+                                    searchPlaceholder="Tìm kiếm đại lý..."
+                                    emptyMessage="Không tìm thấy đại lý"
+                                    allowClear
+                                />
                             </div>
 
                             <div className="relative">
@@ -380,22 +385,22 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Chọn sản phẩm
                             </label>
-                            <select
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        addOrderItem(e.target.value);
-                                        e.target.value = '';
+                            <Combobox
+                                options={products.map(product => ({
+                                    value: product._id,
+                                    label: product.name,
+                                    subtitle: `Tồn: ${product.stockQuantity}`,
+                                }))}
+                                value=""
+                                onChange={(productId) => {
+                                    if (productId) {
+                                        addOrderItem(productId);
                                     }
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            >
-                                <option value="">Chọn sản phẩm để thêm</option>
-                                {products.map(product => (
-                                    <option key={product._id} value={product._id}>
-                                        {product.name}
-                                    </option>
-                                ))}
-                            </select>
+                                placeholder="Chọn sản phẩm để thêm"
+                                searchPlaceholder="Tìm kiếm sản phẩm..."
+                                emptyMessage="Không tìm thấy sản phẩm"
+                            />
                             {errors.items && (
                                 <p className="text-red-500 text-xs mt-1">{errors.items}</p>
                             )}
@@ -529,31 +534,35 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Khách thanh toán
                                 </label>
-                                <select
+                                <Combobox
+                                    options={[
+                                        { value: 'personal_account', label: 'Tài khoản cá nhân chị Hậu' },
+                                        { value: 'company_account', label: 'Tài khoản Cty' },
+                                        { value: 'cash', label: 'Tiền mặt' },
+                                    ]}
                                     value={formData.paymentMethod}
-                                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as any })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                >
-                                    <option value="personal_account">Tài khoản cá nhân chị Hậu</option>
-                                    <option value="company_account">Tài khoản Cty</option>
-                                    <option value="cash">Tiền mặt</option>
-                                </select>
+                                    onChange={(value) => setFormData({ ...formData, paymentMethod: value as any })}
+                                    placeholder="Chọn phương thức thanh toán"
+                                    searchPlaceholder="Tìm kiếm phương thức..."
+                                />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Trạng thái thanh toán *
                                 </label>
-                                <select
+                                <Combobox
+                                    options={[
+                                        { value: 'pending', label: 'Chưa thanh toán' },
+                                        { value: 'completed', label: 'Đã thanh toán' },
+                                        { value: 'debt', label: 'Công nợ' },
+                                    ]}
                                     value={formData.paymentStatus}
-                                    onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value as any })}
-                                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.paymentStatus ? 'border-red-500' : 'border-gray-300'}`}
-                                >
-                                    <option value="">Chọn trạng thái thanh toán</option>
-                                    <option value="pending">Chưa thanh toán</option>
-                                    <option value="completed">Đã thanh toán</option>
-                                    <option value="debt">Công nợ</option>
-                                </select>
+                                    onChange={(value) => setFormData({ ...formData, paymentStatus: value as any })}
+                                    placeholder="Chọn trạng thái thanh toán"
+                                    searchPlaceholder="Tìm kiếm trạng thái..."
+                                    error={!!errors.paymentStatus}
+                                />
                                 {errors.paymentStatus && (
                                     <p className="text-red-500 text-xs mt-1">{errors.paymentStatus}</p>
                                 )}

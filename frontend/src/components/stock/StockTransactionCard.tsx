@@ -1,18 +1,22 @@
 import React from 'react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
-import { Eye, ArrowUpCircle, ArrowDownCircle, RefreshCw, User } from 'lucide-react';
+import { Eye, ArrowUpCircle, ArrowDownCircle, RefreshCw, User, Edit2, Trash2 } from 'lucide-react';
 import { StockTransaction } from '../../types';
 import { formatCurrency, formatDateTime } from '../../lib/utils';
 
 interface StockTransactionCardProps {
     transaction: StockTransaction;
     onViewDetail: (transaction: StockTransaction) => void;
+    onEdit?: (transaction: StockTransaction) => void;
+    onDelete?: (transaction: StockTransaction) => void;
 }
 
 export const StockTransactionCard: React.FC<StockTransactionCardProps> = ({
     transaction,
-    onViewDetail
+    onViewDetail,
+    onEdit,
+    onDelete
 }) => {
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -63,6 +67,9 @@ export const StockTransactionCard: React.FC<StockTransactionCardProps> = ({
 
     const typeConfig = getTypeColor(transaction.transactionType || transaction.type);
     const totalValue = (transaction.quantity || 0) * (transaction.unitPrice || 0);
+    
+    // Chỉ cho phép edit/delete giao dịch import và adjustment, không cho phép với export có orderId
+    const canEditDelete = (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment') && !transaction.orderId;
 
     return (
         <Card className={`hover:shadow-lg transition-shadow ${typeConfig.border} ${typeConfig.bg}`}>
@@ -79,14 +86,39 @@ export const StockTransactionCard: React.FC<StockTransactionCardProps> = ({
                             </p>
                         </div>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewDetail(transaction)}
-                        className="h-8 w-8 p-0"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center space-x-1">
+                        {canEditDelete && onEdit && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onEdit(transaction)}
+                                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Chỉnh sửa"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </Button>
+                        )}
+                        {canEditDelete && onDelete && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onDelete(transaction)}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Xóa"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        )}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onViewDetail(transaction)}
+                            className="h-8 w-8 p-0"
+                            title="Xem chi tiết"
+                        >
+                            <Eye className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="space-y-2">

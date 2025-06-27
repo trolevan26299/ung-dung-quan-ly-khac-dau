@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { stockApi } from '../../services/api';
-import type { StockTransaction, CreateStockTransactionRequest, StockQueryParams } from '../../types';
+import type { StockTransaction, CreateStockTransactionRequest, UpdateStockTransactionRequest, StockQueryParams } from '../../types';
 
 interface StockState {
   transactions: StockTransaction[];
@@ -75,17 +75,25 @@ export const createTransaction = createAsyncThunk(
 
 export const updateTransaction = createAsyncThunk(
   'stock/updateTransaction',
-  async ({ id, data }: { id: string; data: Partial<CreateStockTransactionRequest> }, { rejectWithValue }) => {
-    // API không có update method, tạm thời return error
-    return rejectWithValue('Chức năng cập nhật chưa được hỗ trợ');
+  async ({ id, data }: { id: string; data: UpdateStockTransactionRequest }, { rejectWithValue }) => {
+    try {
+      const response = await stockApi.updateStockTransaction(id, data);
+      return { id, transaction: response };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Cập nhật giao dịch kho thất bại');
+    }
   }
 );
 
 export const deleteTransaction = createAsyncThunk(
   'stock/deleteTransaction', 
   async (id: string, { rejectWithValue }) => {
-    // API không có delete method, tạm thời return error
-    return rejectWithValue('Chức năng xóa chưa được hỗ trợ');
+    try {
+      await stockApi.deleteStockTransaction(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Xóa giao dịch kho thất bại');
+    }
   }
 );
 
@@ -178,7 +186,10 @@ const stockSlice = createSlice({
       })
       .addCase(updateTransaction.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Do nothing since update is not supported
+        const index = state.transactions.findIndex(t => t._id === action.payload.id);
+        if (index !== -1) {
+          state.transactions[index] = action.payload.transaction;
+        }
       })
       .addCase(updateTransaction.rejected, (state, action) => {
         state.isLoading = false;
@@ -191,7 +202,8 @@ const stockSlice = createSlice({
       })
       .addCase(deleteTransaction.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Do nothing since delete is not supported
+        state.transactions = state.transactions.filter(t => t._id !== action.payload);
+        state.pagination.total -= 1;
       })
       .addCase(deleteTransaction.rejected, (state, action) => {
         state.isLoading = false;

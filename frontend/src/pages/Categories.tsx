@@ -4,12 +4,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Pagination } from '../components/ui/Pagination';
 import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { CategoryForm } from '../components/categories/CategoryForm';
 import { CategoryTable } from '../components/categories/CategoryTable';
 import { useModal } from '../hooks/useModal';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useDebounce } from '../hooks/useDebounce';
 import { 
   fetchCategories,
@@ -41,6 +43,8 @@ export const Categories: React.FC = () => {
         openEditModal,
         closeModal: closeFormModal
     } = useModal<Category>();
+
+    const confirmDialog = useConfirmDialog();
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -92,19 +96,31 @@ export const Categories: React.FC = () => {
     };
 
     const handleDeleteCategory = async (id: string) => {
-        if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return;
+        const performDelete = async () => {
+            try {
+                await dispatch(deleteCategory(id)).unwrap();
+                toast.success('Xóa danh mục thành công');
+                await dispatch(fetchCategories({
+                    page: storePagination.page,
+                    limit: storePagination.limit,
+                    ...(debouncedSearchTerm && { search: debouncedSearchTerm })
+                }));
+            } catch (error: any) {
+                toast.error(error.message || 'Tính năng xóa danh mục đang phát triển');
+            }
+        };
 
-        try {
-            await dispatch(deleteCategory(id)).unwrap();
-            toast.success('Xóa danh mục thành công');
-            await dispatch(fetchCategories({
-                page: storePagination.page,
-                limit: storePagination.limit,
-                ...(debouncedSearchTerm && { search: debouncedSearchTerm })
-            }));
-        } catch (error: any) {
-            toast.error(error.message || 'Tính năng xóa danh mục đang phát triển');
-        }
+        // Tìm danh mục để hiển thị tên
+        const category = categories.find(cat => cat._id === id);
+        const categoryName = category?.name || 'danh mục này';
+
+        confirmDialog.showConfirm(performDelete, {
+            title: 'Xác nhận xóa danh mục',
+            message: `Bạn có chắc chắn muốn xóa danh mục "${categoryName}" không?\n\nHành động này không thể hoàn tác.`,
+            confirmText: 'Xóa',
+            cancelText: 'Hủy',
+            type: 'danger'
+        });
     };
 
     const handleSubmitForm = (data: CreateCategoryRequest) => {
@@ -198,6 +214,19 @@ export const Categories: React.FC = () => {
                 isOpen={isFormOpen}
                 onClose={closeFormModal}
                 onSubmit={handleSubmitForm}
+                isLoading={isLoading}
+            />
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={confirmDialog.handleCancel}
+                onConfirm={confirmDialog.handleConfirm}
+                title={confirmDialog.config.title}
+                message={confirmDialog.config.message}
+                confirmText={confirmDialog.config.confirmText}
+                cancelText={confirmDialog.config.cancelText}
+                type={confirmDialog.config.type}
                 isLoading={isLoading}
             />
         </div>

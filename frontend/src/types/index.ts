@@ -194,6 +194,14 @@ export interface CreateStockTransactionRequest {
   notes?: string;
 }
 
+export interface UpdateStockTransactionRequest {
+  quantity?: number;
+  unitPrice?: number;
+  vat?: number;
+  reason?: string;
+  notes?: string;
+}
+
 export interface StockQueryParams {
   page?: number;
   limit?: number;

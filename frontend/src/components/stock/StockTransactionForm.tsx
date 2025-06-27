@@ -9,6 +9,7 @@ import type { CreateStockTransactionRequest, StockTransaction, Product } from '.
 import { productsApi } from '../../services/api';
 import { formatTableDateTime } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
+import { Combobox } from '../ui/combobox';
 
 interface StockTransactionFormProps {
     transaction?: StockTransaction;
@@ -66,12 +67,21 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
 
     useEffect(() => {
         if (transaction) {
+            // Tính đơn giá gốc (trước VAT) từ đơn giá đã lưu
+            const savedUnitPrice = transaction.unitPrice || 0;
+            const savedVatRate = transaction.vat || 0;
+            
+            // Nếu có VAT, tính ngược lại đơn giá gốc
+            const originalUnitPrice = savedVatRate > 0 
+                ? Math.round(savedUnitPrice / (1 + savedVatRate / 100) * 100) / 100
+                : savedUnitPrice;
+            
             setFormData({
                 product: transaction.productId,
-                type: transaction.type,
+                type: transaction.transactionType || transaction.type,
                 quantity: transaction.quantity.toString(),
-                unitPrice: (transaction.unitPrice || 0).toString(),
-                vat: (transaction.vat || 0).toString(),
+                unitPrice: originalUnitPrice.toString(),
+                vat: savedVatRate.toString(),
                 notes: transaction.notes || ''
             });
         } else {
@@ -189,13 +199,19 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
         e.preventDefault();
         if (validateForm()) {
             try {
-                // Convert to API format
+                // Tính toán đơn giá có VAT trước khi gửi
+                const unitPriceBeforeVat = parseFloat(formData.unitPrice) || 0;
+                const vatRate = parseFloat(formData.vat) || 0;
+                const vatAmount = unitPriceBeforeVat * (vatRate / 100);
+                const finalUnitPrice = unitPriceBeforeVat + vatAmount;
+                
+                // Convert to API format - backend cần nhận đơn giá đã có VAT
                 const submitData: CreateStockTransactionRequest = {
                     product: formData.product,
                     type: formData.type,
                     quantity: parseFloat(formData.quantity),
-                    unitPrice: parseFloat(formData.unitPrice) || 0,
-                    vat: parseFloat(formData.vat) || 0,
+                    unitPrice: finalUnitPrice, // Gửi đơn giá đã có VAT
+                    vat: vatRate,
                     notes: formData.notes
                 };
 
@@ -220,11 +236,24 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
     if (!isOpen) return null;
 
     const quantity = parseFloat(formData.quantity) || 0;
-    const unitPrice = parseFloat(formData.unitPrice) || 0;
+    const unitPriceBeforeVat = parseFloat(formData.unitPrice) || 0;
     const vatRate = parseFloat(formData.vat) || 0;
-    const vatAmount = unitPrice * (vatRate / 100);
-    const finalUnitPrice = unitPrice + vatAmount;
+    
+    // Logic VAT: người dùng nhập đơn giá trước VAT
+    const vatAmount = unitPriceBeforeVat * (vatRate / 100);
+    const finalUnitPrice = unitPriceBeforeVat + vatAmount; // Đơn giá cuối cùng (đã có VAT)
     const totalValue = quantity * finalUnitPrice;
+
+    // Helper function để get user ID string
+    const getUserId = (userId: string | any): string => {
+        if (typeof userId === 'string') {
+            return userId;
+        }
+        if (typeof userId === 'object' && userId?._id) {
+            return userId._id;
+        }
+        return 'N/A';
+    };
 
     return (
         <Portal>
@@ -261,7 +290,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                     {transaction ? transaction.userName : user?.fullName || 'Không xác định'}
                                 </div>
                                 <div className="text-blue-600">
-                                    {transaction ? `ID: ${transaction.userId}` : `@${user?.username || 'unknown'}`}
+                                    {transaction ? `ID: ${getUserId(transaction.userId)}` : `@${user?.username || 'unknown'}`}
                                 </div>
                                 {transaction && (
                                     <div className="text-xs text-blue-500 mt-1">
@@ -275,21 +304,38 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Sản phẩm *
                             </label>
-                            <select
-                                value={formData.product}
-                                onChange={(e) => handleProductChange(e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.product ? 'border-red-500' : 'border-gray-300'
-                                    }`}
-                            >
-                                <option value="">Chọn sản phẩm</option>
-                                {products.map(product => (
-                                    <option key={product._id} value={product._id}>
-                                        {product.name} - Tồn: {product.stockQuantity}
-                                    </option>
-                                ))}
-                            </select>
+                            {transaction ? (
+                                <div className="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-md cursor-not-allowed">
+                                    <div className="font-medium text-gray-700 truncate">
+                                        {products.find(p => p._id === formData.product)?.name || 'Sản phẩm không tồn tại'}
+                                    </div>
+                                    <div className="text-xs text-gray-500 truncate mt-1">
+                                        Tồn: {products.find(p => p._id === formData.product)?.stockQuantity || 0}
+                                    </div>
+                                </div>
+                            ) : (
+                                <Combobox
+                                    options={products.map(product => ({
+                                        value: product._id,
+                                        label: product.name,
+                                        subtitle: `Tồn: ${product.stockQuantity}`,
+                                    }))}
+                                    value={formData.product}
+                                    onChange={handleProductChange}
+                                    placeholder="Chọn sản phẩm"
+                                    searchPlaceholder="Tìm kiếm sản phẩm..."
+                                    emptyMessage="Không tìm thấy sản phẩm"
+                                    error={!!errors.product}
+                                    allowClear
+                                />
+                            )}
                             {errors.product && (
                                 <p className="text-red-500 text-xs mt-1">{errors.product}</p>
+                            )}
+                            {transaction && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    💡 Không thể thay đổi sản phẩm khi chỉnh sửa giao dịch
+                                </p>
                             )}
                         </div>
 
@@ -300,7 +346,8 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                             <select
                                 value={formData.type}
                                 onChange={(e) => handleTypeChange(e.target.value as any)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                disabled={!!transaction} // Disable when editing
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent ${transaction ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                             >
                                 <option value="import">Nhập kho</option>
                                 <option value="export">Xuất kho</option>
@@ -316,6 +363,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                     💡 Xuất kho để giảm tồn kho (chuyển kho, hàng hỏng, sử dụng nội bộ...)
                                 </p>
                             )}
+                           
                         </div>
 
                         <div>
@@ -335,18 +383,19 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                             )}
                         </div>
 
-                        {formData.type === 'import' && (
+                        {/* Hiển thị đơn giá và VAT cho import hoặc khi đang edit transaction import */}
+                        {(formData.type === 'import' || (transaction && (transaction.transactionType === 'import' || transaction.type === 'import'))) && (
                             <>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Đơn giá *
+                                        Đơn giá (trước VAT) *
                                     </label>
                                     <Input
                                         type="text"
                                         inputMode="decimal"
                                         value={formData.unitPrice}
                                         onChange={(e) => handleNumberChange('unitPrice', e.target.value)}
-                                        placeholder="Nhập đơn giá"
+                                        placeholder="Nhập đơn giá trước VAT"
                                         className={errors.unitPrice ? 'border-red-500' : ''}
                                     />
                                     {errors.unitPrice && (
@@ -363,7 +412,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                         inputMode="decimal"
                                         value={formData.vat}
                                         onChange={(e) => handleNumberChange('vat', e.target.value)}
-                                        placeholder="Nhập VAT % (tùy chọn, mặc định 0)"
+                                        placeholder="Nhập % VAT (tùy chọn, mặc định 0)"
                                         className={errors.vat ? 'border-red-500' : ''}
                                     />
                                     {errors.vat && (
@@ -388,11 +437,11 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
 
                         <div className="bg-gray-50 p-3 rounded-lg">
                             <div className="text-sm">
-                                {formData.type === 'import' && unitPrice > 0 && (
+                                {(formData.type === 'import' || (transaction && (transaction.transactionType === 'import' || transaction.type === 'import'))) && unitPriceBeforeVat > 0 && (
                                     <>
                                         <div className="flex justify-between">
-                                            <span>Đơn giá gốc:</span>
-                                            <span>{unitPrice.toLocaleString('vi-VN')}₫</span>
+                                            <span>Đơn giá trước VAT:</span>
+                                            <span>{unitPriceBeforeVat.toLocaleString('vi-VN')}₫</span>
                                         </div>
                                         {vatRate > 0 && (
                                             <div className="flex justify-between">
@@ -401,7 +450,7 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                                             </div>
                                         )}
                                         <div className="flex justify-between font-medium border-t pt-1 mt-1">
-                                            <span>Đơn giá nhập:</span>
+                                            <span>Đơn giá nhập (đã có VAT):</span>
                                             <span>{finalUnitPrice.toLocaleString('vi-VN')}₫</span>
                                         </div>
                                         <div className="flex justify-between font-bold text-primary-600 border-t pt-1 mt-1">

@@ -53,9 +53,7 @@ export const fetchOrders = createAsyncThunk(
       if (params.dateFrom && params.dateFrom.trim()) cleanParams.dateFrom = params.dateFrom.trim();
       if (params.dateTo && params.dateTo.trim()) cleanParams.dateTo = params.dateTo.trim();
       
-      console.log('📤 API Call params:', cleanParams);
       const response = await ordersApi.getOrders(cleanParams);
-      console.log('📥 API Response:', response);
       return response;
     } catch (error: any) {
       console.error('❌ API Error:', error);

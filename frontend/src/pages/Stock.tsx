@@ -13,9 +13,11 @@ import {
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { stockApi, productsApi } from '../services/api';
 import type { StockTransaction, CreateStockTransactionRequest, Product } from '../types';
 import { useModal } from '../hooks/useModal';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useDebounce } from '../hooks/useDebounce';
 import { EmptyState } from '../components/common/EmptyState';
 import { StockTransactionForm } from '../components/stock/StockTransactionForm';
@@ -25,6 +27,8 @@ import { StockTransactionTable } from '../components/stock/StockTransactionTable
 import { ProductStockCard } from '../components/stock/ProductStockCard';
 import { formatCurrency } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
+import { useDispatch } from 'react-redux';
+import { updateTransaction, deleteTransaction } from '../store/slices/stockSlice';
 
 // Product Stock Table Component
 interface ProductStockTableProps {
@@ -376,6 +380,7 @@ export const Stock: React.FC = () => {
         isOpen: isFormOpen,
         selectedItem: selectedTransaction,
         openCreateModal,
+        openEditModal: openEditModal,
         closeModal: closeFormModal
     } = useModal<StockTransaction>();
 
@@ -387,6 +392,11 @@ export const Stock: React.FC = () => {
     } = useModal<StockTransaction>();
 
     const { success, error: showError } = useToast();
+
+    const dispatch = useDispatch();
+
+    // Confirm dialog hook
+    const confirmDialog = useConfirmDialog();
 
     // Load initial data when component mounts
     useEffect(() => {
@@ -512,8 +522,74 @@ export const Stock: React.FC = () => {
         }
     };
 
+    const handleUpdateTransaction = async (data: CreateStockTransactionRequest) => {
+        if (!selectedTransaction) return;
+        
+        try {
+            setIsLoading(true);
+            // Convert CreateStockTransactionRequest to UpdateStockTransactionRequest
+            const updateData = {
+                quantity: data.quantity,
+                unitPrice: data.unitPrice,
+                vat: data.vat,
+                notes: data.notes
+            };
+            
+            await (dispatch as any)(updateTransaction({ 
+                id: selectedTransaction._id, 
+                data: updateData 
+            })).unwrap();
+            
+            closeFormModal();
+            if (activeTab === 'transactions') {
+                fetchTransactions();
+            }
+            fetchProducts();
+            fetchStats();
+            success('Cập nhật giao dịch thành công!');
+        } catch (error: any) {
+            setError(error || 'Có lỗi xảy ra khi cập nhật giao dịch');
+            showError(error || 'Có lỗi xảy ra khi cập nhật giao dịch');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteTransaction = async (transaction: StockTransaction) => {
+        const performDelete = async () => {
+            try {
+                setIsLoading(true);
+                await (dispatch as any)(deleteTransaction(transaction._id)).unwrap();
+                
+                if (activeTab === 'transactions') {
+                    fetchTransactions();
+                }
+                fetchProducts();
+                fetchStats();
+                success('Xóa giao dịch thành công!');
+            } catch (error: any) {
+                setError(error || 'Có lỗi xảy ra khi xóa giao dịch');
+                showError(error || 'Có lỗi xảy ra khi xóa giao dịch');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        confirmDialog.showConfirm(performDelete, {
+            title: 'Xác nhận xóa giao dịch',
+            message: `Bạn có chắc chắn muốn xóa giao dịch này không?\n\nSản phẩm: ${transaction.productName}\nSố lượng: ${transaction.quantity}\n\nHành động này không thể hoàn tác.`,
+            confirmText: 'Xóa',
+            cancelText: 'Hủy',
+            type: 'danger'
+        });
+    };
+
     const handleViewDetail = (transaction: StockTransaction) => {
         openDetailModal(transaction);
+    };
+
+    const handleEditTransaction = (transaction: StockTransaction) => {
+        openEditModal(transaction);
     };
 
     const handleAddNew = () => {
@@ -869,6 +945,8 @@ export const Stock: React.FC = () => {
                             transactions={filteredTransactions}
                             isLoading={isLoading}
                             onView={handleViewDetail}
+                            onEdit={handleEditTransaction}
+                            onDelete={handleDeleteTransaction}
                             onAdd={handleAddNew}
                             pagination={transactionPagination}
                             onPageChange={goToTransactionPage}
@@ -909,6 +987,8 @@ export const Stock: React.FC = () => {
                                             key={transaction._id}
                                             transaction={transaction}
                                             onViewDetail={handleViewDetail}
+                                            onEdit={handleEditTransaction}
+                                            onDelete={handleDeleteTransaction}
                                         />
                                     ))
                                 )}
@@ -1000,7 +1080,7 @@ export const Stock: React.FC = () => {
                 transaction={selectedTransaction || undefined}
                 isOpen={isFormOpen}
                 onClose={closeFormModal}
-                onSubmit={handleCreateTransaction}
+                onSubmit={selectedTransaction ? handleUpdateTransaction : handleCreateTransaction}
                 isLoading={isLoading}
             />
 
@@ -1008,6 +1088,19 @@ export const Stock: React.FC = () => {
                 transaction={detailTransaction}
                 isOpen={isDetailOpen}
                 onClose={closeDetailModal}
+            />
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={confirmDialog.handleCancel}
+                onConfirm={confirmDialog.handleConfirm}
+                title={confirmDialog.config.title}
+                message={confirmDialog.config.message}
+                confirmText={confirmDialog.config.confirmText}
+                cancelText={confirmDialog.config.cancelText}
+                type={confirmDialog.config.type}
+                isLoading={isLoading}
             />
         </div>
     );

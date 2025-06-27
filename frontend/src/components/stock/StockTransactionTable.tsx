@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, ArrowUpCircle, ArrowDownCircle, RotateCcw, Package, Calendar, DollarSign, User } from 'lucide-react';
+import { Eye, ArrowUpCircle, ArrowDownCircle, RotateCcw, Package, Calendar, DollarSign, User, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { formatCurrency, formatDateTime, safeString, safeNumber } from '../../lib/utils';
 import type { StockTransaction } from '../../types';
@@ -8,6 +8,8 @@ interface StockTransactionTableProps {
     transactions?: StockTransaction[];
     isLoading?: boolean;
     onView: (transaction: StockTransaction) => void;
+    onEdit?: (transaction: StockTransaction) => void;
+    onDelete?: (transaction: StockTransaction) => void;
     onAdd?: () => void;
     pagination?: {
         currentPage: number;
@@ -25,6 +27,8 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
     transactions,
     isLoading = false,
     onView,
+    onEdit,
+    onDelete,
     onAdd,
     pagination,
     onPageChange,
@@ -117,10 +121,10 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                 Số lượng
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Đơn giá
+                                Đơn giá (VAT)
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tổng giá trị
+                                Tổng giá trị (VAT)
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Người tạo
@@ -134,86 +138,114 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {(transactions || []).map((transaction) => (
-                            <tr key={transaction._id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div>
-                                        <div className="text-sm font-medium text-gray-900">
-                                            {safeString(transaction.productName || 'N/A')}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            Mã: {safeString(transaction.productCode || '')}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        {getTypeIcon(transaction.transactionType)}
-                                        <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeBadgeColor(transaction.transactionType)}`}>
-                                            {getTypeText(transaction.transactionType)}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {safeNumber(transaction.quantity)}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                                        <span className="text-sm text-gray-900">
-                                            {transaction.transactionType === 'import' 
-                                                ? formatCurrency(transaction.unitPrice || 0)
-                                                : '-'
-                                            }
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                                        <span className="text-sm font-semibold text-green-600">
-                                            {transaction.transactionType === 'import' 
-                                                ? formatCurrency((transaction.quantity || 0) * (transaction.unitPrice || 0))
-                                                : '-'
-                                            }
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <User className="w-4 h-4 text-gray-400 mr-2" />
+                        {(transactions || []).map((transaction) => {
+                            const canEditDelete = (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment') && !transaction.orderId;
+
+                            return (
+                                <tr key={transaction._id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <div>
                                             <div className="text-sm font-medium text-gray-900">
-                                                {typeof transaction.userId === 'object' 
-                                                    ? (transaction.userId.fullName === 'Administrator' ? transaction.userId.username : transaction.userId.fullName)
-                                                    : transaction.userName || 'N/A'}
+                                                {safeString(transaction.productName || 'N/A')}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                Mã: {safeString(transaction.productCode || '')}
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                                        <span className="text-sm text-gray-900">
-                                            {formatDateTime(transaction.createdAt)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            {getTypeIcon(transaction.transactionType)}
+                                            <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeBadgeColor(transaction.transactionType)}`}>
+                                                {getTypeText(transaction.transactionType)}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className="text-sm font-semibold text-gray-900">
+                                            {safeNumber(transaction.quantity)}
                                         </span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <Button
-                                        variant="light"
-                                        size="xs"
-                                        onClick={() => onView(transaction)}
-                                        className="h-7 w-7 p-0"
-                                        title="Xem chi tiết"
-                                    >
-                                        <Eye className="w-3 h-3" />
-                                    </Button>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
+                                            <span className="text-sm text-gray-900">
+                                                {transaction.transactionType === 'import' 
+                                                    ? formatCurrency(transaction.unitPrice || 0)
+                                                    : '-'
+                                                }
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
+                                            <span className="text-sm font-semibold text-green-600">
+                                                {transaction.transactionType === 'import' 
+                                                    ? formatCurrency((transaction.quantity || 0) * (transaction.unitPrice || 0))
+                                                    : '-'
+                                                }
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <User className="w-4 h-4 text-gray-400 mr-2" />
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {typeof transaction.userId === 'object' 
+                                                        ? (transaction.userId.fullName === 'Administrator' ? transaction.userId.username : transaction.userId.fullName)
+                                                        : transaction.userName || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                            <span className="text-sm text-gray-900">
+                                                {formatDateTime(transaction.createdAt)}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex items-center justify-end space-x-1">
+                                            {canEditDelete && onEdit && (
+                                                <Button
+                                                    variant="light"
+                                                    size="xs"
+                                                    onClick={() => onEdit(transaction)}
+                                                    className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                    title="Chỉnh sửa"
+                                                >
+                                                    <Edit2 className="w-3 h-3" />
+                                                </Button>
+                                            )}
+                                            {canEditDelete && onDelete && (
+                                                <Button
+                                                    variant="light"
+                                                    size="xs"
+                                                    onClick={() => onDelete(transaction)}
+                                                    className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    title="Xóa"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="light"
+                                                size="xs"
+                                                onClick={() => onView(transaction)}
+                                                className="h-7 w-7 p-0"
+                                                title="Xem chi tiết"
+                                            >
+                                                <Eye className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

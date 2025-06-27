@@ -13,6 +13,7 @@ import type {
   CreateOrderRequest,
   StockTransaction,
   CreateStockTransactionRequest,
+  UpdateStockTransactionRequest,
   Statistics,
   PaginationParams,
   PaginatedResponse,
@@ -257,6 +258,15 @@ export const stockApi = {
   createStockTransaction: async (data: CreateStockTransactionRequest): Promise<StockTransaction> => {
     const response = await api.post('/stock/transaction', data);
     return response.data as StockTransaction;
+  },
+
+  updateStockTransaction: async (id: string, data: UpdateStockTransactionRequest): Promise<StockTransaction> => {
+    const response = await api.patch(`/stock/transaction/${id}`, data);
+    return response.data as StockTransaction;
+  },
+
+  deleteStockTransaction: async (id: string): Promise<void> => {
+    await api.delete(`/stock/transaction/${id}`);
   },
   
   getProductStock: async (productId: string) => {

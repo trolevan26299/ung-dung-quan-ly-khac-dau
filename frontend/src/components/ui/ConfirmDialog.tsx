@@ -1,30 +1,84 @@
 import React from 'react';
-import { AlertTriangle, X } from 'lucide-react';
 import { Button } from './Button';
 import { Portal } from './Portal';
+import { X, AlertTriangle } from 'lucide-react';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
+    onClose?: () => void;
+    onCancel?: () => void; // Backward compatibility
+    onConfirm: () => void;
     title?: string;
-    message: string;
+    message?: string;
     confirmText?: string;
     cancelText?: string;
-    confirmVariant?: 'default' | 'destructive';
-    onConfirm: () => void;
-    onCancel: () => void;
+    type?: 'danger' | 'warning' | 'info';
+    confirmVariant?: 'default' | 'destructive'; // Backward compatibility
+    isLoading?: boolean;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     isOpen,
+    onClose,
+    onCancel, // Backward compatibility
+    onConfirm,
     title = 'Xác nhận',
-    message,
+    message = 'Bạn có chắc chắn muốn thực hiện hành động này?',
     confirmText = 'Xác nhận',
     cancelText = 'Hủy',
-    confirmVariant = 'destructive',
-    onConfirm,
-    onCancel
+    type = 'danger',
+    confirmVariant, // Backward compatibility
+    isLoading = false
 }) => {
     if (!isOpen) return null;
+
+    // Handle backward compatibility
+    const handleClose = onClose || onCancel || (() => {});
+    
+    // Map old confirmVariant to new type system
+    let finalType = type;
+    if (confirmVariant && !type) {
+        finalType = confirmVariant === 'destructive' ? 'danger' : 'info';
+    }
+
+    const getTypeConfig = () => {
+        switch (finalType) {
+            case 'danger':
+                return {
+                    iconColor: 'text-red-600',
+                    bgColor: 'bg-red-50',
+                    borderColor: 'border-red-200',
+                    buttonVariant: 'danger' as const
+                };
+            case 'warning':
+                return {
+                    iconColor: 'text-yellow-600',
+                    bgColor: 'bg-yellow-50',
+                    borderColor: 'border-yellow-200',
+                    buttonVariant: 'secondary' as const
+                };
+            case 'info':
+                return {
+                    iconColor: 'text-blue-600',
+                    bgColor: 'bg-blue-50',
+                    borderColor: 'border-blue-200',
+                    buttonVariant: 'default' as const
+                };
+            default:
+                return {
+                    iconColor: 'text-red-600',
+                    bgColor: 'bg-red-50',
+                    borderColor: 'border-red-200',
+                    buttonVariant: 'danger' as const
+                };
+        }
+    };
+
+    const config = getTypeConfig();
+
+    const handleConfirm = () => {
+        onConfirm();
+    };
 
     return (
         <Portal>
@@ -39,47 +93,55 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                     width: '100vw',
                     height: '100vh'
                 }}
+                onClick={handleClose}
             >
-                <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div 
+                    className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                        <div className="flex items-center space-x-3">
+                            <div className={`p-2 rounded-full ${config.bgColor} ${config.borderColor} border`}>
+                                <AlertTriangle className={`w-5 h-5 ${config.iconColor}`} />
                             </div>
                             <h3 className="text-lg font-semibold text-gray-900">
                                 {title}
                             </h3>
                         </div>
                         <Button
-                            variant="light"
-                            size="xs"
-                            onClick={onCancel}
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClose}
                             className="h-8 w-8 p-0"
+                            disabled={isLoading}
                         >
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
 
-                    <div className="mb-6">
-                        <p className="text-gray-600 text-sm leading-relaxed">
+                    {/* Body */}
+                    <div className="p-6">
+                        <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                             {message}
                         </p>
                     </div>
 
-                    <div className="flex space-x-3 justify-end">
+                    {/* Footer */}
+                    <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-lg">
                         <Button
                             variant="secondary"
-                            onClick={onCancel}
-                            className="flex-1"
+                            onClick={handleClose}
+                            disabled={isLoading}
                         >
                             {cancelText}
                         </Button>
                         <Button
-                            variant={confirmVariant}
-                            onClick={onConfirm}
-                            className="flex-1"
+                            variant={config.buttonVariant}
+                            onClick={handleConfirm}
+                            disabled={isLoading}
                         >
-                            {confirmText}
+                            {isLoading ? 'Đang xử lý...' : confirmText}
                         </Button>
                     </div>
                 </div>
