@@ -42,6 +42,38 @@ export class CreateStockTransactionDto {
   notes?: string;
 }
 
+export class UpdateStockTransactionDto {
+  @ApiProperty({ description: 'Số lượng', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  quantity?: number;
+
+  @ApiProperty({ description: 'Giá đơn vị', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  unitPrice?: number;
+
+  @ApiProperty({ description: 'VAT (%)', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  vat?: number;
+
+  @ApiProperty({ description: 'Lý do giao dịch', required: false })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @ApiProperty({ description: 'Ghi chú', required: false })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
 export class ImportStockDto {
   @ApiProperty({ description: 'Mã sản phẩm' })
   @IsString()

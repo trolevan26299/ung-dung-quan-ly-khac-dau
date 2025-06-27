@@ -6,11 +6,13 @@ import {
   UseGuards,
   Query,
   Param,
-  Request 
+  Request,
+  Patch,
+  Delete
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { StockService } from './stock.service';
-import { CreateStockTransactionDto, ImportStockDto, AdjustStockDto, StockReportQueryDto } from './dto/stock.dto';
+import { CreateStockTransactionDto, ImportStockDto, AdjustStockDto, StockReportQueryDto, UpdateStockTransactionDto } from './dto/stock.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('Stock')
@@ -82,5 +84,30 @@ export class StockController {
   @ApiResponse({ status: 200, description: 'Lấy lịch sử thành công' })
   getProductTransactionHistory(@Param('productId') productId: string) {
     return this.stockService.getProductTransactionHistory(productId);
+  }
+
+  @Patch('transaction/:id')
+  @ApiOperation({ summary: 'Cập nhật giao dịch kho' })
+  @ApiResponse({ status: 200, description: 'Cập nhật giao dịch thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy giao dịch' })
+  updateTransaction(
+    @Param('id') id: string,
+    @Body() updateStockTransactionDto: UpdateStockTransactionDto,
+    @Request() req
+  ) {
+    return this.stockService.updateTransaction(
+      id,
+      updateStockTransactionDto,
+      req.user.userId,
+      req.user.username
+    );
+  }
+
+  @Delete('transaction/:id')
+  @ApiOperation({ summary: 'Xóa giao dịch kho' })
+  @ApiResponse({ status: 200, description: 'Xóa giao dịch thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy giao dịch' })
+  deleteTransaction(@Param('id') id: string, @Request() req) {
+    return this.stockService.deleteTransaction(id, req.user.userId, req.user.username);
   }
 } 

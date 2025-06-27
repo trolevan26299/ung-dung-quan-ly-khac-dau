@@ -39,7 +39,6 @@ export class StockService {
         { userId: systemUser._id }
       ).exec();
 
-      console.log('✅ Fixed system userId in stock transactions');
     } catch (error) {
       console.error('❌ Error fixing system userId:', error);
     }
@@ -81,9 +80,10 @@ export class StockService {
     let totalImportValue = 0;
     
     if (createStockTransactionDto.type === TransactionType.IMPORT && finalUnitPrice > 0) {
-      const vatRate = createStockTransactionDto.vat || 0;
-      const vatAmount = finalUnitPrice * (vatRate / 100);
-      finalUnitPrice = finalUnitPrice + vatAmount; // Giá đã bao gồm VAT
+      // Frontend đã tính VAT và gửi finalUnitPrice rồi, không cần tính lại
+      // const vatRate = createStockTransactionDto.vat || 0;
+      // const vatAmount = finalUnitPrice * (vatRate / 100);
+      // finalUnitPrice = finalUnitPrice + vatAmount; // Giá đã bao gồm VAT
       
       // Cập nhật giá nhập trung bình
       const currentAvgPrice = product.avgImportPrice || 0;
@@ -411,5 +411,168 @@ export class StockService {
       lowStockProducts,
       totalStockValue: stockValue[0]?.totalValue || 0
     };
+  }
+
+  // Cập nhật giao dịch kho
+  async updateTransaction(
+    transactionId: string,
+    updateData: Partial<any>,
+    userId: string,
+    userName: string
+  ): Promise<StockTransaction> {
+    // Tìm giao dịch cũ
+    const oldTransaction = await this.stockTransactionModel.findById(transactionId);
+    if (!oldTransaction) {
+      throw new NotFoundException('Không tìm thấy giao dịch');
+    }
+
+    // Tìm sản phẩm
+    const product = await this.productModel.findById(oldTransaction.productId);
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm');
+    }
+
+    // Chỉ cho phép cập nhật các giao dịch import và adjustment
+    // Không cho phép cập nhật export vì liên quan đến đơn hàng
+    if (oldTransaction.transactionType === TransactionType.EXPORT && oldTransaction.orderId) {
+      throw new Error('Không thể cập nhật giao dịch xuất kho của đơn hàng');
+    }
+
+    // Hoàn nguyên giao dịch cũ trước
+    await this.revertTransactionEffect(oldTransaction, product);
+    
+    // Lấy lại product sau khi revert để có stock mới
+    const productAfterRevert = await this.productModel.findById(oldTransaction.productId);
+
+    // Áp dụng giao dịch mới
+    const newQuantity = updateData.quantity !== undefined ? updateData.quantity : oldTransaction.quantity;
+    const newUnitPrice = updateData.unitPrice !== undefined ? updateData.unitPrice : oldTransaction.unitPrice;
+    const newVat = updateData.vat !== undefined ? updateData.vat : oldTransaction.vat;
+
+    // Tính toán lại stock và avg price
+    const stockBefore = productAfterRevert.stockQuantity;
+    let stockAfter = stockBefore;
+    let finalUnitPrice = newUnitPrice || 0;
+    let totalValue = 0;
+    const updateProductData: any = {};
+
+    if (oldTransaction.transactionType === TransactionType.IMPORT) {
+      stockAfter = stockBefore + Math.abs(newQuantity);
+      
+      if (finalUnitPrice > 0) {
+        // Frontend đã tính VAT rồi, không cần cộng thêm
+        // const vatRate = newVat || 0;
+        // const vatAmount = finalUnitPrice * (vatRate / 100);
+        // finalUnitPrice = finalUnitPrice + vatAmount;
+        
+        // Tính lại giá trung bình với đơn giá đã có VAT
+        const currentAvgPrice = productAfterRevert.avgImportPrice || 0;
+        const totalCurrentValue = stockBefore * currentAvgPrice;
+        totalValue = Math.abs(newQuantity) * finalUnitPrice;
+        const newAvgImportPrice = stockBefore === 0 ? 
+          finalUnitPrice : 
+          (totalCurrentValue + totalValue) / stockAfter;
+        
+        updateProductData.avgImportPrice = newAvgImportPrice;
+      }
+    } else if (oldTransaction.transactionType === TransactionType.ADJUSTMENT) {
+      stockAfter = stockBefore + newQuantity;
+      
+      if (stockAfter < 0) {
+        throw new Error('Số lượng tồn kho không đủ');
+      }
+    }
+
+    updateProductData.stockQuantity = stockAfter;
+    
+    // Cập nhật sản phẩm
+    await this.productModel.findByIdAndUpdate(oldTransaction.productId, updateProductData);
+
+    // Cập nhật transaction
+    const updatedTransaction = await this.stockTransactionModel.findByIdAndUpdate(
+      transactionId,
+      {
+        quantity: oldTransaction.transactionType === TransactionType.IMPORT ? Math.abs(newQuantity) : newQuantity,
+        unitPrice: finalUnitPrice,
+        vat: newVat || 0,
+        totalValue,
+        stockBefore,
+        stockAfter,
+        reason: updateData.reason !== undefined ? updateData.reason : oldTransaction.reason,
+        notes: updateData.notes !== undefined ? updateData.notes : oldTransaction.notes,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    return updatedTransaction;
+  }
+
+  // Xóa giao dịch kho
+  async deleteTransaction(transactionId: string, userId: string, userName: string): Promise<void> {
+    // Tìm giao dịch
+    const transaction = await this.stockTransactionModel.findById(transactionId);
+    if (!transaction) {
+      throw new NotFoundException('Không tìm thấy giao dịch');
+    }
+
+    // Tìm sản phẩm
+    const product = await this.productModel.findById(transaction.productId);
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm');
+    }
+
+    // Chỉ cho phép xóa các giao dịch import và adjustment
+    // Không cho phép xóa export vì liên quan đến đơn hàng
+    if (transaction.transactionType === TransactionType.EXPORT && transaction.orderId) {
+      throw new Error('Không thể xóa giao dịch xuất kho của đơn hàng');
+    }
+
+    // Hoàn nguyên giao dịch
+    await this.revertTransactionEffect(transaction, product);
+
+    // Xóa giao dịch
+    await this.stockTransactionModel.findByIdAndDelete(transactionId);
+  }
+
+  // Helper method để hoàn nguyên hiệu ứng của giao dịch
+  private async revertTransactionEffect(transaction: any, product: any): Promise<void> {
+    const updateData: any = {};
+
+    if (transaction.transactionType === TransactionType.IMPORT) {
+      // Hoàn nguyên số lượng
+      const newStockQuantity = product.stockQuantity - Math.abs(transaction.quantity);
+      
+      if (newStockQuantity < 0) {
+        throw new Error('Không thể hoàn nguyên: số lượng tồn kho không đủ');
+      }
+
+      updateData.stockQuantity = newStockQuantity;
+
+      // Hoàn nguyên giá trung bình nếu có
+      if (transaction.unitPrice > 0 && transaction.totalValue > 0) {
+        const currentTotalValue = product.stockQuantity * (product.avgImportPrice || 0);
+        const valueToRemove = transaction.totalValue;
+        
+        if (newStockQuantity === 0) {
+          updateData.avgImportPrice = 0;
+        } else {
+          const newAvgPrice = (currentTotalValue - valueToRemove) / newStockQuantity;
+          updateData.avgImportPrice = newAvgPrice > 0 ? newAvgPrice : 0;
+        }
+      }
+    } else if (transaction.transactionType === TransactionType.ADJUSTMENT) {
+      // Hoàn nguyên điều chỉnh
+      const newStockQuantity = product.stockQuantity - transaction.quantity;
+      
+      if (newStockQuantity < 0) {
+        throw new Error('Không thể hoàn nguyên: số lượng tồn kho không đủ');
+      }
+
+      updateData.stockQuantity = newStockQuantity;
+    }
+
+    // Cập nhật sản phẩm
+    await this.productModel.findByIdAndUpdate(transaction.productId, updateData);
   }
 } 
