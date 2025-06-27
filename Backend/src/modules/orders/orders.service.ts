@@ -342,7 +342,6 @@ export class OrdersService {
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order> {
-    console.log('🔍 Update Order - Received data:', updateOrderDto);
     
     // Get current order first
     const currentOrder = await this.orderModel.findById(id).exec();
@@ -355,7 +354,6 @@ export class OrdersService {
       throw new BadRequestException('Không thể cập nhật đơn hàng đã hủy');
     }
 
-    console.log('📋 Current order items before update:', currentOrder.items);
 
     // Update order with new data
     const updatedFields: any = { ...updateOrderDto };
@@ -364,14 +362,10 @@ export class OrdersService {
 
     // Handle items update if provided
     if (updateOrderDto.items && updateOrderDto.items.length > 0) {
-      console.log('🔄 Updating items...');
       
       // Get current items for stock comparison
       const currentItems = currentOrder.items || [];
       const newItems = updateOrderDto.items;
-      
-      console.log('📊 Current items for stock comparison:', currentItems);
-      console.log('📊 New items for stock comparison:', newItems);
 
       // Create map of current items by productId for easy lookup
       const currentItemsMap = new Map();
@@ -386,16 +380,12 @@ export class OrdersService {
         newItemsMap.set(item.productId, item.quantity);
       });
 
-      console.log('🗺️ Current items map:', Array.from(currentItemsMap.entries()));
-      console.log('🗺️ New items map:', Array.from(newItemsMap.entries()));
-
       // Process stock changes
       // 1. Handle removed or reduced items (return stock)
       for (const [productId, currentQty] of currentItemsMap) {
         const newQty = newItemsMap.get(productId) || 0;
         if (newQty < currentQty) {
           const returnQty = currentQty - newQty;
-          console.log(`📦 Returning stock for product ${productId}: ${returnQty} units`);
           
           const systemUserId = await this.getSystemUserId();
           await this.stockService.returnStock(
@@ -413,7 +403,6 @@ export class OrdersService {
         const currentQty = currentItemsMap.get(productId) || 0;
         if (newQty > currentQty) {
           const exportQty = newQty - currentQty;
-          console.log(`📤 Exporting stock for product ${productId}: ${exportQty} units`);
           
           // Lấy unitPrice từ item tương ứng
           const itemData = updateOrderDto.items.find(item => item.productId === productId);
@@ -450,7 +439,6 @@ export class OrdersService {
       }
       
       updatedFields.items = orderItems;
-      console.log('✅ Updated items:', orderItems);
     }
 
     // Recalculate totalAmount if VAT, shipping fee, or items changed
@@ -476,13 +464,6 @@ export class OrdersService {
       updatedFields.shippingFee = shippingFee;
       updatedFields.totalAmount = totalAmount;
 
-      console.log('🧮 Recalculated order totals:', {
-        subtotal,
-        vatRate,
-        vatAmount,
-        shippingFee,
-        totalAmount
-      });
     }
 
     const order = await this.orderModel.findByIdAndUpdate(
@@ -498,8 +479,6 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
-
-    console.log('📋 Order items after update:', order.items);
 
     // Transform để frontend có thể access đúng field names
     const transformedOrder = order.toObject() as any;
