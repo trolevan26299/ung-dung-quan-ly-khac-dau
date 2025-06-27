@@ -36,9 +36,8 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
     // Logic filter data dựa trên lựa chọn
     const getDisplayData = () => {
         if (periodType === '3months') {
-            // Lấy tháng hiện tại theo múi giờ Việt Nam
-            const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
-            const currentMonth = new Date(vietnamNow).getMonth() + 1; // 1-12
+            // Lấy tháng hiện tại và 2 tháng trước
+            const currentMonth = new Date().getMonth() + 1; // 1-12
             const targetMonths = [];
             
             for (let i = 2; i >= 0; i--) {

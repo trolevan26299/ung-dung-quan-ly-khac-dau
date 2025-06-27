@@ -138,8 +138,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             
             setOrderItems(mappedOrderItemsDisplay);
             setCustomerSearchValue(order.customer?.name || '');
-        } else if (isOpen) {
-            // Chỉ reset form khi mở form mới, không phải khi customers thay đổi
+        } else {
             setFormData({
                 customerId: '',
                 customerName: '',
@@ -156,12 +155,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             setCustomerSearchValue('');
         }
         setErrors({});
-    }, [order, isOpen]);
-
-    // Separate useEffect for customers to avoid form reset
-    useEffect(() => {
         setFilteredCustomers(customers);
-    }, [customers]);
+    }, [order, isOpen, customers]);
 
     const calculateTotals = () => {
         const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
