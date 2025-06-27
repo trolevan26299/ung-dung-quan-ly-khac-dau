@@ -21,7 +21,8 @@ import type {
   Category,
   CreateCategoryRequest,
   UpdateCategoryRequest,
-  OrderQuery
+  OrderQuery,
+  StockQueryParams
 } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8085';
@@ -248,7 +249,7 @@ export const ordersApi = {
 
 // Stock API
 export const stockApi = {
-  getStockTransactions: async (params?: PaginationParams): Promise<PaginatedResponse<StockTransaction>> => {
+  getStockTransactions: async (params?: StockQueryParams): Promise<PaginatedResponse<StockTransaction>> => {
     const response = await api.get('/stock/report', { params });
     return response.data as PaginatedResponse<StockTransaction>;
   },

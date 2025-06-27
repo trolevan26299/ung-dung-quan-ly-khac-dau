@@ -365,6 +365,8 @@ export const Stock: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'transactions' | 'products'>('transactions');
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
     const [viewMode, setViewMode] = useState<ViewMode>('table');
     const [productViewMode, setProductViewMode] = useState<ViewMode>('table');
     
@@ -398,7 +400,7 @@ export const Stock: React.FC = () => {
         if (activeTab === 'transactions') {
             fetchTransactions();
         }
-    }, [transactionPagination.currentPage, transactionPagination.limit, debouncedSearchTerm, activeTab, typeFilter]);
+    }, [transactionPagination.currentPage, transactionPagination.limit, debouncedSearchTerm, activeTab, typeFilter, startDate, endDate]);
 
     useEffect(() => {
         // Load products 
@@ -413,8 +415,10 @@ export const Stock: React.FC = () => {
             const fetchParams = {
                 page: transactionPagination.currentPage,
                 limit: transactionPagination.limit,
-                ...(typeFilter && { transactionType: typeFilter }),
-                ...(debouncedSearchTerm && { search: debouncedSearchTerm })
+                ...(typeFilter && { transactionType: typeFilter as 'import' | 'export' | 'adjustment' }),
+                ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+                ...(startDate && { startDate }),
+                ...(endDate && { endDate })
             };
             const response = await stockApi.getStockTransactions(fetchParams);
             setTransactions(response.data);
@@ -520,6 +524,8 @@ export const Stock: React.FC = () => {
         setActiveTab(tab);
         setTypeFilter('');
         setSearchTerm('');
+        setStartDate('');
+        setEndDate('');
         // Reset pagination cho tab mới
         if (tab === 'products') {
             setProductPagination(prev => ({ ...prev, currentPage: 1 }));
@@ -697,8 +703,9 @@ export const Stock: React.FC = () => {
             {/* Search and Filters */}
             <Card>
                 <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex-1 relative mr-2">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        {/* Search */}
+                        <div className="flex-1 relative min-w-64">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
                                 placeholder={activeTab === 'transactions' ? "Tìm kiếm giao dịch..." : "Tìm kiếm sản phẩm..."}
@@ -707,20 +714,65 @@ export const Stock: React.FC = () => {
                                 className="pl-10"
                             />
                         </div>
-                        <div className="flex items-center space-x-4 ">
-                            {activeTab === 'transactions' && (
-                                <select
-                                    value={typeFilter}
-                                    onChange={(e) => setTypeFilter(e.target.value)}
-                                    className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                >
-                                    <option value="">Tất cả loại</option>
-                                    <option value="import">Nhập kho</option>
-                                    <option value="export">Xuất kho</option>
-                                    <option value="adjustment">Điều chỉnh</option>
-                                </select>
-                            )}
 
+                        {/* Filters for Transactions */}
+                        {activeTab === 'transactions' && (
+                            <>
+                                <div className="flex items-center space-x-2">
+                                    <select
+                                        value={typeFilter}
+                                        onChange={(e) => setTypeFilter(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                    >
+                                        <option value="">Tất cả loại</option>
+                                        <option value="import">Nhập kho</option>
+                                        <option value="export">Xuất kho</option>
+                                        <option value="adjustment">Điều chỉnh</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-36 text-sm"
+                                        placeholder="Từ ngày"
+                                    />
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                
+                                    <Input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="w-36 text-sm"
+                                        placeholder="Đến ngày"
+                                    />
+                                </div>
+
+                                {/* Clear all filters button */}
+                                {(typeFilter || startDate || endDate || searchTerm) && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setTypeFilter('');
+                                            setStartDate('');
+                                            setEndDate('');
+                                            setSearchTerm('');
+                                        }}
+                                        className="text-gray-500 hover:text-gray-700 whitespace-nowrap"
+                                    >
+                                        Xóa bộ lọc
+                                    </Button>
+                                )}
+                            </>
+                        )}
+
+                        {/* Right side controls */}
+                        <div className="flex items-center space-x-4">
                             {/* View Toggle for Transactions */}
                             {activeTab === 'transactions' && (
                                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200">
@@ -793,7 +845,7 @@ export const Stock: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 whitespace-nowrap">
                                 Tổng: {activeTab === 'transactions' ? transactionPagination.total : productPagination.total} {activeTab === 'transactions' ? 'giao dịch' : 'sản phẩm'}
                             </div>
                         </div>

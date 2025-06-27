@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { stockApi } from '../../services/api';
-import type { StockTransaction, CreateStockTransactionRequest } from '../../types';
+import type { StockTransaction, CreateStockTransactionRequest, StockQueryParams } from '../../types';
 
 interface StockState {
   transactions: StockTransaction[];
@@ -9,6 +9,8 @@ interface StockState {
   error: string | null;
   searchTerm: string;
   typeFilter: string;
+  startDate: string;
+  endDate: string;
   pagination: {
     page: number;
     limit: number;
@@ -24,6 +26,8 @@ const initialState: StockState = {
   error: null,
   searchTerm: '',
   typeFilter: '',
+  startDate: '',
+  endDate: '',
   pagination: {
     page: 1,
     limit: 10,
@@ -35,7 +39,7 @@ const initialState: StockState = {
 // Async thunks
 export const fetchTransactions = createAsyncThunk(
   'stock/fetchTransactions',
-  async (params: { page?: number; limit?: number; search?: string; type?: string } = {}, { rejectWithValue }) => {
+  async (params: StockQueryParams = {}, { rejectWithValue }) => {
     try {
       const response = await stockApi.getStockTransactions(params);
       return response;
@@ -95,6 +99,12 @@ const stockSlice = createSlice({
     setTypeFilter: (state, action: PayloadAction<string>) => {
       state.typeFilter = action.payload;
     },
+    setStartDate: (state, action: PayloadAction<string>) => {
+      state.startDate = action.payload;
+    },
+    setEndDate: (state, action: PayloadAction<string>) => {
+      state.endDate = action.payload;
+    },
     setCurrentTransaction: (state, action: PayloadAction<StockTransaction | null>) => {
       state.currentTransaction = action.payload;
     },
@@ -104,6 +114,12 @@ const stockSlice = createSlice({
     clearTransactions: (state) => {
       state.transactions = [];
       state.pagination = initialState.pagination;
+    },
+    clearFilters: (state) => {
+      state.searchTerm = '';
+      state.typeFilter = '';
+      state.startDate = '';
+      state.endDate = '';
     },
   },
   extraReducers: (builder) => {
@@ -187,8 +203,11 @@ const stockSlice = createSlice({
 export const { 
   setSearchTerm, 
   setTypeFilter, 
+  setStartDate,
+  setEndDate,
   setCurrentTransaction, 
   clearError, 
-  clearTransactions 
+  clearTransactions,
+  clearFilters
 } = stockSlice.actions;
 export default stockSlice.reducer; 

@@ -194,6 +194,16 @@ export interface CreateStockTransactionRequest {
   notes?: string;
 }
 
+export interface StockQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  transactionType?: 'import' | 'export' | 'adjustment';
+  productId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 // Statistics types
 export interface Statistics {
   totalRevenue: number;
