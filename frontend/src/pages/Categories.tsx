@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Pagination } from '../components/ui/Pagination';
-import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from '../types';
+import type { Category, CreateCategoryRequest } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { CategoryForm } from '../components/categories/CategoryForm';
 import { CategoryTable } from '../components/categories/CategoryTable';
@@ -97,17 +97,17 @@ export const Categories: React.FC = () => {
 
     const handleDeleteCategory = async (id: string) => {
         const performDelete = async () => {
-            try {
-                await dispatch(deleteCategory(id)).unwrap();
-                toast.success('Xóa danh mục thành công');
-                await dispatch(fetchCategories({
-                    page: storePagination.page,
-                    limit: storePagination.limit,
-                    ...(debouncedSearchTerm && { search: debouncedSearchTerm })
-                }));
-            } catch (error: any) {
-                toast.error(error.message || 'Tính năng xóa danh mục đang phát triển');
-            }
+        try {
+            await dispatch(deleteCategory(id)).unwrap();
+            toast.success('Xóa danh mục thành công');
+            await dispatch(fetchCategories({
+                page: storePagination.page,
+                limit: storePagination.limit,
+                ...(debouncedSearchTerm && { search: debouncedSearchTerm })
+            }));
+        } catch (error: any) {
+            toast.error(error.message || 'Tính năng xóa danh mục đang phát triển');
+        }
         };
 
         // Tìm danh mục để hiển thị tên

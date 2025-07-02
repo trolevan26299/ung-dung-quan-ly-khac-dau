@@ -218,6 +218,12 @@ export const ordersApi = {
     return response.data as PaginatedResponse<Order>;
   },
   
+  // API riêng cho xuất Excel với limit cao
+  getOrdersForExcel: async (params?: Omit<OrderQuery, 'page' | 'limit'>): Promise<PaginatedResponse<Order>> => {
+    const response = await api.get('/orders/export/excel', { params });
+    return response.data as PaginatedResponse<Order>;
+  },
+  
   getOrder: async (id: string): Promise<Order> => {
     const response = await api.get(`/orders/${id}`);
     return response.data as Order;

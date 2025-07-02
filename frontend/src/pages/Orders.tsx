@@ -20,6 +20,7 @@ import { useToast } from '../contexts/ToastContext';
 import type { CreateOrderRequest, Order, OrderQuery } from '../types';
 import * as XLSX from 'xlsx';
 import { formatTableDate } from '../lib/utils';
+import { ordersApi } from '../services/api';
 
 type ViewMode = 'grid' | 'table';
 
@@ -228,16 +229,30 @@ export const Orders: React.FC = () => {
         paginationHook.resetPagination();
     };
 
-    const handleExportExcel = () => {
+    const handleExportExcel = async () => {
         try {
-            const excelData = orders.map((order, index) => ({
+            // Hiển thị loading
+            const loadingToast = success('Đang xuất Excel...', 'Vui lòng chờ trong giây lát');
+
+            // Gọi API riêng cho xuất Excel với các filter hiện tại
+            const exportParams: any = {};
+            if (searchTerm && searchTerm.trim()) exportParams.search = searchTerm.trim();
+            if (statusFilter && statusFilter.trim()) exportParams.status = statusFilter.trim();
+            if (paymentFilter && paymentFilter.trim()) exportParams.paymentStatus = paymentFilter.trim();
+            if (dateFrom && dateFrom.trim()) exportParams.dateFrom = dateFrom.trim();
+            if (dateTo && dateTo.trim()) exportParams.dateTo = dateTo.trim();
+
+            const response = await ordersApi.getOrdersForExcel(exportParams);
+            const excelOrders = response.data || response;
+
+            const excelData = excelOrders.map((order: Order, index: number) => ({
                 'Mã đơn hàng': order.orderNumber || '',
                 'Tên khách hàng - SĐT': order.customer 
                     ? `${order.customer.name || ''} - ${order.customer.phone || ''}`
                     : 'N/A',
                 'Tên đại lý': order.agent?.name || 'N/A',
                 'Ngày tạo': formatTableDate(order.createdAt),
-                'Sản phẩm': order.items?.map(item => {
+                'Sản phẩm': order.items?.map((item: any) => {
                     const productName = item.productName || 'N/A';
                     const quantity = item.quantity || 0;
                     const unitPrice = item.unitPrice || 0;
@@ -278,8 +293,9 @@ export const Orders: React.FC = () => {
 
             XLSX.writeFile(wb, fileName);
 
-            success('Xuất Excel thành công', `File ${fileName} đã được tải xuống`);
+            success('Xuất Excel thành công', `File ${fileName} đã được tải xuống với ${excelOrders.length} đơn hàng`);
         } catch (error) {
+            console.error('Export Excel error:', error);
             showError('Xuất Excel thất bại', 'Có lỗi xảy ra khi xuất file Excel');
         }
     };
@@ -466,7 +482,6 @@ export const Orders: React.FC = () => {
                                     size="sm"
                                     onClick={handleExportExcel}
                                     className="flex items-center gap-2 h-12 px-6 whitespace-nowrap border-green-300 hover:bg-green-50 hover:border-green-400 hover:text-green-700 transition-all font-medium"
-                                    disabled={orders.length === 0}
                                 >
                                     <Download className="h-4 w-4" />
                                     Excel
