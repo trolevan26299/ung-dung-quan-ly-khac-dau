@@ -127,10 +127,10 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đơn hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
                                     Khách hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đại lý
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
@@ -169,7 +169,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 w-36">
+                                    <td className="px-2 py-4 w-36">
                                         <div className="max-w-36 overflow-hidden">
                                             <Tooltip 
                                                 content={safeString(order.customer?.name || 'N/A')} 
@@ -189,7 +189,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </Tooltip>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 w-32">
+                                    <td className="px-2 py-4 w-32">
                                         <div className="max-w-32 overflow-hidden">
                                             <Tooltip 
                                                 content={safeString(order.agent?.name || 'N/A')} 
