@@ -123,34 +123,34 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đơn hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
                                     Khách hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
                                     Đại lý
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Ngày tạo
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                                     Sản phẩm
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Tổng tiền
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Trạng thái
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Thanh toán
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                                     Khách thanh toán
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Thao tác
                                 </th>
                             </tr>
@@ -158,7 +158,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                         <tbody className="bg-white divide-y divide-gray-200">
                             {(orders || []).map((order) => (
                                 <tr key={order._id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-32">
                                         <div>
                                             <div className="text-sm font-medium text-gray-900">
                                                 {order.orderNumber}
@@ -168,27 +168,39 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 w-40">
                                         <div>
-                                            <div className="text-sm font-medium text-gray-900">
+                                            <div 
+                                                className="text-sm font-medium text-gray-900 truncate cursor-help"
+                                                title={safeString(order.customer?.name || 'N/A')}
+                                            >
                                                 {safeString(order.customer?.name || 'N/A')}
                                             </div>
-                                            <div className="text-sm text-gray-500">
+                                            <div 
+                                                className="text-sm text-gray-500 truncate cursor-help"
+                                                title={safeString(order.customer?.phone || '')}
+                                            >
                                                 {safeString(order.customer?.phone || '')}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 w-36">
                                         <div>
-                                            <div className="text-sm font-medium text-gray-900">
+                                            <div 
+                                                className="text-sm font-medium text-gray-900 truncate cursor-help"
+                                                title={safeString(order.agent?.name || 'N/A')}
+                                            >
                                                 {safeString(order.agent?.name || 'N/A')}
                                             </div>
-                                            <div className="text-sm text-gray-500">
+                                            <div 
+                                                className="text-sm text-gray-500 truncate cursor-help"
+                                                title={safeString(order.agent?.phone || '')}
+                                            >
                                                 {safeString(order.agent?.phone || '')}
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-24">
                                         <div className="flex items-center">
                                             <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
@@ -196,7 +208,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-20">
                                         <div className="flex items-center">
                                             <Package className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
@@ -204,7 +216,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-24">
                                         <div className="flex items-center">
                                             <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                                             <span className="text-sm font-semibold text-green-600">
@@ -212,22 +224,22 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-24">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                                             {getStatusText(order.status)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-24">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentStatusText(order.paymentStatus)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-6 py-4 whitespace-nowrap w-28">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentMethodText(order.paymentMethod)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-24">
                                         <div className="flex space-x-1">
                                             <Button
                                                 variant="light"
