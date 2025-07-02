@@ -126,10 +126,10 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đơn hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                                     Khách hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Đại lý
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
@@ -168,8 +168,8 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 w-40">
-                                        <div>
+                                    <td className="px-6 py-4 w-28">
+                                        <div className="max-w-28">
                                             <div 
                                                 className="text-sm font-medium text-gray-900 truncate cursor-help"
                                                 title={safeString(order.customer?.name || 'N/A')}
@@ -184,8 +184,8 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 w-36">
-                                        <div>
+                                    <td className="px-6 py-4 w-24">
+                                        <div className="max-w-24">
                                             <div 
                                                 className="text-sm font-medium text-gray-900 truncate cursor-help"
                                                 title={safeString(order.agent?.name || 'N/A')}

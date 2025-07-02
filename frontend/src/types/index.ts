@@ -140,6 +140,7 @@ export interface Order {
   paymentMethod?: 'company_account' | 'personal_account' | 'cash';
   status: 'active' | 'cancelled';
   notes?: string;
+  deliveryDate?: string;
   createdBy: User;
   createdAt: string;
   updatedAt: string;
@@ -160,6 +161,7 @@ export interface CreateOrderRequest {
   vat?: number;
   shippingFee?: number;
   notes?: string;
+  deliveryDate?: string;
 }
 
 // Stock types

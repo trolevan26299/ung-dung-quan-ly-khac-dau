@@ -8,6 +8,37 @@ import { Input } from '../ui/Input';
 import { Portal } from '../ui/Portal';
 import { Combobox } from '../ui/combobox';
 
+// Helper function để lấy ngày giờ hiện tại theo múi giờ Việt Nam (UTC+7)
+const getVietnamDateTime = (): string => {
+    const now = new Date();
+    // Tạo một Date object mới với múi giờ Việt Nam
+    // Cách đơn giản: lấy UTC time và cộng thêm 7 giờ
+    const vietnamTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    
+    // Format thành chuỗi YYYY-MM-DDTHH:mm
+    const year = vietnamTime.getUTCFullYear();
+    const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
+    const hours = String(vietnamTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(vietnamTime.getUTCMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Helper function để format datetime từ database cho input (giữ nguyên múi giờ)
+const formatDateTimeForInput = (dateTime: string | Date): string => {
+    const date = new Date(dateTime);
+    
+    // Format thành chuỗi YYYY-MM-DDTHH:mm cho datetime-local input
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 interface OrderFormProps {
     order?: Order | null;
     isOpen: boolean;
@@ -49,7 +80,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         shippingFee: 0,
         notes: '',
         paymentStatus: 'pending',
-        paymentMethod: 'personal_account'
+        paymentMethod: 'personal_account',
+        deliveryDate: getVietnamDateTime() // Mặc định là ngày hiện tại theo UTC+7
     });
 
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -126,7 +158,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 shippingFee: order.shippingFee || 0,
                 notes: order.notes || '',
                 paymentStatus: order.paymentStatus || 'pending',
-                paymentMethod: order.paymentMethod || 'personal_account'
+                paymentMethod: order.paymentMethod || 'personal_account',
+                deliveryDate: order.deliveryDate ? formatDateTimeForInput(order.deliveryDate) : getVietnamDateTime()
             });
 
             const mappedOrderItemsDisplay = order.items.filter(item => item.product).map(item => ({
@@ -150,7 +183,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 shippingFee: 0,
                 notes: '',
                 paymentStatus: 'pending',
-                paymentMethod: 'personal_account'
+                paymentMethod: 'personal_account',
+                deliveryDate: getVietnamDateTime() // Mặc định là ngày hiện tại theo UTC+7
             });
             setOrderItems([]);
             setCustomerSearchValue('');
@@ -378,6 +412,22 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                     <p className="text-red-500 text-xs mt-1">{errors.customer}</p>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Delivery Date */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ngày nhập hàng
+                            </label>
+                            <Input
+                                type="datetime-local"
+                                value={formData.deliveryDate}
+                                onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
+                                className="w-full md:w-64"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Ngày dự kiến nhận hàng (mặc định là ngày hiện tại)
+                            </p>
                         </div>
 
                         {/* Product Selection */}
