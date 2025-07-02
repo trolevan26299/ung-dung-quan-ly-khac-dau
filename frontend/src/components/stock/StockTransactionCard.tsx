@@ -68,15 +68,15 @@ export const StockTransactionCard: React.FC<StockTransactionCardProps> = ({
     const typeConfig = getTypeColor(transaction.transactionType || transaction.type);
     const totalValue = (transaction.quantity || 0) * (transaction.unitPrice || 0);
     
-    // Cho phép edit/delete tất cả giao dịch import và adjustment, không phụ thuộc vào giá trị
+    // Cho phép edit/delete cho tất cả giao dịch import và adjustment, không phụ thuộc vào giá trị
     // Chỉ không cho phép với giao dịch export có orderId (từ đơn hàng)
-    const canEditDelete = (
-        (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment' || 
-         transaction.type === 'import' || transaction.type === 'adjustment')
-        && !transaction.orderId
-    );
+    const transactionType = transaction.transactionType || transaction.type;
     
-
+    // Debug từng điều kiện
+    const isImport = transactionType === 'import';
+    const isAdjustment = transactionType === 'adjustment';
+    
+    const canEditDelete = isImport || isAdjustment;
 
     return (
         <Card className={`hover:shadow-lg transition-shadow ${typeConfig.border} ${typeConfig.bg}`}>
@@ -159,7 +159,7 @@ export const StockTransactionCard: React.FC<StockTransactionCardProps> = ({
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-500">Thời gian:</span>
                         <span className="text-sm font-medium text-gray-700">
-                            {formatDateTime(transaction.createdAt)}
+                            {formatDateTime(transaction.transactionDate || transaction.createdAt)}
                         </span>
                     </div>
                 </div>

@@ -139,13 +139,16 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {(transactions || []).map((transaction) => {
-                            // Cho phép edit/delete tất cả giao dịch import và adjustment, không phụ thuộc vào giá trị
+                            // Cho phép edit/delete cho tất cả giao dịch import và adjustment, không phụ thuộc vào giá trị
                             // Chỉ không cho phép với giao dịch export có orderId (từ đơn hàng)
-                            const canEditDelete = (
-                                (transaction.transactionType === 'import' || transaction.transactionType === 'adjustment' || 
-                                 transaction.type === 'import' || transaction.type === 'adjustment')
-                                && !transaction.orderId
-                            );
+                            const transactionType = transaction.transactionType || transaction.type;
+                            
+                            // Debug từng điều kiện
+                            const isImport = transactionType === 'import';
+                            const isAdjustment = transactionType === 'adjustment';
+                            
+                            const canEditDelete = isImport || isAdjustment
+                        
 
                             return (
                                 <tr key={transaction._id} className="hover:bg-gray-50">
@@ -161,9 +164,9 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            {getTypeIcon(transaction.transactionType)}
-                                            <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeBadgeColor(transaction.transactionType)}`}>
-                                                {getTypeText(transaction.transactionType)}
+                                            {getTypeIcon(transactionType)}
+                                            <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getTypeBadgeColor(transactionType)}`}>
+                                                {getTypeText(transactionType)}
                                             </span>
                                         </div>
                                     </td>
@@ -176,7 +179,7 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                         <div className="flex items-center">
                                             <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                                             <span className="text-sm text-gray-900">
-                                                {transaction.transactionType === 'import' 
+                                                {transactionType === 'import' 
                                                     ? formatCurrency(transaction.unitPrice || 0)
                                                     : '-'
                                                 }
@@ -187,7 +190,7 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                         <div className="flex items-center">
                                             <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                                             <span className="text-sm font-semibold text-green-600">
-                                                {transaction.transactionType === 'import' 
+                                                {transactionType === 'import' 
                                                     ? formatCurrency((transaction.quantity || 0) * (transaction.unitPrice || 0))
                                                     : '-'
                                                 }
@@ -210,7 +213,7 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                                         <div className="flex items-center">
                                             <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
-                                                {formatDateTime(transaction.createdAt)}
+                                                {formatDateTime(transaction.transactionDate || transaction.createdAt)}
                                             </span>
                                         </div>
                                     </td>

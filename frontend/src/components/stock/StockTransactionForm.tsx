@@ -11,6 +11,37 @@ import { formatTableDateTime } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 import { Combobox } from '../ui/combobox';
 
+// Helper function để lấy ngày giờ hiện tại theo múi giờ Việt Nam (UTC+7)
+const getVietnamDateTime = (): string => {
+    const now = new Date();
+    // Tạo một Date object mới với múi giờ Việt Nam
+    // Cách đơn giản: lấy UTC time và cộng thêm 7 giờ
+    const vietnamTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    
+    // Format thành chuỗi YYYY-MM-DDTHH:mm
+    const year = vietnamTime.getUTCFullYear();
+    const month = String(vietnamTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(vietnamTime.getUTCDate()).padStart(2, '0');
+    const hours = String(vietnamTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(vietnamTime.getUTCMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Helper function để format datetime từ database cho input (giữ nguyên múi giờ)
+const formatDateTimeForInput = (dateTime: string | Date): string => {
+    const date = new Date(dateTime);
+    
+    // Format thành chuỗi YYYY-MM-DDTHH:mm cho datetime-local input
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 interface StockTransactionFormProps {
     transaction?: StockTransaction;
     isOpen: boolean;
@@ -25,6 +56,7 @@ interface FormErrors {
     unitPrice?: string;
     vat?: string;
     notes?: string;
+    transactionDate?: string;
 }
 
 interface FormData {
@@ -34,6 +66,7 @@ interface FormData {
     unitPrice: string; // Changed to string to allow empty input  
     vat: string; // VAT percentage
     notes: string;
+    transactionDate: string; // Ngày và giờ giao dịch
 }
 
 export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
@@ -52,7 +85,8 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
         quantity: '',
         unitPrice: '',
         vat: '',
-        notes: ''
+        notes: '',
+        transactionDate: getVietnamDateTime() // Lấy ngày giờ hiện tại theo múi giờ Việt Nam
     });
 
     const [products, setProducts] = useState<Product[]>([]);
@@ -76,13 +110,24 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 ? Math.round(savedUnitPrice / (1 + savedVatRate / 100) * 100) / 100
                 : savedUnitPrice;
             
+            // Lấy ngày giờ từ transactionDate hoặc createdAt và format cho input
+            let transactionDateStr: string;
+            if (transaction.transactionDate) {
+                // Giữ nguyên giờ cũ, format cho input
+                transactionDateStr = formatDateTimeForInput(transaction.transactionDate);
+            } else {
+                // Fallback về createdAt nếu không có transactionDate
+                transactionDateStr = formatDateTimeForInput(transaction.createdAt);
+            }
+            
             setFormData({
                 product: transaction.productId,
                 type: transaction.transactionType || transaction.type,
                 quantity: transaction.quantity.toString(),
                 unitPrice: originalUnitPrice.toString(),
                 vat: savedVatRate.toString(),
-                notes: transaction.notes || ''
+                notes: transaction.notes || '',
+                transactionDate: transactionDateStr
             });
         } else {
             setFormData({
@@ -91,7 +136,8 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                 quantity: '',
                 unitPrice: '',
                 vat: '',
-                notes: ''
+                notes: '',
+                transactionDate: getVietnamDateTime() // Lấy ngày giờ hiện tại theo múi giờ Việt Nam
             });
         }
         setErrors({});
@@ -127,6 +173,11 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
             if (!formData.unitPrice || isNaN(unitPrice) || unitPrice < 0) {
                 newErrors.unitPrice = 'Đơn giá phải >= 0';
             }
+        }
+
+        // Validate ngày giao dịch
+        if (!formData.transactionDate) {
+            newErrors.transactionDate = 'Vui lòng chọn ngày giờ giao dịch';
         }
 
         setErrors(newErrors);
@@ -212,7 +263,8 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                     quantity: parseFloat(formData.quantity),
                     unitPrice: finalUnitPrice, // Gửi đơn giá đã có VAT
                     vat: vatRate,
-                    notes: formData.notes
+                    notes: formData.notes,
+                    transactionDate: formData.transactionDate
                 };
 
                 await onSubmit(submitData);
@@ -223,7 +275,8 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                     quantity: '',
                     unitPrice: '',
                     vat: '',
-                    notes: ''
+                    notes: '',
+                    transactionDate: getVietnamDateTime() // Reset về ngày giờ hiện tại theo múi giờ Việt Nam
                 });
             } catch (err) {
                 error('Có lỗi xảy ra khi tạo giao dịch');
@@ -381,6 +434,22 @@ export const StockTransactionForm: React.FC<StockTransactionFormProps> = ({
                             {errors.quantity && (
                                 <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
                             )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ngày giao dịch *
+                            </label>
+                            <Input
+                                type="datetime-local"
+                                value={formData.transactionDate}
+                                onChange={(e) => setFormData({ ...formData, transactionDate: e.target.value })}
+                                className={errors.transactionDate ? 'border-red-500' : ''}
+                            />
+                            {errors.transactionDate && (
+                                <p className="text-red-500 text-xs mt-1">{errors.transactionDate}</p>
+                            )}
+                           
                         </div>
 
                         {/* Hiển thị đơn giá và VAT cho import hoặc khi đang edit transaction import */}

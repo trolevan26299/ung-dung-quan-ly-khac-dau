@@ -532,7 +532,8 @@ export const Stock: React.FC = () => {
                 quantity: data.quantity,
                 unitPrice: data.unitPrice,
                 vat: data.vat,
-                notes: data.notes
+                notes: data.notes,
+                transactionDate: data.transactionDate
             };
             
             await (dispatch as any)(updateTransaction({ 

@@ -159,7 +159,7 @@ export const StockTransactionDetail: React.FC<StockTransactionDetailProps> = ({
                                     Ngày thực hiện
                                 </label>
                                 <p className="text-gray-900">
-                                    {formatTableDateTime(transaction.createdAt)}
+                                    {formatTableDateTime(transaction.transactionDate || transaction.createdAt)}
                                 </p>
                             </div>
 

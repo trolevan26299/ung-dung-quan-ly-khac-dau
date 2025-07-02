@@ -181,6 +181,7 @@ export interface StockTransaction {
   reason?: string;
   stockBefore?: number;
   stockAfter?: number;
+  transactionDate?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -192,6 +193,7 @@ export interface CreateStockTransactionRequest {
   unitPrice?: number;
   vat?: number;
   notes?: string;
+  transactionDate?: string;
 }
 
 export interface UpdateStockTransactionRequest {
@@ -200,6 +202,7 @@ export interface UpdateStockTransactionRequest {
   vat?: number;
   reason?: string;
   notes?: string;
+  transactionDate?: string;
 }
 
 export interface StockQueryParams {
