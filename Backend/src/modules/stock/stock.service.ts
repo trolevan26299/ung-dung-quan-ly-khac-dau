@@ -569,11 +569,13 @@ export class StockService {
     const updateData: any = {};
 
     if (transaction.transactionType === TransactionType.IMPORT) {
-      // Hoàn nguyên số lượng
-      const newStockQuantity = product.stockQuantity - Math.abs(transaction.quantity);
+      // Hoàn nguyên giao dịch nhập kho: trừ đi số lượng đã nhập
+      // transaction.quantity của IMPORT luôn là số dương
+      const quantityToRevert = Math.abs(transaction.quantity);
+      const newStockQuantity = product.stockQuantity - quantityToRevert;
       
       if (newStockQuantity < 0) {
-        throw new Error('Không thể hoàn nguyên: số lượng tồn kho không đủ');
+        throw new Error(`Không thể hoàn nguyên: cần ${quantityToRevert} sản phẩm nhưng chỉ còn ${product.stockQuantity} trong kho`);
       }
 
       updateData.stockQuantity = newStockQuantity;
@@ -591,11 +593,13 @@ export class StockService {
         }
       }
     } else if (transaction.transactionType === TransactionType.ADJUSTMENT) {
-      // Hoàn nguyên điều chỉnh
+      // Hoàn nguyên điều chỉnh: đảo ngược lại thay đổi
+      // transaction.quantity có thể âm hoặc dương tùy theo loại adjustment
+      // Để hoàn nguyên, ta trừ đi quantity này
       const newStockQuantity = product.stockQuantity - transaction.quantity;
       
       if (newStockQuantity < 0) {
-        throw new Error('Không thể hoàn nguyên: số lượng tồn kho không đủ');
+        throw new Error(`Không thể hoàn nguyên điều chỉnh: kết quả sẽ là ${newStockQuantity} (âm)`);
       }
 
       updateData.stockQuantity = newStockQuantity;
