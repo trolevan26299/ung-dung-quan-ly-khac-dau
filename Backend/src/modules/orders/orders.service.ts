@@ -179,6 +179,7 @@ export class OrdersService {
       paymentStatus: createOrderDto.paymentStatus,
       paymentMethod: createOrderDto.paymentMethod || 'personal_account',
       notes: createOrderDto.notes,
+      deliveryDate: createOrderDto.deliveryDate ? new Date(createOrderDto.deliveryDate) : undefined,
       createdBy: employeeId,
       status: OrderStatus.ACTIVE,
     });
@@ -464,6 +465,11 @@ export class OrdersService {
       updatedFields.shippingFee = shippingFee;
       updatedFields.totalAmount = totalAmount;
 
+    }
+
+    // Handle deliveryDate conversion if provided
+    if (updateOrderDto.deliveryDate) {
+      updatedFields.deliveryDate = new Date(updateOrderDto.deliveryDate);
     }
 
     const order = await this.orderModel.findByIdAndUpdate(

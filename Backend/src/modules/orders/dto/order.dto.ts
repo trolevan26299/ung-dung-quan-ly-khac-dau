@@ -78,6 +78,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   agentName?: string;
+
+  @ApiProperty({ description: 'Ngày nhập hàng', required: false })
+  @IsOptional()
+  @IsString()
+  deliveryDate?: string;
 }
 
 export class UpdateOrderDto {
@@ -119,6 +124,11 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsEnum(OrderStatus)
   status?: OrderStatus;
+
+  @ApiProperty({ description: 'Ngày nhập hàng', required: false })
+  @IsOptional()
+  @IsString()
+  deliveryDate?: string;
 }
 
 export class OrderQueryDto {
