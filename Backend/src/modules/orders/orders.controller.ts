@@ -36,6 +36,22 @@ export class OrdersController {
     );
   }
 
+  @Get('export/excel')
+  @ApiOperation({ summary: 'Xuất Excel danh sách đơn hàng' })
+  @ApiResponse({ status: 200, description: 'Xuất Excel thành công' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'paymentStatus', required: false, enum: ['pending', 'completed', 'debt'] })
+  @ApiQuery({ name: 'status', required: false, enum: ['active', 'cancelled'] })
+  @ApiQuery({ name: 'customerId', required: false, type: String })
+  @ApiQuery({ name: 'agentId', required: false, type: String })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'YYYY-MM-DD' })
+  exportExcel(@Query() query: OrderQueryDto) {
+    // Đặt limit cao cho xuất Excel
+    const exportQuery = { ...query, limit: 9999999 };
+    return this.ordersService.findAll(exportQuery);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách đơn hàng' })
   @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
