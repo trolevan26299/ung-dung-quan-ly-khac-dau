@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, Edit, Trash2, ShoppingCart, Calendar, DollarSign, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { Tooltip } from '../ui/tooltip';
 import { formatCurrency, safeString, safeNumber, formatTableDate } from '../../lib/utils';
 import type { Order } from '../../types';
 
@@ -126,10 +127,10 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đơn hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
                                     Khách hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đại lý
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
@@ -168,36 +169,32 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 w-28">
-                                        <div className="max-w-28">
-                                            <div 
-                                                className="text-sm font-medium text-gray-900 truncate cursor-help"
-                                                title={safeString(order.customer?.name || 'N/A')}
-                                            >
-                                                {safeString(order.customer?.name || 'N/A')}
-                                            </div>
-                                            <div 
-                                                className="text-sm text-gray-500 truncate cursor-help"
-                                                title={safeString(order.customer?.phone || '')}
-                                            >
-                                                {safeString(order.customer?.phone || '')}
-                                            </div>
+                                    <td className="px-6 py-4 w-36">
+                                        <div className="max-w-36">
+                                            <Tooltip content={safeString(order.customer?.name || 'N/A')} side="top">
+                                                <div className="text-sm font-medium text-gray-900 truncate cursor-help">
+                                                    {safeString(order.customer?.name || 'N/A')}
+                                                </div>
+                                            </Tooltip>
+                                            <Tooltip content={safeString(order.customer?.phone || '')} side="bottom">
+                                                <div className="text-sm text-gray-500 truncate cursor-help">
+                                                    {safeString(order.customer?.phone || '')}
+                                                </div>
+                                            </Tooltip>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 w-24">
-                                        <div className="max-w-24">
-                                            <div 
-                                                className="text-sm font-medium text-gray-900 truncate cursor-help"
-                                                title={safeString(order.agent?.name || 'N/A')}
-                                            >
-                                                {safeString(order.agent?.name || 'N/A')}
-                                            </div>
-                                            <div 
-                                                className="text-sm text-gray-500 truncate cursor-help"
-                                                title={safeString(order.agent?.phone || '')}
-                                            >
-                                                {safeString(order.agent?.phone || '')}
-                                            </div>
+                                    <td className="px-6 py-4 w-32">
+                                        <div className="max-w-32">
+                                            <Tooltip content={safeString(order.agent?.name || 'N/A')} side="top">
+                                                <div className="text-sm font-medium text-gray-900 truncate cursor-help">
+                                                    {safeString(order.agent?.name || 'N/A')}
+                                                </div>
+                                            </Tooltip>
+                                            <Tooltip content={safeString(order.agent?.phone || '')} side="bottom">
+                                                <div className="text-sm text-gray-500 truncate cursor-help">
+                                                    {safeString(order.agent?.phone || '')}
+                                                </div>
+                                            </Tooltip>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap w-24">
