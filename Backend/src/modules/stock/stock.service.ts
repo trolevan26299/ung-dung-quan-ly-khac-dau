@@ -117,7 +117,8 @@ export class StockService {
       stockAfter,
       reason: createStockTransactionDto.reason,
       notes: createStockTransactionDto.notes,
-      totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? totalImportValue : 0
+      totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? totalImportValue : 0,
+      transactionDate: createStockTransactionDto.transactionDate || new Date()
     });
 
     return transaction.save();
@@ -249,7 +250,8 @@ export class StockService {
       userName,
       stockBefore,
       stockAfter,
-      reason: 'Xuất kho cho đơn hàng'
+      reason: 'Xuất kho cho đơn hàng',
+      transactionDate: new Date()
     });
 
     return transaction.save();
@@ -284,7 +286,8 @@ export class StockService {
       userName,
       stockBefore,
       stockAfter,
-      reason: 'Hoàn trả kho do hủy đơn hàng'
+      reason: 'Hoàn trả kho do hủy đơn hàng',
+      transactionDate: new Date()
     });
 
     return transaction.save();
@@ -438,74 +441,100 @@ export class StockService {
       throw new Error('Không thể cập nhật giao dịch xuất kho của đơn hàng');
     }
 
-    // Hoàn nguyên giao dịch cũ trước
-    await this.revertTransactionEffect(oldTransaction, product);
+    // Kiểm tra xem có thay đổi về số lượng hoặc giá không
+    const quantityChanged = updateData.quantity !== undefined && updateData.quantity !== oldTransaction.quantity;
+    const priceChanged = updateData.unitPrice !== undefined && updateData.unitPrice !== oldTransaction.unitPrice;
+    const vatChanged = updateData.vat !== undefined && updateData.vat !== oldTransaction.vat;
+    const dateChanged = updateData.transactionDate !== undefined;
     
-    // Lấy lại product sau khi revert để có stock mới
-    const productAfterRevert = await this.productModel.findById(oldTransaction.productId);
+    // Chỉ hoàn nguyên và áp dụng lại nếu có thay đổi về số lượng, giá hoặc VAT
+    const needsStockRecalculation = quantityChanged || priceChanged || vatChanged;
 
-    // Áp dụng giao dịch mới
-    const newQuantity = updateData.quantity !== undefined ? updateData.quantity : oldTransaction.quantity;
-    const newUnitPrice = updateData.unitPrice !== undefined ? updateData.unitPrice : oldTransaction.unitPrice;
-    const newVat = updateData.vat !== undefined ? updateData.vat : oldTransaction.vat;
-
-    // Tính toán lại stock và avg price
-    const stockBefore = productAfterRevert.stockQuantity;
-    let stockAfter = stockBefore;
-    let finalUnitPrice = newUnitPrice || 0;
-    let totalValue = 0;
-    const updateProductData: any = {};
-
-    if (oldTransaction.transactionType === TransactionType.IMPORT) {
-      stockAfter = stockBefore + Math.abs(newQuantity);
+    if (needsStockRecalculation) {
+      // Hoàn nguyên giao dịch cũ trước
+      await this.revertTransactionEffect(oldTransaction, product);
       
-      if (finalUnitPrice > 0) {
-        // Frontend đã tính VAT rồi, không cần cộng thêm
-        // const vatRate = newVat || 0;
-        // const vatAmount = finalUnitPrice * (vatRate / 100);
-        // finalUnitPrice = finalUnitPrice + vatAmount;
+      // Lấy lại product sau khi revert để có stock mới
+      const productAfterRevert = await this.productModel.findById(oldTransaction.productId);
+
+      // Áp dụng giao dịch mới
+      const newQuantity = updateData.quantity !== undefined ? updateData.quantity : oldTransaction.quantity;
+      const newUnitPrice = updateData.unitPrice !== undefined ? updateData.unitPrice : oldTransaction.unitPrice;
+      const newVat = updateData.vat !== undefined ? updateData.vat : oldTransaction.vat;
+
+      // Tính toán lại stock và avg price
+      const stockBefore = productAfterRevert.stockQuantity;
+      let stockAfter = stockBefore;
+      let finalUnitPrice = newUnitPrice || 0;
+      let totalValue = 0;
+      const updateProductData: any = {};
+
+      if (oldTransaction.transactionType === TransactionType.IMPORT) {
+        stockAfter = stockBefore + Math.abs(newQuantity);
         
-        // Tính lại giá trung bình với đơn giá đã có VAT
-        const currentAvgPrice = productAfterRevert.avgImportPrice || 0;
-        const totalCurrentValue = stockBefore * currentAvgPrice;
-        totalValue = Math.abs(newQuantity) * finalUnitPrice;
-        const newAvgImportPrice = stockBefore === 0 ? 
-          finalUnitPrice : 
-          (totalCurrentValue + totalValue) / stockAfter;
+        if (finalUnitPrice > 0) {
+          // Frontend đã tính VAT rồi, không cần cộng thêm
+          // const vatRate = newVat || 0;
+          // const vatAmount = finalUnitPrice * (vatRate / 100);
+          // finalUnitPrice = finalUnitPrice + vatAmount;
+          
+          // Tính lại giá trung bình với đơn giá đã có VAT
+          const currentAvgPrice = productAfterRevert.avgImportPrice || 0;
+          const totalCurrentValue = stockBefore * currentAvgPrice;
+          totalValue = Math.abs(newQuantity) * finalUnitPrice;
+          const newAvgImportPrice = stockBefore === 0 ? 
+            finalUnitPrice : 
+            (totalCurrentValue + totalValue) / stockAfter;
+          
+          updateProductData.avgImportPrice = newAvgImportPrice;
+        }
+      } else if (oldTransaction.transactionType === TransactionType.ADJUSTMENT) {
+        stockAfter = stockBefore + newQuantity;
         
-        updateProductData.avgImportPrice = newAvgImportPrice;
+        if (stockAfter < 0) {
+          throw new Error('Số lượng tồn kho không đủ');
+        }
       }
-    } else if (oldTransaction.transactionType === TransactionType.ADJUSTMENT) {
-      stockAfter = stockBefore + newQuantity;
+
+      updateProductData.stockQuantity = stockAfter;
       
-      if (stockAfter < 0) {
-        throw new Error('Số lượng tồn kho không đủ');
-      }
+      // Cập nhật sản phẩm
+      await this.productModel.findByIdAndUpdate(oldTransaction.productId, updateProductData);
+
+      // Cập nhật transaction với thông tin stock mới
+      const updatedTransaction = await this.stockTransactionModel.findByIdAndUpdate(
+        transactionId,
+        {
+          quantity: oldTransaction.transactionType === TransactionType.IMPORT ? Math.abs(newQuantity) : newQuantity,
+          unitPrice: finalUnitPrice,
+          vat: newVat || 0,
+          totalValue,
+          stockBefore,
+          stockAfter,
+          reason: updateData.reason !== undefined ? updateData.reason : oldTransaction.reason,
+          notes: updateData.notes !== undefined ? updateData.notes : oldTransaction.notes,
+          updatedAt: new Date(),
+          ...(dateChanged && { transactionDate: updateData.transactionDate })
+        },
+        { new: true }
+      );
+
+      return updatedTransaction;
+    } else {
+      // Chỉ cập nhật các trường không ảnh hưởng đến stock (như ghi chú, lý do, ngày giao dịch)
+      const updatedTransaction = await this.stockTransactionModel.findByIdAndUpdate(
+        transactionId,
+        {
+          reason: updateData.reason !== undefined ? updateData.reason : oldTransaction.reason,
+          notes: updateData.notes !== undefined ? updateData.notes : oldTransaction.notes,
+          updatedAt: new Date(),
+          ...(dateChanged && { transactionDate: updateData.transactionDate })
+        },
+        { new: true }
+      );
+
+      return updatedTransaction;
     }
-
-    updateProductData.stockQuantity = stockAfter;
-    
-    // Cập nhật sản phẩm
-    await this.productModel.findByIdAndUpdate(oldTransaction.productId, updateProductData);
-
-    // Cập nhật transaction
-    const updatedTransaction = await this.stockTransactionModel.findByIdAndUpdate(
-      transactionId,
-      {
-        quantity: oldTransaction.transactionType === TransactionType.IMPORT ? Math.abs(newQuantity) : newQuantity,
-        unitPrice: finalUnitPrice,
-        vat: newVat || 0,
-        totalValue,
-        stockBefore,
-        stockAfter,
-        reason: updateData.reason !== undefined ? updateData.reason : oldTransaction.reason,
-        notes: updateData.notes !== undefined ? updateData.notes : oldTransaction.notes,
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-
-    return updatedTransaction;
   }
 
   // Xóa giao dịch kho

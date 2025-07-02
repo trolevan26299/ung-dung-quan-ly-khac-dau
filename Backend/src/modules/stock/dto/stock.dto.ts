@@ -40,6 +40,11 @@ export class CreateStockTransactionDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiProperty({ description: 'Ngày giao dịch', required: false })
+  @IsOptional()
+  @Type(() => Date)
+  transactionDate?: Date;
 }
 
 export class UpdateStockTransactionDto {
@@ -72,6 +77,11 @@ export class UpdateStockTransactionDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiProperty({ description: 'Ngày giao dịch', required: false })
+  @IsOptional()
+  @Type(() => Date)
+  transactionDate?: Date;
 }
 
 export class ImportStockDto {
