@@ -121,7 +121,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
         <>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 table-fixed">
                         <thead className="bg-gray-50">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
@@ -170,28 +170,40 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 w-36">
-                                        <div className="max-w-36">
-                                            <Tooltip content={safeString(order.customer?.name || 'N/A')} side="top">
-                                                <div className="text-sm font-medium text-gray-900 truncate cursor-help">
+                                        <div className="max-w-36 overflow-hidden">
+                                            <Tooltip 
+                                                content={safeString(order.customer?.name || 'N/A')} 
+                                                side="top"
+                                            >
+                                                <div className="text-sm font-medium text-gray-900 truncate cursor-help overflow-hidden">
                                                     {safeString(order.customer?.name || 'N/A')}
                                                 </div>
                                             </Tooltip>
-                                            <Tooltip content={safeString(order.customer?.phone || '')} side="bottom">
-                                                <div className="text-sm text-gray-500 truncate cursor-help">
+                                            <Tooltip 
+                                                content={safeString(order.customer?.phone || '')} 
+                                                side="bottom"
+                                            >
+                                                <div className="text-sm text-gray-500 truncate cursor-help overflow-hidden">
                                                     {safeString(order.customer?.phone || '')}
                                                 </div>
                                             </Tooltip>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 w-32">
-                                        <div className="max-w-32">
-                                            <Tooltip content={safeString(order.agent?.name || 'N/A')} side="top">
-                                                <div className="text-sm font-medium text-gray-900 truncate cursor-help">
+                                        <div className="max-w-32 overflow-hidden">
+                                            <Tooltip 
+                                                content={safeString(order.agent?.name || 'N/A')} 
+                                                side="top"
+                                            >
+                                                <div className="text-sm font-medium text-gray-900 truncate cursor-help overflow-hidden">
                                                     {safeString(order.agent?.name || 'N/A')}
                                                 </div>
                                             </Tooltip>
-                                            <Tooltip content={safeString(order.agent?.phone || '')} side="bottom">
-                                                <div className="text-sm text-gray-500 truncate cursor-help">
+                                            <Tooltip 
+                                                content={safeString(order.agent?.phone || '')} 
+                                                side="bottom"
+                                            >
+                                                <div className="text-sm text-gray-500 truncate cursor-help overflow-hidden">
                                                     {safeString(order.agent?.phone || '')}
                                                 </div>
                                             </Tooltip>

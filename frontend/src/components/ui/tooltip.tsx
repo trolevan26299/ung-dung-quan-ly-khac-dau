@@ -153,7 +153,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
           style={getTooltipStyle()}
           className={cn(
             'animate-in fade-in-0 zoom-in-95 duration-200',
-            'relative px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg max-w-xs break-words',
+            'relative px-3 py-2 text-sm text-white bg-gray-900 rounded-md shadow-lg',
+            'max-w-sm min-w-0 break-words whitespace-normal',
             className
           )}
           onMouseEnter={handleMouseEnter}
