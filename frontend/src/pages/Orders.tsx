@@ -226,7 +226,7 @@ export const Orders: React.FC = () => {
         setDateTo('');
         setDateFromObj(undefined);
         setDateToObj(undefined);
-        paginationHook.resetPagination();
+        paginationHook.goToPage(1);
     };
 
     const handleExportExcel = async () => {
