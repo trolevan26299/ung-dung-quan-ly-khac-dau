@@ -414,21 +414,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                             </div>
                         </div>
 
-                        {/* Delivery Date */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Ngày nhập hàng
-                            </label>
-                            <Input
-                                type="datetime-local"
-                                value={formData.deliveryDate}
-                                onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                                className="w-full md:w-64"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Ngày dự kiến nhận hàng (mặc định là ngày hiện tại)
-                            </p>
-                        </div>
+                        
 
                         {/* Product Selection */}
                         <div>
@@ -617,6 +603,18 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                     <p className="text-red-500 text-xs mt-1">{errors.paymentStatus}</p>
                                 )}
                             </div>
+                        </div>
+                        {/* Delivery Date */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ngày nhập hàng
+                            </label>
+                            <Input
+                                type="datetime-local"
+                                value={formData.deliveryDate}
+                                onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
+                                className="w-full md:w-64"
+                            />
                         </div>
 
                         {/* Order Summary */}

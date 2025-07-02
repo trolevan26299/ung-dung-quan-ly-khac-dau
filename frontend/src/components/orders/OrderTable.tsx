@@ -134,7 +134,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                     Đại lý
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                                    Ngày tạo
+                                    Ngày nhập hàng
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                                     Sản phẩm
@@ -213,7 +213,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                         <div className="flex items-center">
                                             <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
-                                                {formatTableDate(order.createdAt)}
+                                                {formatTableDate(order.deliveryDate || order.createdAt)}
                                             </span>
                                         </div>
                                     </td>
