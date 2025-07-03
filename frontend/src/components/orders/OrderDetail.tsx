@@ -147,8 +147,8 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                             <div className="bg-gray-50 p-4 rounded-lg">
                                 <div className="grid grid-cols-2 grid-rows-2 gap-4 h-40">
                                     <div className="bg-white p-3 rounded border flex flex-col justify-center items-start">
-                                        <span className="text-xs text-gray-500 block">Ngày tạo</span>
-                                        <p className="font-medium text-sm mt-1">{formatDate(order.createdAt)}</p>
+                                        <span className="text-xs text-gray-500 block">Ngày nhập hàng</span>
+                                        <p className="font-medium text-sm mt-1">{formatDate(order.deliveryDate || order.createdAt)}</p>
                                     </div>
                                     <div className="bg-white p-3 rounded border flex flex-col justify-center items-start">
                                         <span className="text-xs text-gray-500 block">Cập nhật</span>

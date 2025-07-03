@@ -51,8 +51,8 @@ export interface CreateCustomerRequest {
 export interface Agent {
   _id: string;
   name: string;
-  phone: string;
-  address: string;
+  phone?: string;
+  address?: string;
   notes?: string;
   totalOrders: number;
   totalAmount: number;
@@ -62,8 +62,8 @@ export interface Agent {
 
 export interface CreateAgentRequest {
   name: string;
-  phone: string;
-  address: string;
+  phone?: string;
+  address?: string;
   notes?: string;
 }
 

@@ -30,8 +30,8 @@ export const AgentForm: React.FC<AgentFormProps> = ({
         if (agent) {
             setFormData({
                 name: agent.name,
-                phone: agent.phone,
-                address: agent.address,
+                phone: agent.phone || '',
+                address: agent.address || '',
                 notes: agent.notes || ''
             });
         } else {
@@ -85,25 +85,23 @@ export const AgentForm: React.FC<AgentFormProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Số điện thoại *
+                                Số điện thoại
                             </label>
                             <Input
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                placeholder="Nhập số điện thoại"
-                                required
+                                placeholder="Nhập số điện thoại (tùy chọn)"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Địa chỉ *
+                                Địa chỉ
                             </label>
                             <Input
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                placeholder="Nhập địa chỉ"
-                                required
+                                placeholder="Nhập địa chỉ (tùy chọn)"
                             />
                         </div>
 
@@ -134,7 +132,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
                                 type="submit"
                                 variant="default"
                                 className="flex-1"
-                                disabled={isLoading || !formData.name || !formData.phone || !formData.address}
+                                disabled={isLoading || !formData.name}
                             >
                                 {isLoading ? 'Đang xử lý...' : (agent ? 'Cập nhật' : 'Thêm mới')}
                             </Button>

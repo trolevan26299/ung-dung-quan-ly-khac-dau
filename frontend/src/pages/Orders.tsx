@@ -7,7 +7,7 @@ import { RootState, AppDispatch } from '../store';
 import { fetchOrders, createOrder, updateOrder, deleteOrder, setSearchTerm, setStatusFilter, setPaymentFilter, setCurrentOrder, clearError, fetchOrderById } from '../store/slices/ordersSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchProducts } from '../store/slices/productsSlice';
-import { fetchAgents } from '../store/slices/agentsSlice';
+import { fetchAgents, createAgent } from '../store/slices/agentsSlice';
 import { OrderForm, OrderDetail, OrderCard, OrderTable } from '../components/orders';
 import { EmptyState, Pagination } from '../components/common';
 import { Button } from '../components/ui/Button';
@@ -17,7 +17,7 @@ import { DatePicker } from '../components/ui/date-picker';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { usePagination, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
-import type { CreateOrderRequest, Order, OrderQuery } from '../types';
+import type { CreateOrderRequest, Order, OrderQuery, CreateAgentRequest, Agent } from '../types';
 import * as XLSX from 'xlsx';
 import { formatTableDate } from '../lib/utils';
 import { ordersApi } from '../services/api';
@@ -91,7 +91,7 @@ export const Orders: React.FC = () => {
     useEffect(() => {
         dispatch(fetchCustomers({ page: 1, limit: 1000 }));
         dispatch(fetchProducts({ page: 1, limit: 1000 }));
-        dispatch(fetchAgents({ page: 1, limit: 1000 }));
+        dispatch(fetchAgents({ page: 1, limit: 99999 }));
     }, [dispatch]);
 
     // Check URL parameters for auto-open form
@@ -213,8 +213,24 @@ export const Orders: React.FC = () => {
     };
 
     const handleAgentChange = (agentId: string) => {
-        // Không cần refresh customers ở đây vì đã được load sẵn
-        // và việc refresh sẽ làm reset form
+        // Optional callback for when agent changes
+        console.log('Agent changed to:', agentId);
+    };
+
+    const handleCreateAgent = async (agentData: CreateAgentRequest): Promise<Agent> => {
+        try {
+            // Sử dụng Redux action để tạo agent - tự động update store
+            const resultAction = await dispatch(createAgent(agentData));
+            
+            if (createAgent.fulfilled.match(resultAction)) {
+                return resultAction.payload; // Trả về agent mới được tạo
+            } else {
+                throw new Error('Tạo đại lý thất bại');
+            }
+        } catch (error) {
+            console.error('Lỗi khi tạo đại lý:', error);
+            throw error;
+        }
     };
 
     const handleResetFilters = () => {
@@ -550,6 +566,7 @@ export const Orders: React.FC = () => {
                 agents={agents}
                 products={products}
                 onAgentChange={handleAgentChange}
+                onCreateAgent={handleCreateAgent}
             />
 
             <OrderDetail

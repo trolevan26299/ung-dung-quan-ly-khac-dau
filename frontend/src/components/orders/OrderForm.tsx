@@ -1,12 +1,13 @@
 import { Minus, Plus, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { VALIDATION } from '../../constants';
-import type { Agent, CreateOrderRequest, Customer, Order, Product } from '../../types';
+import type { Agent, CreateOrderRequest, Customer, Order, Product, CreateAgentRequest } from '../../types';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Portal } from '../ui/Portal';
 import { Combobox } from '../ui/combobox';
+import { AgentForm } from '../agents/AgentForm';
 
 // Helper function để lấy ngày giờ hiện tại theo múi giờ Việt Nam (UTC+7)
 const getVietnamDateTime = (): string => {
@@ -49,6 +50,7 @@ interface OrderFormProps {
     agents: Agent[];
     products: Product[];
     onAgentChange?: (agentId: string) => void;
+    onCreateAgent?: (data: CreateAgentRequest) => Promise<Agent>;
 }
 
 interface OrderItem {
@@ -68,7 +70,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     customers,
     agents,
     products,
-    onAgentChange
+    onAgentChange,
+    onCreateAgent
 }) => {
     const [formData, setFormData] = useState<CreateOrderRequest>({
         customerId: '',
@@ -89,6 +92,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [customerSearchValue, setCustomerSearchValue] = useState('');
+    const [showAgentForm, setShowAgentForm] = useState(false);
+    const [isCreatingAgent, setIsCreatingAgent] = useState(false);
+    const [pendingAgentId, setPendingAgentId] = useState<string | null>(null);
 
     // Filter customers by selected agent
     const getCustomersByAgent = (agentId: string) => {
@@ -141,6 +147,48 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         setCustomerSearchValue(customer.name);
         setShowCustomerDropdown(false);
     };
+
+    // Handle tạo đại lý mới
+    const handleCreateAgent = async (agentData: CreateAgentRequest) => {
+        if (!onCreateAgent) return;
+        
+        try {
+            setIsCreatingAgent(true);
+            const newAgent = await onCreateAgent(agentData);
+            
+            // Set pending agent ID để useEffect tự động select khi Redux update
+            setPendingAgentId(newAgent._id);
+            
+            setShowAgentForm(false);
+        } catch (error) {
+            console.error('Lỗi khi tạo đại lý:', error);
+        } finally {
+            setIsCreatingAgent(false);
+        }
+    };
+
+    // Auto-select agent sau khi tạo thành công
+    useEffect(() => {
+        if (pendingAgentId && agents.some(agent => agent._id === pendingAgentId)) {
+            setFormData(prevFormData => ({
+                ...prevFormData,
+                agentId: pendingAgentId
+            }));
+            
+            // Reset customer selection khi thay đổi agent
+            setCustomerSearchValue('');
+            const agentCustomers = getCustomersByAgent(pendingAgentId);
+            setFilteredCustomers(agentCustomers);
+            
+            // Gọi callback
+            if (onAgentChange) {
+                onAgentChange(pendingAgentId);
+            }
+            
+            // Clear pending
+            setPendingAgentId(null);
+        }
+    }, [agents, pendingAgentId, onAgentChange, customers]);
 
     useEffect(() => {
         if (order && isOpen) {
@@ -347,22 +395,36 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Đại lý
                                 </label>
-                                <Combobox
-                                    options={[
-                                        { value: '', label: 'Không có đại lý' },
-                                        ...agents.map(agent => ({
-                                            value: agent._id,
-                                            label: agent.name,
-                                            subtitle: agent.phone,
-                                        }))
-                                    ]}
-                                    value={formData.agentId}
-                                    onChange={handleAgentChange}
-                                    placeholder="Chọn đại lý"
-                                    searchPlaceholder="Tìm kiếm đại lý..."
-                                    emptyMessage="Không tìm thấy đại lý"
-                                    allowClear
-                                />
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex-1">
+                                        <Combobox
+                                            options={[
+                                                { value: '', label: 'Không có đại lý' },
+                                                ...agents.map(agent => ({
+                                                    value: agent._id,
+                                                    label: agent.name,
+                                                    subtitle: agent.phone || 'Chưa có SĐT',
+                                                }))
+                                            ]}
+                                            value={formData.agentId}
+                                            onChange={handleAgentChange}
+                                            placeholder="Chọn đại lý"
+                                            searchPlaceholder="Tìm kiếm đại lý..."
+                                            emptyMessage="Không tìm thấy đại lý"
+                                            allowClear
+                                        />
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowAgentForm(true)}
+                                        className="px-3 py-2 whitespace-nowrap"
+                                        disabled={!onCreateAgent}
+                                    >
+                                        + Thêm mới
+                                    </Button>
+                                </div>
                             </div>
 
                             <div className="relative">
@@ -687,6 +749,14 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                     </form>
                 </div>
             </div>
+
+            {/* Agent Form Modal */}
+            <AgentForm
+                isOpen={showAgentForm}
+                onClose={() => setShowAgentForm(false)}
+                onSubmit={handleCreateAgent}
+                isLoading={isCreatingAgent}
+            />
         </Portal>
     );
 };
