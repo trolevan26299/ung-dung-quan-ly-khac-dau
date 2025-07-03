@@ -99,4 +99,21 @@ export class TimezoneUtil {
     vietnamDate.setHours(23, 59, 59, 999);
     return this.convertToUTCForFilter(vietnamDate);
   }
+
+  /**
+   * Parse datetime string từ frontend (format: YYYY-MM-DDTHH:MM) về Date object
+   * Frontend gửi datetime theo múi giờ local (UTC+7), cần chuyển về UTC để lưu database
+   */
+  static parseVietnamDateTime(datetimeString: string): Date {
+    if (!datetimeString) return new Date();
+    
+    // Frontend gửi format: "2025-07-03T07:51"
+    // Cần parse như múi giờ Việt Nam và chuyển về UTC
+    const date = new Date(datetimeString);
+    
+    // Trừ đi 7 giờ để chuyển từ UTC+7 về UTC
+    const utcDate = new Date(date.getTime() - (this.VIETNAM_TIMEZONE_OFFSET * 60 * 60 * 1000));
+    
+    return utcDate;
+  }
 } 

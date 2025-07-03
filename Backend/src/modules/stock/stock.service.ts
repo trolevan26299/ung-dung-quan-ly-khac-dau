@@ -118,7 +118,9 @@ export class StockService {
       reason: createStockTransactionDto.reason,
       notes: createStockTransactionDto.notes,
       totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? totalImportValue : 0,
-      transactionDate: createStockTransactionDto.transactionDate || new Date()
+      transactionDate: createStockTransactionDto.transactionDate ? 
+        TimezoneUtil.parseVietnamDateTime(createStockTransactionDto.transactionDate) : 
+        new Date()
     });
 
     return transaction.save();
@@ -251,7 +253,7 @@ export class StockService {
       stockBefore,
       stockAfter,
       reason: 'Xuất kho cho đơn hàng',
-      transactionDate: new Date()
+      transactionDate: TimezoneUtil.nowInVietnam()
     });
 
     return transaction.save();
@@ -287,7 +289,7 @@ export class StockService {
       stockBefore,
       stockAfter,
       reason: 'Hoàn trả kho do hủy đơn hàng',
-      transactionDate: new Date()
+      transactionDate: TimezoneUtil.nowInVietnam()
     });
 
     return transaction.save();
@@ -536,7 +538,9 @@ export class StockService {
         reason: updateData.reason !== undefined ? updateData.reason : oldTransaction.reason,
         notes: updateData.notes !== undefined ? updateData.notes : oldTransaction.notes,
         updatedAt: new Date(),
-        ...(dateChanged && { transactionDate: updateData.transactionDate })
+        ...(dateChanged && { 
+          transactionDate: TimezoneUtil.parseVietnamDateTime(updateData.transactionDate) 
+        })
       },
       { new: true }
     );
