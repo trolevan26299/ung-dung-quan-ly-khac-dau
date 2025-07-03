@@ -8,10 +8,10 @@ export class CreateAgentDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ description: 'Số điện thoại' })
+  @ApiProperty({ description: 'Số điện thoại', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  phone: string;
+  phone?: string;
 
   @ApiProperty({ description: 'Địa chỉ', required: false })
   @IsOptional()
