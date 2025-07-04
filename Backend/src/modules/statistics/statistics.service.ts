@@ -206,7 +206,7 @@ export class StatisticsService {
           'items.unitPrice': 1,
           'product.avgImportPrice': 1,
           'product.name': 1,
-          createdAt: 1
+          deliveryDate: 1
         }
       }
     ]);
@@ -336,7 +336,7 @@ export class StatisticsService {
     let groupBy: any;
     let matchCondition: any = {
       status: OrderStatus.ACTIVE, // Tính tất cả đơn hàng active, bao gồm cả công nợ
-      createdAt: {
+      deliveryDate: {
         $gte: new Date(currentYear, 0, 1),
         $lt: new Date(currentYear + 1, 0, 1)
       }
@@ -344,25 +344,25 @@ export class StatisticsService {
 
     switch (period) {
       case 'month':
-        groupBy = { $month: '$createdAt' };
+        groupBy = { $month: '$deliveryDate' };
         break;
       case 'quarter':
         groupBy = {
           $switch: {
             branches: [
-              { case: { $lte: [{ $month: '$createdAt' }, 3] }, then: 1 },
-              { case: { $lte: [{ $month: '$createdAt' }, 6] }, then: 2 },
-              { case: { $lte: [{ $month: '$createdAt' }, 9] }, then: 3 },
+              { case: { $lte: [{ $month: '$deliveryDate' }, 3] }, then: 1 },
+              { case: { $lte: [{ $month: '$deliveryDate' }, 6] }, then: 2 },
+              { case: { $lte: [{ $month: '$deliveryDate' }, 9] }, then: 3 },
             ],
             default: 4
           }
         };
         break;
       case 'year':
-        groupBy = { $year: '$createdAt' };
+        groupBy = { $year: '$deliveryDate' };
         matchCondition = {
           status: OrderStatus.ACTIVE, // Tính tất cả đơn hàng active, bao gồm cả công nợ
-          createdAt: { $gte: new Date(currentYear - 4, 0, 1) }
+          deliveryDate: { $gte: new Date(currentYear - 4, 0, 1) }
         };
         break;
     }
@@ -640,7 +640,7 @@ export class StatisticsService {
       : TimezoneUtil.endOfDayVietnam(now);
 
     const filter = {
-      createdAt: {
+      deliveryDate: {
         $gte: startDate,
         $lte: endDate
       }
@@ -937,13 +937,15 @@ export class StatisticsService {
         $match: {
           status: OrderStatus.ACTIVE,
           paymentStatus: PaymentStatus.COMPLETED,
-          $gte: new Date(currentYear, 0, 1),
-          $lt: new Date(currentYear + 1, 0, 1)
+          deliveryDate: {
+            $gte: new Date(currentYear, 0, 1),
+            $lt: new Date(currentYear + 1, 0, 1)
+          }
         }
       },
       {
         $group: {
-          _id: { $month: '$createdAt' },
+          _id: { $month: '$deliveryDate' },
           totalRevenue: { $sum: '$totalAmount' },
           totalOrders: { $sum: 1 }
         }

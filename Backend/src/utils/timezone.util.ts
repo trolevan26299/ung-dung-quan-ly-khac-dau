@@ -34,19 +34,33 @@ export class TimezoneUtil {
       
       if (dateFrom) {
         // Tạo ngày bắt đầu với múi giờ Việt Nam (UTC+7)
-        const startDate = typeof dateFrom === 'string' ? new Date(dateFrom) : new Date(dateFrom);
+        let startDate: Date;
+        if (typeof dateFrom === 'string') {
+          // Parse string date từ frontend (YYYY-MM-DD) theo múi giờ VN
+          startDate = new Date(dateFrom + 'T00:00:00+07:00');
+        } else {
+          startDate = new Date(dateFrom);
+        }
         startDate.setHours(0, 0, 0, 0);
-        // Chuyển về UTC (trừ 7 giờ)
-        const utcStartDate = this.convertToUTCForFilter(startDate);
+        
+        // Chuyển về UTC để lưu trong MongoDB
+        const utcStartDate = new Date(startDate.getTime() - (this.VIETNAM_TIMEZONE_OFFSET * 60 * 60 * 1000));
         filter.createdAt.$gte = utcStartDate;
       }
       
       if (dateTo) {
         // Tạo ngày kết thúc với múi giờ Việt Nam (UTC+7)
-        const endDate = typeof dateTo === 'string' ? new Date(dateTo) : new Date(dateTo);
+        let endDate: Date;
+        if (typeof dateTo === 'string') {
+          // Parse string date từ frontend (YYYY-MM-DD) theo múi giờ VN
+          endDate = new Date(dateTo + 'T23:59:59+07:00');
+        } else {
+          endDate = new Date(dateTo);
+        }
         endDate.setHours(23, 59, 59, 999);
-        // Chuyển về UTC (trừ 7 giờ)
-        const utcEndDate = this.convertToUTCForFilter(endDate);
+        
+        // Chuyển về UTC để lưu trong MongoDB
+        const utcEndDate = new Date(endDate.getTime() - (this.VIETNAM_TIMEZONE_OFFSET * 60 * 60 * 1000));
         filter.createdAt.$lte = utcEndDate;
       }
     }
@@ -108,12 +122,11 @@ export class TimezoneUtil {
     if (!datetimeString) return new Date();
     
     // Frontend gửi format: "2025-07-03T07:51"
-    // Cần parse như múi giờ Việt Nam và chuyển về UTC
-    const date = new Date(datetimeString);
+    // Thêm timezone +07:00 để JavaScript hiểu đây là múi giờ VN
+    const dateWithTimezone = datetimeString + '+07:00';
+    const date = new Date(dateWithTimezone);
     
-    // Trừ đi 7 giờ để chuyển từ UTC+7 về UTC
-    const utcDate = new Date(date.getTime() - (this.VIETNAM_TIMEZONE_OFFSET * 60 * 60 * 1000));
-    
-    return utcDate;
+    // JavaScript tự động chuyển về UTC khi parse với timezone
+    return date;
   }
 } 

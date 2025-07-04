@@ -179,7 +179,7 @@ export class OrdersService {
       paymentStatus: createOrderDto.paymentStatus,
       paymentMethod: createOrderDto.paymentMethod || 'personal_account',
       notes: createOrderDto.notes,
-      deliveryDate: createOrderDto.deliveryDate ? new Date(createOrderDto.deliveryDate) : undefined,
+      deliveryDate: createOrderDto.deliveryDate ? TimezoneUtil.parseVietnamDateTime(createOrderDto.deliveryDate) : undefined,
       createdBy: employeeId,
       status: OrderStatus.ACTIVE,
     });
@@ -248,7 +248,10 @@ export class OrdersService {
     // Date filter
     if (dateFrom || dateTo) {
       const dateFilter = TimezoneUtil.createDateRangeFilter(dateFrom, dateTo);
-      filter = { ...filter, ...dateFilter };
+      // Thay đổi từ createdAt thành deliveryDate để filter theo ngày lên đơn
+      if (dateFilter.createdAt) {
+        filter.deliveryDate = dateFilter.createdAt;
+      }
     }
 
     // Search logic
@@ -469,7 +472,7 @@ export class OrdersService {
 
     // Handle deliveryDate conversion if provided
     if (updateOrderDto.deliveryDate) {
-      updatedFields.deliveryDate = new Date(updateOrderDto.deliveryDate);
+      updatedFields.deliveryDate = TimezoneUtil.parseVietnamDateTime(updateOrderDto.deliveryDate);
     }
 
     const order = await this.orderModel.findByIdAndUpdate(
@@ -574,7 +577,7 @@ export class OrdersService {
       { 
         $match: { 
           ...filter, 
-          createdAt: { 
+          deliveryDate: { 
             $gte: currentPeriodStart, 
             $lte: currentPeriodEnd 
           } 
@@ -604,7 +607,7 @@ export class OrdersService {
       { 
         $match: { 
           ...filter, 
-          createdAt: { 
+          deliveryDate: { 
             $gte: previousPeriodStart, 
             $lte: previousPeriodEnd 
           } 
