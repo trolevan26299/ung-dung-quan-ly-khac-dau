@@ -247,8 +247,7 @@ export const Orders: React.FC = () => {
 
     const handleExportExcel = async () => {
         try {
-            // Hiển thị loading
-            const loadingToast = success('Đang xuất Excel...', 'Vui lòng chờ trong giây lát');
+            
 
             // Gọi API riêng cho xuất Excel với các filter hiện tại
             const exportParams: any = {};
@@ -267,7 +266,7 @@ export const Orders: React.FC = () => {
                     ? `${order.customer.name || ''} - ${order.customer.phone || ''}`
                     : 'N/A',
                 'Tên đại lý': order.agent?.name || 'N/A',
-                'Ngày tạo': formatTableDate(order.createdAt),
+                'Ngày lên đơn': formatTableDate(order.deliveryDate || order.createdAt),
                 'Sản phẩm': order.items?.map((item: any) => {
                     const productName = item.productName || 'N/A';
                     const quantity = item.quantity || 0;

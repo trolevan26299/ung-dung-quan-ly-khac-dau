@@ -669,7 +669,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                         {/* Delivery Date */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Ngày nhập hàng
+                                Ngày lên đơn
                             </label>
                             <Input
                                 type="datetime-local"

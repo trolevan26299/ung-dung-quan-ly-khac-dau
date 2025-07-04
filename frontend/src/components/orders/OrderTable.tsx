@@ -134,7 +134,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                     Đại lý
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                                    Ngày nhập hàng
+                                    Ngày lên đơn
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                                     Sản phẩm
