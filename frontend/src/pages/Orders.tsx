@@ -400,7 +400,6 @@ export const Orders: React.FC = () => {
             {/* Search and Filters */}
             <Card className="shadow-sm border-0 shadow-md">
                 <CardContent className="p-6">
-                    {/* Mobile: Stack vertically, Desktop XL: Horizontal */}
                     <div className="flex flex-col xl:flex-row items-start xl:items-center gap-2">
                         
                         {/* Search Input - Full width on mobile, flexible on desktop */}
