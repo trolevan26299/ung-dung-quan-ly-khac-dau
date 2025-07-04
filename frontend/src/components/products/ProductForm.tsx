@@ -245,7 +245,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                                 onChange={(e) => handleNumberChange('currentPrice', parseFloat(e.target.value) || 0)}
                                 placeholder={product ? "Nhập giá nhập" : "Giá sẽ được tính từ kho hàng"}
                                 min="0"
-                                step="1000"
+                                step="0.01"
                                 disabled={!product} // Chỉ cho sửa khi edit sản phẩm
                                 className={`${errors.currentPrice ? 'border-red-500' : ''} ${!product ? 'bg-gray-100 text-gray-500' : ''}`}
                             />

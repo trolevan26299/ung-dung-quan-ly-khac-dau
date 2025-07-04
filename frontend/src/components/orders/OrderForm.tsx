@@ -558,7 +558,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                                         placeholder="Nhập đơn giá"
                                                         className={`text-right ${errors[`unitPrice_${index}`] ? 'border-red-500' : ''}`}
                                                         min="0"
-                                                        step="1000"
+                                                        step="0.01"
                                                     />
                                                     {errors[`unitPrice_${index}`] && (
                                                         <p className="text-red-500 text-xs mt-1">{errors[`unitPrice_${index}`]}</p>
@@ -620,7 +620,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                     onChange={(e) => setFormData({ ...formData, shippingFee: parseFloat(e.target.value) || 0 })}
                                     placeholder="0"
                                     min="0"
-                                    step="1000"
+                                    step="0.01"
                                     className={errors.shippingFee ? 'border-red-500' : ''}
                                 />
                                 {errors.shippingFee && (
