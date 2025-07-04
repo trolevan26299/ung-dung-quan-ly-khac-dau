@@ -2,7 +2,7 @@ name: Build and Deploy Khắc Dấu App
 
 on:
   push:
-    branches: [ production ]
+    branches: [ product ]
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
