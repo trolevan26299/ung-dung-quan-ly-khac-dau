@@ -248,9 +248,12 @@ export class OrdersService {
     // Date filter
     if (dateFrom || dateTo) {
       const dateFilter = TimezoneUtil.createDateRangeFilter(dateFrom, dateTo);
+      console.log('🔍 Date filter input:', { dateFrom, dateTo });
+      console.log('🔍 Date filter output:', dateFilter);
       // Thay đổi từ createdAt thành deliveryDate để filter theo ngày lên đơn
       if (dateFilter.createdAt) {
         filter.deliveryDate = dateFilter.createdAt;
+        console.log('🔍 Final deliveryDate filter:', filter.deliveryDate);
       }
     }
 

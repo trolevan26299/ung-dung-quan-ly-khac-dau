@@ -27,6 +27,7 @@ export class TimezoneUtil {
    * Tạo date range cho filter với múi giờ Việt Nam
    */
   static createDateRangeFilter(dateFrom?: string | Date, dateTo?: string | Date): any {
+    console.log('📅 createDateRangeFilter input:', { dateFrom, dateTo });
     const filter: any = {};
 
     if (dateFrom || dateTo) {
@@ -37,15 +38,15 @@ export class TimezoneUtil {
         let startDate: Date;
         if (typeof dateFrom === 'string') {
           // Parse string date từ frontend (YYYY-MM-DD) theo múi giờ VN
+          // Thêm timezone +07:00 để JavaScript tự động chuyển về UTC
           startDate = new Date(dateFrom + 'T00:00:00+07:00');
+          console.log('📅 startDate created:', startDate.toISOString());
         } else {
           startDate = new Date(dateFrom);
         }
-        startDate.setHours(0, 0, 0, 0);
         
-        // Chuyển về UTC để lưu trong MongoDB
-        const utcStartDate = new Date(startDate.getTime() - (this.VIETNAM_TIMEZONE_OFFSET * 60 * 60 * 1000));
-        filter.createdAt.$gte = utcStartDate;
+        // Không cần setHours và trừ thêm 7 giờ nữa vì đã parse với timezone
+        filter.createdAt.$gte = startDate;
       }
       
       if (dateTo) {
@@ -53,18 +54,19 @@ export class TimezoneUtil {
         let endDate: Date;
         if (typeof dateTo === 'string') {
           // Parse string date từ frontend (YYYY-MM-DD) theo múi giờ VN
+          // Thêm timezone +07:00 để JavaScript tự động chuyển về UTC
           endDate = new Date(dateTo + 'T23:59:59+07:00');
+          console.log('📅 endDate created:', endDate.toISOString());
         } else {
           endDate = new Date(dateTo);
         }
-        endDate.setHours(23, 59, 59, 999);
         
-        // Chuyển về UTC để lưu trong MongoDB
-        const utcEndDate = new Date(endDate.getTime() - (this.VIETNAM_TIMEZONE_OFFSET * 60 * 60 * 1000));
-        filter.createdAt.$lte = utcEndDate;
+        // Không cần setHours và trừ thêm 7 giờ nữa vì đã parse với timezone
+        filter.createdAt.$lte = endDate;
       }
     }
 
+    console.log('📅 createDateRangeFilter output:', filter);
     return filter;
   }
 
