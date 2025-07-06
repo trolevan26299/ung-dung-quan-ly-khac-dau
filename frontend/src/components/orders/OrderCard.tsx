@@ -105,7 +105,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                         {/* Date */}
                         <div className="flex items-center text-gray-600">
                             <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
-                            <span>{formatDate(order.createdAt)}</span>
+                            <span>{formatDate(order.deliveryDate || order.createdAt)}</span>
                         </div>
 
                         {/* Items count */}
