@@ -26,19 +26,30 @@ export const Statistics: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Date range state - mặc định là "tháng này"
-    const getStartOfCurrentMonth = (): string => {
-        const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
-        const date = new Date(vietnamNow);
-        return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+    // Helper function để format date giữ nguyên timezone địa phương
+    const formatDateForAPI = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
+    // Lấy ngày đầu tháng hiện tại
+    const getCurrentMonthStart = (): string => {
+        const now = new Date();
+        const vietnamNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+        const date = new Date(vietnamNow.getFullYear(), vietnamNow.getMonth(), 1);
+        return formatDateForAPI(date);
+    };
+
+    // Lấy ngày hiện tại
     const getCurrentDate = (): string => {
-        const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
-        return new Date(vietnamNow).toISOString().split('T')[0];
+        const now = new Date();
+        const vietnamNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+        return formatDateForAPI(vietnamNow);
     };
 
-    const [startDate, setStartDate] = useState(() => getStartOfCurrentMonth());
+    const [startDate, setStartDate] = useState(() => getCurrentMonthStart());
     const [endDate, setEndDate] = useState(() => getCurrentDate());
 
     const fetchStatistics = async () => {

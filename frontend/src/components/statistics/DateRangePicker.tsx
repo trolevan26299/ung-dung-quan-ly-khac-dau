@@ -37,6 +37,14 @@ const createVietnamDateFromMonthYear = (year: number, month: number, day = 1): D
   return vietnamTime;
 };
 
+// Helper function để format date giữ nguyên timezone địa phương
+const formatDateForAPI = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const periodOptions: PeriodOption[] = [
   {
     value: 'today',
@@ -118,8 +126,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         if (period) {
             const start = period.getStartDate();
             const end = period.getEndDate();
-            onStartDateChange(start.toISOString().split('T')[0]);
-            onEndDateChange(end.toISOString().split('T')[0]);
+            onStartDateChange(formatDateForAPI(start));
+            onEndDateChange(formatDateForAPI(end));
         }
     };
 

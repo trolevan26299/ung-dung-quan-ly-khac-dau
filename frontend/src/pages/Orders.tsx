@@ -24,6 +24,14 @@ import { ordersApi } from '../services/api';
 
 type ViewMode = 'grid' | 'table';
 
+// Helper function để format date giữ nguyên timezone địa phương
+const formatDateForAPI = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export const Orders: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const location = useLocation();
@@ -303,7 +311,7 @@ export const Orders: React.FC = () => {
             XLSX.utils.book_append_sheet(wb, ws, 'Danh sách đơn hàng');
 
             const vietnamNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
-            const today = new Date(vietnamNow).toISOString().split('T')[0];
+            const today = formatDateForAPI(new Date(vietnamNow));
             const fileName = `DanhSachDonHang_${today}.xlsx`;
 
             XLSX.writeFile(wb, fileName);
@@ -427,7 +435,7 @@ export const Orders: React.FC = () => {
                                         date={dateFromObj}
                                         onDateChange={(date: Date | undefined) => {
                                             setDateFromObj(date);
-                                            setDateFrom(date ? date.toISOString().split('T')[0] : '');
+                                            setDateFrom(date ? formatDateForAPI(date) : '');
                                         }}
                                         placeholder="Từ ngày"
                                         className="w-full xl:w-52"
@@ -437,7 +445,7 @@ export const Orders: React.FC = () => {
                                         date={dateToObj}
                                         onDateChange={(date: Date | undefined) => {
                                             setDateToObj(date);
-                                            setDateTo(date ? date.toISOString().split('T')[0] : '');
+                                            setDateTo(date ? formatDateForAPI(date) : '');
                                         }}
                                         placeholder="Đến ngày"
                                         className="w-full xl:w-52"
