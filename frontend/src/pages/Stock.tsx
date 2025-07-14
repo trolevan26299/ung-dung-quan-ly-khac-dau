@@ -8,7 +8,8 @@ import {
     AlertTriangle,
     Package,
     Grid,
-    List
+    List,
+    Download
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -29,6 +30,7 @@ import { formatCurrency } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 import { useDispatch } from 'react-redux';
 import { updateTransaction, deleteTransaction } from '../store/slices/stockSlice';
+import * as XLSX from 'xlsx';
 
 // Product Stock Table Component
 interface ProductStockTableProps {
@@ -654,6 +656,63 @@ export const Stock: React.FC = () => {
     // Products are already filtered by API search, không cần filter thêm
     const filteredProducts = products;
 
+    // Export Products to Excel
+    const handleExportProductsExcel = async () => {
+        try {
+            setIsLoading(true);
+            // Gọi API với page=1 và limit=999999 để lấy tất cả sản phẩm
+            const response = await productsApi.getProducts({
+                page: 1,
+                limit: 999999,
+                search: debouncedSearchTerm || undefined
+            });
+            
+            const allProducts = response.data || [];
+
+            const excelData = allProducts.map((product: Product, index: number) => ({
+                'STT': index + 1,
+                'Tên sản phẩm': product.name || '',
+                'Mã sản phẩm': product.code || '',
+                'Danh mục': product.category || '',
+                'Tồn kho': product.stockQuantity || 0,
+                'Giá nhập TB': (product.avgImportPrice || 0).toLocaleString('vi-VN') + '₫',
+                'Giá bán': (product.currentPrice || 0).toLocaleString('vi-VN') + '₫',
+                'Trạng thái tồn kho': product.stockQuantity === 0 ? 'Hết hàng' :
+                                    product.stockQuantity >= 10 && product.stockQuantity <= 20 ? 'Tồn kho thấp' :
+                                    product.stockQuantity > 20 ? 'Tồn kho tốt' : 'Tồn kho thấp'
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+
+            const colWidths = [
+                { wch: 8 },   // STT
+                { wch: 30 },  // Tên sản phẩm
+                { wch: 15 },  // Mã sản phẩm
+                { wch: 15 },  // Danh mục
+                { wch: 12 },  // Tồn kho
+                { wch: 15 },  // Giá nhập TB
+                { wch: 15 },  // Giá bán
+                { wch: 18 }   // Trạng thái tồn kho
+            ];
+            ws['!cols'] = colWidths;
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Tồn kho sản phẩm');
+
+            const today = new Date().toLocaleDateString('vi-VN').replace(/\//g, '-');
+            const fileName = `TonKhoSanPham_${today}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+
+            success('Xuất Excel thành công', `File ${fileName} đã được tải xuống với ${allProducts.length} sản phẩm`);
+        } catch (error) {
+            console.error('Export Excel error:', error);
+            showError('Xuất Excel thất bại', 'Có lỗi xảy ra khi xuất file Excel');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Product pagination handlers with limit change
     const handleProductLimitChange = (limit: number) => {
         setProductPagination(prev => {
@@ -791,6 +850,20 @@ export const Stock: React.FC = () => {
                                 className="pl-10"
                             />
                         </div>
+
+                        {/* Export Excel Button for Products Tab */}
+                        {activeTab === 'products' && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleExportProductsExcel}
+                                disabled={isLoading}
+                                className="flex items-center gap-2 h-10 px-4 whitespace-nowrap border-green-300 hover:bg-green-50 hover:border-green-400 hover:text-green-700 transition-all font-medium"
+                            >
+                                <Download className="h-4 w-4" />
+                                {isLoading ? 'Đang xuất...' : 'Excel'}
+                            </Button>
+                        )}
 
                         {/* Filters for Transactions */}
                         {activeTab === 'transactions' && (
