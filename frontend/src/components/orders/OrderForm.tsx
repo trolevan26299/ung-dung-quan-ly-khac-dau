@@ -651,7 +651,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                 </label>
                                 <Combobox
                                     options={[
-                                        { value: 'pending', label: 'Chưa thanh toán' },
+                                        { value: 'pending', label: 'COD' },
                                         { value: 'completed', label: 'Đã thanh toán' },
                                         { value: 'debt', label: 'Công nợ' },
                                     ]}

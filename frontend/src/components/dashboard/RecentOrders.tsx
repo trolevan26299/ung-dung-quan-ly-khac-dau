@@ -15,7 +15,7 @@ const DASHBOARD_STATUS_COLORS = {
 
 const DASHBOARD_STATUS_LABELS = {
     completed: 'Đã thanh toán',
-    pending: 'Chưa thanh toán',
+    pending: 'COD',
     debt: 'Công nợ'
 } as const;
 

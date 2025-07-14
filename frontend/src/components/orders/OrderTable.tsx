@@ -68,7 +68,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
             case 'debt':
                 return 'Công nợ';
             case 'pending':
-                return 'Chưa thanh toán';
+                return 'COD';
             default:
                 return 'Không xác định';
         }
