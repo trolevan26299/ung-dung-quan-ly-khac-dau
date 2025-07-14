@@ -286,7 +286,7 @@ export const Orders: React.FC = () => {
                 'Phí vận chuyển': (order.shippingFee || 0).toLocaleString('vi-VN') + '₫',
                 'Ghi chú': order.notes || '',
                 'Trạng thái thanh toán': order.paymentStatus === 'completed' ? 'Đã thanh toán' : 
-                                       order.paymentStatus === 'pending' ? 'Chưa thanh toán' : 'Công nợ',
+                                       order.paymentStatus === 'pending' ? 'COD' : 'Công nợ',
                 'Trạng thái đơn hàng': order.status === 'active' ? 'Hoàn thành' : 'Đã hủy'
             }));
 
@@ -464,7 +464,7 @@ export const Orders: React.FC = () => {
                             >
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="completed">Đã thanh toán</option>
-                                <option value="pending">Chưa thanh toán</option>
+                                <option value="pending">COD</option>
                                 <option value="debt">Công nợ</option>
                             </select>
                         </div>
