@@ -726,6 +726,25 @@ export class OrdersService {
     return order;
   }
 
+  // Cập nhật trạng thái thanh toán hàng loạt
+  async bulkUpdatePaymentStatus(orderIds: string[], paymentStatus: PaymentStatus): Promise<{ success: boolean, updated: number }> {
+    try {
+      const result = await this.orderModel.updateMany(
+        { _id: { $in: orderIds }, status: 'active' }, // Chỉ cập nhật đơn hàng đang active
+        { paymentStatus },
+        { new: true }
+      ).exec();
+
+      return {
+        success: true,
+        updated: result.modifiedCount
+      };
+    } catch (error) {
+      console.error('Error in bulkUpdatePaymentStatus:', error);
+      throw new BadRequestException('Có lỗi xảy ra khi cập nhật trạng thái thanh toán');
+    }
+  }
+
   // Doanh thu theo tháng
   async getMonthlyRevenue(year: number): Promise<any[]> {
     return this.orderModel.aggregate([

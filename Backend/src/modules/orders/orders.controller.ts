@@ -135,6 +135,14 @@ export class OrdersController {
     return this.ordersService.updatePaymentStatus(id, paymentStatus);
   }
 
+  @Post('bulk-update-payment-status')
+  @ApiOperation({ summary: 'Cập nhật trạng thái thanh toán hàng loạt' })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
+  async bulkUpdatePaymentStatus(@Body() updateData: { orderIds: string[], paymentStatus: PaymentStatus }): Promise<{ success: boolean, updated: number }> {
+    return this.ordersService.bulkUpdatePaymentStatus(updateData.orderIds, updateData.paymentStatus);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Hủy hoặc xóa vĩnh viễn đơn hàng' })
   @ApiResponse({ status: 200, description: 'Xử lý thành công' })
