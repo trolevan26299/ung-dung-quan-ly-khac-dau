@@ -110,6 +110,18 @@ export const deleteOrder = createAsyncThunk(
   }
 );
 
+export const cancelOrder = createAsyncThunk(
+  'orders/cancelOrder',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const cancelledOrder = await ordersApi.cancelOrder(id);
+      return cancelledOrder;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Hủy đơn hàng thất bại');
+    }
+  }
+);
+
 const ordersSlice = createSlice({
   name: 'orders',
   initialState,
@@ -220,6 +232,27 @@ const ordersSlice = createSlice({
         state.pagination.total -= 1;
       })
       .addCase(deleteOrder.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Cancel Order
+      .addCase(cancelOrder.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(cancelOrder.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const index = state.orders.findIndex(o => o._id === action.payload._id);
+        if (index !== -1) {
+          state.orders[index] = action.payload; // Cập nhật đơn hàng với status 'cancelled'
+        }
+        // Update currentOrder nếu đang xem order này
+        if (state.currentOrder && state.currentOrder._id === action.payload._id) {
+          state.currentOrder = action.payload;
+        }
+        state.lastUpdated = Date.now();
+      })
+      .addCase(cancelOrder.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

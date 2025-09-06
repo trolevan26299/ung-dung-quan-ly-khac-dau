@@ -4,7 +4,7 @@ import { Plus, ShoppingCart, Search, Grid, List, X, Download } from 'lucide-reac
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
-import { fetchOrders, createOrder, updateOrder, deleteOrder, setSearchTerm, setStatusFilter, setPaymentFilter, setCurrentOrder, clearError, fetchOrderById } from '../store/slices/ordersSlice';
+import { fetchOrders, createOrder, updateOrder, deleteOrder, cancelOrder, setSearchTerm, setStatusFilter, setPaymentFilter, setCurrentOrder, clearError, fetchOrderById } from '../store/slices/ordersSlice';
 import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchProducts } from '../store/slices/productsSlice';
 import { fetchAgents, createAgent } from '../store/slices/agentsSlice';
@@ -17,10 +17,10 @@ import { DatePicker } from '../components/ui/date-picker';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { usePagination, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
+import { ordersApi } from '../services/api';
 import type { CreateOrderRequest, Order, OrderQuery, CreateAgentRequest, Agent } from '../types';
 import * as XLSX from 'xlsx';
 import { formatTableDate } from '../lib/utils';
-import { ordersApi } from '../services/api';
 
 type ViewMode = 'grid' | 'table';
 
@@ -48,6 +48,11 @@ export const Orders: React.FC = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('table');
     const [hasProcessedUrlAction, setHasProcessedUrlAction] = useState(false);
     
+    // Bulk selection state
+    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+    const [selectedNewStatus, setSelectedNewStatus] = useState<string>('');
+    
     // Local search state for debounce
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
     
@@ -58,7 +63,7 @@ export const Orders: React.FC = () => {
     const [dateToObj, setDateToObj] = useState<Date | undefined>();
 
     // Hooks
-    const paginationHook = usePagination(10);
+    const paginationHook = usePagination(20);
     
     // Extract function to avoid dependency issues
     const { updatePagination } = paginationHook;
@@ -93,6 +98,9 @@ export const Orders: React.FC = () => {
         };
         
         dispatch(fetchOrders(queryParams));
+        
+        // Reset selection when page/filters change
+        setSelectedOrders([]);
     }, [dispatch, searchTerm, statusFilter, paymentFilter, dateFrom, dateTo, paginationHook.pagination.currentPage, paginationHook.pagination.limit]);
 
     // Load initial data
@@ -165,18 +173,19 @@ export const Orders: React.FC = () => {
 
     const handleDeleteOrder = async (id: string) => {
         const confirmed = await confirm({
-            title: 'Xác nhận xóa',
-            message: 'Bạn có chắc chắn muốn xóa đơn hàng này? Hành động này không thể hoàn tác.',
-            confirmText: 'Xóa',
-            cancelText: 'Hủy'
+            title: 'Xác nhận hủy đơn hàng',
+            message: 'Bạn có chắc chắn muốn hủy đơn hàng này? Hàng hóa sẽ được hoàn trả về kho.',
+            confirmText: 'Hủy đơn hàng',
+            cancelText: 'Không'
         });
 
         if (confirmed) {
             try {
-                await dispatch(deleteOrder(id)).unwrap();
-                success('Đã xóa đơn hàng thành công');
+                await dispatch(cancelOrder(id)).unwrap();
+                success('Đã hủy đơn hàng thành công');
+                // Không cần fetch lại - Redux sẽ tự động cập nhật status
             } catch (error) {
-                showError('Có lỗi xảy ra khi xóa đơn hàng');
+                showError('Có lỗi xảy ra khi hủy đơn hàng');
             }
         }
     };
@@ -251,6 +260,59 @@ export const Orders: React.FC = () => {
         setDateFromObj(undefined);
         setDateToObj(undefined);
         paginationHook.goToPage(1);
+    };
+
+    // Bulk selection handlers
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedOrders(orders.map(order => order._id));
+        } else {
+            setSelectedOrders([]);
+        }
+    };
+
+    const handleSelectOrder = (orderId: string, checked: boolean) => {
+        if (checked) {
+            setSelectedOrders(prev => [...prev, orderId]);
+        } else {
+            setSelectedOrders(prev => prev.filter(id => id !== orderId));
+        }
+    };
+
+    const handleSelectStatus = (status: string) => {
+        setSelectedNewStatus(status);
+    };
+
+    const handleConfirmStatusChange = async () => {
+        if (selectedOrders.length === 0 || !selectedNewStatus) return;
+        
+        try {
+            // Call API using ordersApi service
+            const result = await ordersApi.bulkUpdatePaymentStatus(selectedOrders, selectedNewStatus);
+            success('Cập nhật thành công', `Đã cập nhật trạng thái ${result.updated} đơn hàng`);
+            setSelectedOrders([]);
+            setIsStatusModalOpen(false);
+            setSelectedNewStatus('');
+            // Refresh data
+            const queryParams = {
+                page: paginationHook.pagination.currentPage,
+                limit: paginationHook.pagination.limit,
+                search: searchTerm,
+                status: statusFilter,
+                paymentStatus: paymentFilter,
+                dateFrom: dateFrom || undefined,
+                dateTo: dateTo || undefined
+            };
+            dispatch(fetchOrders(queryParams));
+        } catch (error) {
+            console.error('Error updating payment status:', error);
+            showError('Cập nhật thất bại', 'Có lỗi xảy ra khi cập nhật trạng thái');
+        }
+    };
+
+    const handleCloseStatusModal = () => {
+        setIsStatusModalOpen(false);
+        setSelectedNewStatus('');
     };
 
     const handleExportExcel = async () => {
@@ -380,6 +442,11 @@ export const Orders: React.FC = () => {
                     onEdit={handleEditOrder}
                     onDelete={handleDeleteOrder}
                     onAdd={handleNewOrder}
+                    currentPage={paginationHook.pagination.currentPage}
+                    pageSize={paginationHook.pagination.limit}
+                    selectedOrders={selectedOrders}
+                    onSelectAll={handleSelectAll}
+                    onSelectOrder={handleSelectOrder}
                 />
             );
         }
@@ -388,12 +455,20 @@ export const Orders: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div 
+            className="flex flex-col overflow-hidden"
+            style={{ 
+                height: 'calc(100vh - 123px)', // Thêm 5px nữa
+                minHeight: '400px',
+                maxHeight: 'calc(100vh - 123px)' // Đảm bảo không vượt quá
+            }}
+        >
+            <div className="flex-shrink-0 space-y-3 px-6 pt-4 pb-2">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <ShoppingCart className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <ShoppingCart className="w-6 h-6 mr-2 text-primary-600" />
                         Quản lý đơn hàng
                     </h1>
                   
@@ -406,7 +481,7 @@ export const Orders: React.FC = () => {
 
             {/* Search and Filters */}
             <Card className="shadow-sm border-0 shadow-md">
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                     <div className="flex flex-col xl:flex-row items-start xl:items-center gap-2">
                         
                         {/* Search Input - Full width on mobile, flexible on desktop */}
@@ -438,7 +513,7 @@ export const Orders: React.FC = () => {
                                             setDateFrom(date ? formatDateForAPI(date) : '');
                                         }}
                                         placeholder="Từ ngày"
-                                        className="w-full xl:w-52"
+                                        className="w-full xl:w-40"
                                     />
                                     <span className="text-gray-500 text-sm px-2 font-medium flex-shrink-0">-</span>
                                     <DatePicker
@@ -448,7 +523,7 @@ export const Orders: React.FC = () => {
                                             setDateTo(date ? formatDateForAPI(date) : '');
                                         }}
                                         placeholder="Đến ngày"
-                                        className="w-full xl:w-52"
+                                        className="w-full xl:w-40"
                                     />
                                 </div>
                             </div>
@@ -487,6 +562,17 @@ export const Orders: React.FC = () => {
                         <div className="w-full xl:w-auto">
                           
                             <div className="flex items-center justify-between xl:justify-end gap-2">
+                                {/* Bulk Status Change Button - Only show when orders are selected */}
+                                {selectedOrders.length > 0 && (
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setIsStatusModalOpen(true)}
+                                        className="flex items-center gap-2 h-12 px-4 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-all font-medium"
+                                    >
+                                        Đổi Trạng thái TT ({selectedOrders.length})
+                                    </Button>
+                                )}
+
                                 {/* Reset Button */}
                                 <Button
                                     variant="outline"
@@ -531,10 +617,6 @@ export const Orders: React.FC = () => {
                                     </Button>
                                 </div>
 
-                                {/* Stats Badge */}
-                                <div className="text-sm text-gray-600 font-semibold bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 rounded-lg border border-blue-200 shadow-sm">
-                                    📊 <span className="text-blue-700 font-bold">{pagination.total}</span> ĐH
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -547,19 +629,23 @@ export const Orders: React.FC = () => {
                     {error}
                 </div>
             )}
+            </div>
 
-            {/* Orders Content */}
-            {renderContent()}
+            {/* Orders Content - Flexible area */}
+            <div className="flex-1 px-6 overflow-hidden" style={{ minHeight: 0 }}>
+                {renderContent()}
+            </div>
 
-            {/* Pagination */}
-            {pagination && pagination.total > 0 && (
+            {/* Pagination - Always show */}
+            <div className="flex-shrink-0 px-6 py-4">
                 <Pagination
                     pagination={paginationHook.pagination}
                     onPageChange={paginationHook.goToPage}
                     onPreviousPage={paginationHook.goToPreviousPage}
                     onNextPage={paginationHook.goToNextPage}
+                    onLimitChange={paginationHook.setLimit}
                 />
-            )}
+            </div>
 
             {/* Modals */}
             <OrderForm
@@ -582,6 +668,78 @@ export const Orders: React.FC = () => {
             />
 
             <ConfirmDialog {...confirmProps} />
+
+            {/* Bulk Status Change Modal */}
+            {isStatusModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseStatusModal}></div>
+                    <div className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-lg w-full">
+                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                                    Thay đổi trạng thái thanh toán
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Chọn trạng thái mới cho {selectedOrders.length} đơn hàng đã chọn:
+                                </p>
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={() => handleSelectStatus('completed')}
+                                        className={`w-full text-left px-4 py-3 border rounded-md transition-colors ${
+                                            selectedNewStatus === 'completed' 
+                                                ? 'border-green-400 bg-green-50 ring-2 ring-green-200' 
+                                                : 'border-gray-300 hover:bg-green-50 hover:border-green-300'
+                                        }`}
+                                    >
+                                        <div className="font-medium text-green-600">Đã thanh toán</div>
+                                        <div className="text-sm text-gray-500">Đánh dấu các đơn hàng đã được thanh toán</div>
+                                    </button>
+                                    <button
+                                        onClick={() => handleSelectStatus('pending')}
+                                        className={`w-full text-left px-4 py-3 border rounded-md transition-colors ${
+                                            selectedNewStatus === 'pending' 
+                                                ? 'border-yellow-400 bg-yellow-50 ring-2 ring-yellow-200' 
+                                                : 'border-gray-300 hover:bg-yellow-50 hover:border-yellow-300'
+                                        }`}
+                                    >
+                                        <div className="font-medium text-yellow-600">COD</div>
+                                        <div className="text-sm text-gray-500">Thanh toán khi nhận hàng</div>
+                                    </button>
+                                    <button
+                                        onClick={() => handleSelectStatus('debt')}
+                                        className={`w-full text-left px-4 py-3 border rounded-md transition-colors ${
+                                            selectedNewStatus === 'debt' 
+                                                ? 'border-red-400 bg-red-50 ring-2 ring-red-200' 
+                                                : 'border-gray-300 hover:bg-red-50 hover:border-red-300'
+                                        }`}
+                                    >
+                                        <div className="font-medium text-red-600">Công nợ</div>
+                                        <div className="text-sm text-gray-500">Chưa thanh toán, ghi nợ</div>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                                <Button
+                                    onClick={handleConfirmStatusChange}
+                                    disabled={!selectedNewStatus}
+                                    className={`w-full sm:w-auto ${
+                                        selectedNewStatus 
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    }`}
+                                >
+                                    Xác nhận thay đổi
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCloseStatusModal}
+                                    className="w-full sm:w-auto"
+                                >
+                                    Hủy
+                                </Button>
+                            </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }; 

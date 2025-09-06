@@ -12,6 +12,11 @@ interface OrderTableProps {
     onEdit: (order: Order) => void;
     onDelete: (id: string) => void;
     onAdd?: () => void;
+    currentPage?: number;
+    pageSize?: number;
+    selectedOrders?: string[];
+    onSelectAll?: (checked: boolean) => void;
+    onSelectOrder?: (orderId: string, checked: boolean) => void;
 }
 
 export const OrderTable: React.FC<OrderTableProps> = ({
@@ -20,7 +25,12 @@ export const OrderTable: React.FC<OrderTableProps> = ({
     onView,
     onEdit,
     onDelete,
-    onAdd
+    onAdd,
+    currentPage = 1,
+    pageSize = 20,
+    selectedOrders = [],
+    onSelectAll,
+    onSelectOrder
 }) => {
     const handleDelete = (order: Order) => {
         onDelete(order._id);
@@ -119,11 +129,23 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
     return (
         <>
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 table-fixed">
-                        <thead className="bg-gray-50">
+            <div className="bg-white rounded-lg border border-gray-200 flex flex-col h-full overflow-hidden">
+                {/* Single Table with Fixed Header */}
+                <div className="overflow-x-auto overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 293px)' }}>
+                    <table className="min-w-full table-fixed">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
+                                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                                    <input
+                                        type="checkbox"
+                                        checked={orders && orders.length > 0 && selectedOrders.length === orders.length}
+                                        onChange={(e) => onSelectAll?.(e.target.checked)}
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                </th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                    STT
+                                </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                     Đơn hàng
                                 </th>
@@ -157,59 +179,53 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {(orders || []).map((order) => (
-                                <tr key={order._id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap w-32">
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900">
-                                                {order.orderNumber}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                ID: {order._id.slice(-6)}
-                                            </div>
+                            {(orders || []).map((order, index) => {
+                                const stt = (currentPage - 1) * pageSize + index + 1;
+                                return (
+                                    <tr key={order._id} className="hover:bg-gray-50">
+                                        <td className="px-3 py-2 whitespace-nowrap w-12 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedOrders.includes(order._id)}
+                                                onChange={(e) => onSelectOrder?.(order._id, e.target.checked)}
+                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-2 whitespace-nowrap w-16 text-center">
+                                            <span className="text-sm text-gray-600 font-medium">
+                                                {stt}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-2 whitespace-nowrap w-32">
+                                        <div className="text-sm font-medium text-gray-900">
+                                            {order.orderNumber}
                                         </div>
                                     </td>
-                                    <td className="px-2 py-4 w-36">
+                                    <td className="px-2 py-2 w-36">
                                         <div className="max-w-36 overflow-hidden">
                                             <Tooltip 
-                                                content={safeString(order.customer?.name || 'N/A')} 
+                                                content={`SĐT: ${safeString(order.customer?.phone || 'Chưa có')}`}
                                                 side="top"
                                             >
                                                 <div className="text-sm font-medium text-gray-900 truncate cursor-help overflow-hidden">
                                                     {safeString(order.customer?.name || 'N/A')}
                                                 </div>
                                             </Tooltip>
-                                            <Tooltip 
-                                                content={safeString(order.customer?.phone || '')} 
-                                                side="bottom"
-                                            >
-                                                <div className="text-sm text-gray-500 truncate cursor-help overflow-hidden">
-                                                    {safeString(order.customer?.phone || '')}
-                                                </div>
-                                            </Tooltip>
                                         </div>
                                     </td>
-                                    <td className="px-2 py-4 w-32">
+                                    <td className="px-2 py-2 w-32">
                                         <div className="max-w-32 overflow-hidden">
                                             <Tooltip 
-                                                content={safeString(order.agent?.name || 'N/A')} 
+                                                content={`SĐT: ${safeString(order.agent?.phone || 'Chưa có')}`}
                                                 side="top"
                                             >
                                                 <div className="text-sm font-medium text-gray-900 truncate cursor-help overflow-hidden">
                                                     {safeString(order.agent?.name || 'N/A')}
                                                 </div>
                                             </Tooltip>
-                                            <Tooltip 
-                                                content={safeString(order.agent?.phone || '')} 
-                                                side="bottom"
-                                            >
-                                                <div className="text-sm text-gray-500 truncate cursor-help overflow-hidden">
-                                                    {safeString(order.agent?.phone || '')}
-                                                </div>
-                                            </Tooltip>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap w-24">
+                                    <td className="px-6 py-2 whitespace-nowrap w-24">
                                         <div className="flex items-center">
                                             <Calendar className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
@@ -217,7 +233,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap w-20">
+                                    <td className="px-6 py-2 whitespace-nowrap w-20">
                                         <div className="flex items-center">
                                             <Package className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
@@ -225,7 +241,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap w-24">
+                                    <td className="px-6 py-2 whitespace-nowrap w-24">
                                         <div className="flex items-center">
                                             <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
                                             <span className="text-sm font-semibold text-green-600">
@@ -233,23 +249,23 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap w-24">
+                                    <td className="px-6 py-2 whitespace-nowrap w-24">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                                             {getStatusText(order.status)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap w-24">
+                                    <td className="px-6 py-2 whitespace-nowrap w-24">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentStatusText(order.paymentStatus)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap w-28">
+                                    <td className="px-6 py-2 whitespace-nowrap w-28">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentMethodText(order.paymentMethod)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-24">
-                                        <div className="flex space-x-1">
+                                    <td className="px-6 py-2 whitespace-nowrap text-right text-sm font-medium w-24">
+                                        <div className="flex justify-end items-center space-x-1">
                                             <Button
                                                 variant="light"
                                                 size="xs"
@@ -281,7 +297,8 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            );
+                            })}
                         </tbody>
                     </table>
                 </div>

@@ -242,6 +242,11 @@ export const ordersApi = {
   deleteOrder: async (id: string): Promise<void> => {
     await api.delete(`/orders/${id}?permanent=true`);
   },
+
+  cancelOrder: async (id: string): Promise<Order> => {
+    const response = await api.delete(`/orders/${id}`); // Không có permanent=true
+    return response.data as Order;
+  },
   
   updateOrderStatus: async (id: string, status: Order['status']): Promise<Order> => {
     const response = await api.patch(`/orders/${id}/status`, { status });
@@ -251,6 +256,14 @@ export const ordersApi = {
   updatePaymentStatus: async (id: string, status: Order['paymentStatus']): Promise<Order> => {
     const response = await api.patch(`/orders/${id}/payment`, { status });
     return response.data as Order;
+  },
+
+  bulkUpdatePaymentStatus: async (orderIds: string[], paymentStatus: string): Promise<{ success: boolean, updated: number }> => {
+    const response = await api.post('/orders/bulk-update-payment-status', {
+      orderIds,
+      paymentStatus
+    });
+    return response.data as { success: boolean, updated: number };
   },
 };
 
