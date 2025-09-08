@@ -2,6 +2,7 @@ export interface PaginationQuery {
   page?: number;
   limit?: number;
   search?: string;
+  agentId?: string;
 }
 
 export interface PaginationResult<T> {

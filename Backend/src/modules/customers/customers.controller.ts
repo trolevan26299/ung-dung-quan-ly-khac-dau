@@ -35,7 +35,8 @@ export class CustomersController {
     const paginationQuery = {
       page: query.page ? parseInt(query.page) : 1,
       limit: query.limit ? parseInt(query.limit) : 10,
-      search: query.search
+      search: query.search,
+      agentId: query.agentId
     };
     return this.customersService.findAll(paginationQuery);
   }

@@ -17,6 +17,11 @@ export class CustomerQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({ description: 'ID đại lý để filter khách hàng', required: false })
+  @IsOptional()
+  @IsMongoId()
+  agentId?: string;
 }
 
 export class CreateCustomerDto {

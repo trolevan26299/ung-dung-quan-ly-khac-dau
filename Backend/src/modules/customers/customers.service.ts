@@ -30,13 +30,20 @@ export class CustomersService {
   }
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Customer>> {
-    const { page = 1, limit = 10, search } = query;
+    const { page = 1, limit = 10, search, agentId } = query;
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
     const skip = (page - 1) * safeLimit;
 
-    // Build match filter for search
+    // Build match filter for search and agentId
     const matchFilter: any = {};
+    
+    // Filter by agentId if provided
+    if (agentId) {
+      matchFilter.agentId = agentId;
+    }
+    
+    // Search filter
     if (search) {
       matchFilter.$or = [
         { name: { $regex: search, $options: 'i' } },
