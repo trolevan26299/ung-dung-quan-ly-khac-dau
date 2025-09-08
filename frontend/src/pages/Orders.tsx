@@ -20,7 +20,7 @@ import { useToast } from '../contexts/ToastContext';
 import { ordersApi } from '../services/api';
 import type { CreateOrderRequest, Order, OrderQuery, CreateAgentRequest, Agent } from '../types';
 import * as XLSX from 'xlsx';
-import { formatTableDate } from '../lib/utils';
+import { formatTableDate, formatCurrency } from '../lib/utils';
 
 type ViewMode = 'grid' | 'table';
 
@@ -105,8 +105,8 @@ export const Orders: React.FC = () => {
 
     // Load initial data
     useEffect(() => {
-        dispatch(fetchCustomers({ page: 1, limit: 1000 }));
-        dispatch(fetchProducts({ page: 1, limit: 1000 }));
+        dispatch(fetchCustomers({ page: 1, limit: 10000 }));
+        dispatch(fetchProducts({ page: 1, limit: 10000 }));
         dispatch(fetchAgents({ page: 1, limit: 99999 }));
     }, [dispatch]);
 
@@ -148,10 +148,6 @@ export const Orders: React.FC = () => {
             await dispatch(createOrder(data)).unwrap();
             setIsFormOpen(false);
             setEditingOrder(null);
-            
-            // Refresh customers list để load khách hàng mới tạo
-            dispatch(fetchCustomers({ page: 1, limit: 1000 }));
-            
             success('Tạo thành công', `Đơn hàng đã được tạo`);
         } catch (error: any) {
             showError('Tạo thất bại', error.message || 'Có lỗi xảy ra khi tạo đơn hàng');
@@ -212,10 +208,6 @@ export const Orders: React.FC = () => {
 
     const handleNewOrder = () => {
         setEditingOrder(null);
-        
-        // Refresh customers list để đảm bảo có data mới nhất
-        dispatch(fetchCustomers({ page: 1, limit: 1000 }));
-        
         setIsFormOpen(true);
     };
 
@@ -313,6 +305,14 @@ export const Orders: React.FC = () => {
     const handleCloseStatusModal = () => {
         setIsStatusModalOpen(false);
         setSelectedNewStatus('');
+    };
+
+    // Tính tổng tiền của các đơn hàng được chọn
+    const calculateSelectedTotal = () => {
+        if (selectedOrders.length === 0) return 0;
+        return orders
+            .filter(order => selectedOrders.includes(order._id))
+            .reduce((total, order) => total + (order.totalAmount || 0), 0);
     };
 
     const handleExportExcel = async () => {
@@ -463,7 +463,7 @@ export const Orders: React.FC = () => {
                 maxHeight: 'calc(100vh - 123px)' // Đảm bảo không vượt quá
             }}
         >
-            <div className="flex-shrink-0 space-y-3 px-6 pt-4 pb-2">
+            <div className="flex-shrink-0 space-y-3 px-6 pt-1 pb-2">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -515,7 +515,7 @@ export const Orders: React.FC = () => {
                                         placeholder="Từ ngày"
                                         className="w-full xl:w-40"
                                     />
-                                    <span className="text-gray-500 text-sm px-2 font-medium flex-shrink-0">-</span>
+                                    <span className="text-gray-500 text-sm px-[1px] font-medium flex-shrink-0">-</span>
                                     <DatePicker
                                         date={dateToObj}
                                         onDateChange={(date: Date | undefined) => {
@@ -564,13 +564,22 @@ export const Orders: React.FC = () => {
                             <div className="flex items-center justify-between xl:justify-end gap-2">
                                 {/* Bulk Status Change Button - Only show when orders are selected */}
                                 {selectedOrders.length > 0 && (
-                                    <Button
-                                        size="sm"
-                                        onClick={() => setIsStatusModalOpen(true)}
-                                        className="flex items-center gap-2 h-12 px-4 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-all font-medium"
-                                    >
-                                        Đổi Trạng thái TT ({selectedOrders.length})
-                                    </Button>
+                                    <>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => setIsStatusModalOpen(true)}
+                                            className="flex items-center gap-2 h-12 px-2 whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white transition-all font-medium"
+                                        >
+                                            Đổi Trạng thái TT ({selectedOrders.length})
+                                        </Button>
+                                        
+                                        {/* Selected orders total amount */}
+                                        <div className="bg-green-100 border border-green-300 rounded-lg px-1 py-2 h-12 flex items-center">
+                                            <span className="text-green-800 font-bold text-sm whitespace-nowrap">
+                                                Tổng: {formatCurrency(calculateSelectedTotal())}
+                                            </span>
+                                        </div>
+                                    </>
                                 )}
 
                                 {/* Reset Button */}
@@ -578,7 +587,7 @@ export const Orders: React.FC = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleResetFilters}
-                                    className="flex items-center gap-2 h-12 px-3 whitespace-nowrap border-gray-300 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all font-medium"
+                                    className="flex items-center gap-2 h-12 px-2 whitespace-nowrap border-gray-300 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all font-medium"
                                 >
                                     <X className="h-4 w-4" />
                                     Reset 

@@ -220,7 +220,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             
             setOrderItems(mappedOrderItemsDisplay);
             setCustomerSearchValue(order.customer?.name || '');
-        } else {
+        } else if (isOpen && !order) {
+            // Chỉ reset form khi mở form tạo mới (không có order) và chỉ 1 lần
             setFormData({
                 customerId: '',
                 customerName: '',
@@ -237,9 +238,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             setOrderItems([]);
             setCustomerSearchValue('');
         }
-        setErrors({});
-        setFilteredCustomers(customers);
-    }, [order, isOpen, customers]);
+        
+        if (isOpen) {
+            setErrors({});
+            setFilteredCustomers(customers);
+        }
+    }, [order, isOpen]); // Loại bỏ customers khỏi dependency để tránh reset form
 
     const calculateTotals = () => {
         const subtotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -362,6 +366,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
     if (!isOpen) return null;
 
+    // Show loading nếu chưa có data customers, agents hoặc products
+    const isDataLoading = !customers.length || !agents.length || !products.length;
+    
     const { subtotal, vatAmount, total } = calculateTotals();
 
     return (
@@ -388,7 +395,18 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                         </Button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    {isDataLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                <p className="text-gray-600">Đang tải dữ liệu...</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Vui lòng chờ trong giây lát
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Agent and Customer Selection - Đổi vị trí */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -747,6 +765,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                             </Button>
                         </div>
                     </form>
+                    )}
                 </div>
             </div>
 
