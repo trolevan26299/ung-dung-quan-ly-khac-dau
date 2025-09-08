@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Customer, CustomerDocument } from '../../schemas/customer.schema';
 import { Agent, AgentDocument } from '../../schemas/agent.schema';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
@@ -40,7 +40,13 @@ export class CustomersService {
     
     // Filter by agentId if provided
     if (agentId) {
-      matchFilter.agentId = agentId;
+      // Convert string to ObjectId for proper comparison
+      try {
+        matchFilter.agentId = new Types.ObjectId(agentId);
+      } catch (error) {
+        // If agentId is not a valid ObjectId, no results will match
+        matchFilter.agentId = null;
+      }
     }
     
     // Search filter
@@ -219,8 +225,16 @@ export class CustomersService {
 
   // Lấy khách hàng theo đại lý
   async getCustomersByAgent(agentId: string): Promise<Customer[]> {
+    // Convert string to ObjectId for proper comparison
+    let agentObjectId;
+    try {
+      agentObjectId = new Types.ObjectId(agentId);
+    } catch (error) {
+      return []; // If agentId is not a valid ObjectId, return empty array
+    }
+    
     return this.customerModel
-      .find({ agentId })
+      .find({ agentId: agentObjectId })
       .populate('agentId', 'name phone')
       .exec();
   }
