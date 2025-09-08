@@ -87,4 +87,27 @@ export class Order {
   updatedBy?: Types.ObjectId;
 }
 
-export const OrderSchema = SchemaFactory.createForClass(Order); 
+export const OrderSchema = SchemaFactory.createForClass(Order);
+
+// Tạo index để tối ưu performance
+OrderSchema.index({ orderNumber: 1 }); // Index cho mã đơn hàng (unique)
+OrderSchema.index({ customerId: 1 }); // Index cho khách hàng
+OrderSchema.index({ agentId: 1 }); // Index cho đại lý
+OrderSchema.index({ status: 1 }); // Index cho trạng thái đơn hàng
+OrderSchema.index({ paymentStatus: 1 }); // Index cho trạng thái thanh toán
+OrderSchema.index({ createdAt: -1 }); // Index cho ngày tạo (desc)
+OrderSchema.index({ deliveryDate: 1 }); // Index cho ngày giao hàng
+OrderSchema.index({ createdBy: 1 }); // Index cho người tạo
+
+// Compound index cho các query thường dùng
+OrderSchema.index({ status: 1, paymentStatus: 1 }); // Filter status + payment
+OrderSchema.index({ customerId: 1, status: 1 }); // Orders by customer
+OrderSchema.index({ agentId: 1, status: 1 }); // Orders by agent
+OrderSchema.index({ deliveryDate: 1, status: 1 }); // Orders by delivery date
+OrderSchema.index({ createdAt: -1, status: 1 }); // Recent orders
+
+// Text index cho search
+OrderSchema.index({ 
+  orderNumber: 'text', 
+  notes: 'text' 
+}); // Text index cho search order 

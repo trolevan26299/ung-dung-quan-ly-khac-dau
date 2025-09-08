@@ -20,9 +20,11 @@ export class AgentsService {
     // Parse số một cách rõ ràng để tránh lỗi aggregation
     const page = parseInt(String(query.page || 1), 10);
     const limit = parseInt(String(query.limit || 10), 10);
+    // Cho phép limit lớn hơn, tối đa 50000 records
+    const safeLimit = Math.min(Math.max(limit, 1), 50000);
     const search = query.search;
     
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * safeLimit;
 
     // Build match filter
     const matchFilter: any = {};
@@ -101,7 +103,7 @@ export class AgentsService {
     const paginatedPipeline = [
       ...pipeline,
       { $skip: skip },
-      { $limit: limit }
+      { $limit: safeLimit }
     ];
 
     // Get total count
@@ -121,8 +123,8 @@ export class AgentsService {
       data: dataResult,
       total,
       page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 

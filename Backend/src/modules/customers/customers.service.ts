@@ -31,7 +31,9 @@ export class CustomersService {
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Customer>> {
     const { page = 1, limit = 10, search } = query;
-    const skip = (page - 1) * limit;
+    // Cho phép limit lớn hơn, tối đa 50000 records
+    const safeLimit = Math.min(Math.max(limit, 1), 50000);
+    const skip = (page - 1) * safeLimit;
 
     // Build match filter for search
     const matchFilter: any = {};
@@ -127,7 +129,7 @@ export class CustomersService {
     const paginatedPipeline = [
       ...pipeline,
       { $skip: skip },
-      { $limit: limit }
+      { $limit: safeLimit }
     ];
 
     // Get total count
@@ -147,8 +149,8 @@ export class CustomersService {
       data: dataResult,
       total,
       page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 

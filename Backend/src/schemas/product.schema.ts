@@ -45,4 +45,23 @@ export class Product {
   imageUrl: string;
 }
 
-export const ProductSchema = SchemaFactory.createForClass(Product); 
+export const ProductSchema = SchemaFactory.createForClass(Product);
+
+// Tạo index để tối ưu performance
+ProductSchema.index({ code: 1 }); // Index cho mã hàng (unique)
+ProductSchema.index({ name: 1 }); // Index cho tên sản phẩm
+ProductSchema.index({ category: 1 }); // Index cho loại sản phẩm
+ProductSchema.index({ color: 1 }); // Index cho màu sắc
+ProductSchema.index({ isActive: 1 }); // Index cho trạng thái
+ProductSchema.index({ stockQuantity: 1 }); // Index cho tồn kho
+
+// Compound index cho search và filter
+ProductSchema.index({ 
+  name: 'text', 
+  code: 'text', 
+  category: 'text',
+  color: 'text' 
+}); // Text index cho search
+
+// Index cho low stock query
+ProductSchema.index({ stockQuantity: 1, minStock: 1, isActive: 1 }); 

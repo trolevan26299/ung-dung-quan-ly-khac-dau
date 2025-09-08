@@ -23,7 +23,9 @@ export class ProductsService {
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Product>> {
     const { page = 1, limit = 10, search } = query;
-    const skip = (page - 1) * limit;
+    // Cho phép limit lớn hơn, tối đa 50000 records
+    const safeLimit = Math.min(Math.max(limit, 1), 50000);
+    const skip = (page - 1) * safeLimit;
 
     const filter: any = {};
     if (search) {
@@ -35,7 +37,7 @@ export class ProductsService {
     }
 
     const [data, total] = await Promise.all([
-      this.productModel.find(filter).skip(skip).limit(limit).exec(),
+      this.productModel.find(filter).skip(skip).limit(safeLimit).exec(),
       this.productModel.countDocuments(filter),
     ]);
 
@@ -43,8 +45,8 @@ export class ProductsService {
       data,
       total,
       page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     };
   }
 
