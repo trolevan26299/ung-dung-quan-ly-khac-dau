@@ -168,7 +168,7 @@ export class CustomersService {
   async update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<Customer> {
     const updateData = { ...updateCustomerDto };
 
-    // Nếu có agentId, lấy thông tin agent
+    // Nếu có agentId, lấy thông tin agent 
     if (updateCustomerDto.agentId) {
       const agent = await this.agentModel.findById(updateCustomerDto.agentId);
       if (agent) {
