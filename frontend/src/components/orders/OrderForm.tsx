@@ -1,7 +1,10 @@
 import { Minus, Plus, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { VALIDATION } from '../../constants';
 import type { Agent, CreateOrderRequest, Customer, Order, Product, CreateAgentRequest } from '../../types';
+import { RootState, AppDispatch } from '../../store';
+import { fetchCustomersByAgent } from '../../store/slices/customersSlice';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { Input } from '../ui/Input';
@@ -46,7 +49,6 @@ interface OrderFormProps {
     onClose: () => void;
     onSubmit: (data: CreateOrderRequest) => void;
     isLoading?: boolean;
-    customers: Customer[];
     agents: Agent[];
     products: Product[];
     onAgentChange?: (agentId: string) => void;
@@ -67,12 +69,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     onClose,
     onSubmit,
     isLoading = false,
-    customers,
     agents,
     products,
     onAgentChange,
     onCreateAgent
 }) => {
+    const dispatch = useDispatch<AppDispatch>();
+    const { customers, isLoading: customersLoading } = useSelector((state: RootState) => state.customers);
     const [formData, setFormData] = useState<CreateOrderRequest>({
         customerId: '',
         customerName: '',
@@ -89,53 +92,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [errors, setErrors] = useState<any>({});
-    const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
-    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-    const [customerSearchValue, setCustomerSearchValue] = useState('');
     const [showAgentForm, setShowAgentForm] = useState(false);
     const [isCreatingAgent, setIsCreatingAgent] = useState(false);
     const [pendingAgentId, setPendingAgentId] = useState<string | null>(null);
 
-    // Filter customers by selected agent
-    const getCustomersByAgent = (agentId: string) => {
-        if (!agentId) return customers;
-        return customers.filter(customer => customer.agentId === agentId);
-    };
 
-    // Handle agent selection
-    const handleAgentChange = (agentId: string) => {
-        setFormData({ 
-            ...formData, 
-            agentId,
-            customerId: '', // Reset customer when agent changes
-            customerName: '',
-            customerPhone: ''
-        });
-        setCustomerSearchValue('');
-        const agentCustomers = getCustomersByAgent(agentId || '');
-        setFilteredCustomers(agentCustomers);
-        if (onAgentChange) {
-            onAgentChange(agentId);
-        }
-    };
 
-    // Handle customer search and selection
-    const handleCustomerSearch = (value: string) => {
-        setCustomerSearchValue(value);
-        setFormData({ ...formData, customerName: value, customerId: '' });
-        
-        if (value.length > 0) {
-            const agentCustomers = getCustomersByAgent(formData.agentId || '');
-            const filtered = agentCustomers.filter(customer => 
-                customer.name.toLowerCase().includes(value.toLowerCase()) ||
-                (customer.phone && customer.phone.includes(value))
-            );
-            setFilteredCustomers(filtered);
-            setShowCustomerDropdown(true);
-        } else {
-            setShowCustomerDropdown(false);
-        }
-    };
 
     const handleCustomerSelect = (customer: Customer) => {
         setFormData({
@@ -144,8 +106,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             customerName: customer.name,
             customerPhone: customer.phone || ''
         });
-        setCustomerSearchValue(customer.name);
-        setShowCustomerDropdown(false);
     };
 
     // Handle tạo đại lý mới
@@ -175,10 +135,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 agentId: pendingAgentId
             }));
             
-            // Reset customer selection khi thay đổi agent
-            setCustomerSearchValue('');
-            const agentCustomers = getCustomersByAgent(pendingAgentId);
-            setFilteredCustomers(agentCustomers);
+            // Reset customer selection khi thay đổi agent - không cần làm gì thêm
             
             // Gọi callback
             if (onAgentChange) {
@@ -219,7 +176,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             }));
             
             setOrderItems(mappedOrderItemsDisplay);
-            setCustomerSearchValue(order.customer?.name || '');
         } else if (isOpen && !order) {
             // Chỉ reset form khi mở form tạo mới (không có order) và chỉ 1 lần
             setFormData({
@@ -236,12 +192,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 deliveryDate: getVietnamDateTime() // Mặc định là ngày hiện tại theo UTC+7
             });
             setOrderItems([]);
-            setCustomerSearchValue('');
         }
         
         if (isOpen) {
             setErrors({});
-            setFilteredCustomers(customers);
         }
     }, [order, isOpen]); // Loại bỏ customers khỏi dependency để tránh reset form
 
@@ -346,6 +300,33 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         return Object.keys(newErrors).length === 0;
     };
 
+    // Handle agent change và load customers theo agent
+    const handleAgentChange = (agentId: string) => {
+        setFormData(prev => ({ 
+            ...prev, 
+            agentId,
+            // Reset customer khi thay đổi agent  
+            customerId: '',
+            customerName: '',
+            customerPhone: ''
+        }));
+        
+        // Reset customer selection - Combobox sẽ tự handle
+        
+        // Load customers theo agent nếu có chọn agent
+        if (agentId) {
+            dispatch(fetchCustomersByAgent({ 
+                agentId, 
+                pagination: { page: 1, limit: 10000 }
+            }));
+        }
+        
+        // Call parent handler if provided
+        if (onAgentChange) {
+            onAgentChange(agentId);
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
@@ -366,8 +347,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
     if (!isOpen) return null;
 
-    // Show loading nếu chưa có data customers, agents hoặc products
-    const isDataLoading = !customers.length || !agents.length || !products.length;
+    // Show loading nếu chưa có data agents hoặc products (customers sẽ load sau khi chọn agent)
+    const isDataLoading = !agents.length || !products.length;
     
     const { subtotal, vatAmount, total } = calculateTotals();
 
@@ -445,22 +426,66 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                 </div>
                             </div>
 
-                            <div className="relative">
+                            <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Khách hàng *
                                 </label>
-                                <Input
-                                    type="text"
-                                    value={customerSearchValue}
-                                    onChange={(e) => handleCustomerSearch(e.target.value)}
-                                    placeholder="Nhập tên hoặc SĐT khách hàng"
-                                    className={`${errors.customer ? 'border-red-500' : ''}`}
-                                    onFocus={() => {
-                                        if (filteredCustomers.length > 0) {
-                                            setShowCustomerDropdown(true);
+                                {customersLoading && formData.agentId ? (
+                                    <div className="flex items-center space-x-2 p-2 border border-gray-300 rounded-md bg-gray-50">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                        <span className="text-sm text-gray-600">Đang tải khách hàng...</span>
+                                    </div>
+                                ) : (
+                                    <Combobox
+                                        options={[
+                                            { value: '', label: 'Khách hàng mới (nhập bên dưới)' },
+                                            ...customers.map(customer => ({
+                                                value: customer._id,
+                                                label: customer.name,
+                                                subtitle: customer.phone || 'Chưa có SĐT',
+                                            }))
+                                        ]}
+                                        value={formData.customerId}
+                                        onChange={(customerId) => {
+                                            if (customerId) {
+                                                const customer = customers.find(c => c._id === customerId);
+                                                if (customer) {
+                                                    handleCustomerSelect(customer);
+                                                }
+                                            } else {
+                                                // Reset customer when selecting "Khách hàng mới"
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    customerId: '',
+                                                    customerName: '',
+                                                    customerPhone: ''
+                                                }));
+                                            }
+                                        }}
+                                        placeholder={
+                                            formData.agentId 
+                                                ? "Chọn khách hàng hoặc tạo mới" 
+                                                : "Vui lòng chọn đại lý trước"
                                         }
-                                    }}
-                                />
+                                        searchPlaceholder="Tìm kiếm khách hàng..."
+                                        emptyMessage="Không tìm thấy khách hàng"
+                                        disabled={!formData.agentId}
+                                        error={!!errors.customer}
+                                        allowClear
+                                    />
+                                )}
+                                
+                                {/* Customer Name Input - chỉ hiện khi chưa chọn customer có sẵn */}
+                                {!formData.customerId && (
+                                    <Input
+                                        type="text"
+                                        value={formData.customerName}
+                                        onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                        placeholder="Tên khách hàng mới"
+                                        className={`${errors.customer ? 'border-red-500' : ''}`}
+                                        disabled={!formData.agentId}
+                                    />
+                                )}
                                 
                                 {/* Customer Phone Input */}
                                 <Input
@@ -468,25 +493,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                                     value={formData.customerPhone}
                                     onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
                                     placeholder="Số điện thoại (tùy chọn)"
-                                    className="mt-2"
+                                    disabled={!formData.agentId}
                                 />
-
-                                {/* Customer Dropdown */}
-                                {showCustomerDropdown && filteredCustomers.length > 0 && (
-                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                        {filteredCustomers.map(customer => (
-                                            <button
-                                                key={customer._id}
-                                                type="button"
-                                                onClick={() => handleCustomerSelect(customer)}
-                                                className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                                            >
-                                                <div className="font-medium">{customer.name}</div>
-                                                <div className="text-sm text-gray-500">{customer.phone}</div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
                                 
                                 {errors.customer && (
                                     <p className="text-red-500 text-xs mt-1">{errors.customer}</p>

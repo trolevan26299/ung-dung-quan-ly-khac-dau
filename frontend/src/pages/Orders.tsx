@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { RootState, AppDispatch } from '../store';
 import { fetchOrders, createOrder, updateOrder, deleteOrder, cancelOrder, setSearchTerm, setStatusFilter, setPaymentFilter, setCurrentOrder, clearError, fetchOrderById } from '../store/slices/ordersSlice';
-import { fetchCustomers } from '../store/slices/customersSlice';
 import { fetchProducts } from '../store/slices/productsSlice';
 import { fetchAgents, createAgent } from '../store/slices/agentsSlice';
 import { OrderForm, OrderDetail, OrderCard, OrderTable } from '../components/orders';
@@ -36,7 +35,6 @@ export const Orders: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const location = useLocation();
     const { orders, currentOrder, isLoading, error, searchTerm, statusFilter, paymentFilter, pagination } = useSelector((state: RootState) => state.orders);
-    const { customers } = useSelector((state: RootState) => state.customers);
     const { products } = useSelector((state: RootState) => state.products);
     const { agents } = useSelector((state: RootState) => state.agents);
     const { confirm, confirmProps } = useConfirm();
@@ -105,7 +103,7 @@ export const Orders: React.FC = () => {
 
     // Load initial data
     useEffect(() => {
-        dispatch(fetchCustomers({ page: 1, limit: 10000 }));
+        // Chỉ load products và agents - customers sẽ load theo agent trong form
         dispatch(fetchProducts({ page: 1, limit: 10000 }));
         dispatch(fetchAgents({ page: 1, limit: 99999 }));
     }, [dispatch]);
@@ -663,7 +661,6 @@ export const Orders: React.FC = () => {
                 onClose={handleCloseForm}
                 onSubmit={editingOrder ? handleUpdateOrder : handleCreateOrder}
                 isLoading={isLoading}
-                customers={customers}
                 agents={agents}
                 products={products}
                 onAgentChange={handleAgentChange}

@@ -40,6 +40,17 @@ export const fetchCustomers = createAsyncThunk(
   }
 );
 
+export const fetchCustomersByAgent = createAsyncThunk(
+  'customers/fetchCustomersByAgent',
+  async (params: { agentId: string; pagination?: PaginationParams }, { rejectWithValue }) => {
+    try {
+      return await customersApi.getCustomersByAgent(params.agentId, params.pagination);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Lấy danh sách khách hàng theo đại lý thất bại');
+    }
+  }
+);
+
 export const createCustomer = createAsyncThunk(
   'customers/createCustomer',
   async (data: CreateCustomerRequest, { rejectWithValue }) => {
@@ -103,6 +114,25 @@ const customersSlice = createSlice({
         };
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch customers by agent
+      .addCase(fetchCustomersByAgent.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCustomersByAgent.fulfilled, (state, action: PayloadAction<PaginatedResponse<Customer>>) => {
+        state.isLoading = false;
+        state.customers = action.payload.data;
+        state.pagination = {
+          page: action.payload.page,
+          limit: action.payload.limit,
+          total: action.payload.total,
+          totalPages: action.payload.totalPages,
+        };
+      })
+      .addCase(fetchCustomersByAgent.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })

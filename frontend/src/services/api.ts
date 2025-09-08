@@ -120,37 +120,6 @@ export const usersApi = {
   },
 };
 
-// Customers API
-export const customersApi = {
-  getCustomers: async (params?: PaginationParams): Promise<PaginatedResponse<Customer>> => {
-    const response = await api.get('/customers', { params });
-    return response.data as PaginatedResponse<Customer>;
-  },
-  
-  getCustomer: async (id: string): Promise<Customer> => {
-    const response = await api.get(`/customers/${id}`);
-    return response.data as Customer;
-  },
-  
-  createCustomer: async (data: CreateCustomerRequest): Promise<Customer> => {
-    const response = await api.post('/customers', data);
-    return response.data as Customer;
-  },
-  
-  updateCustomer: async (id: string, data: Partial<CreateCustomerRequest>): Promise<Customer> => {
-    const response = await api.patch(`/customers/${id}`, data);
-    return response.data as Customer;
-  },
-  
-  deleteCustomer: async (id: string): Promise<void> => {
-    await api.delete(`/customers/${id}`);
-  },
-  
-  getCustomerOrders: async (id: string, params?: PaginationParams): Promise<PaginatedResponse<Order>> => {
-    const response = await api.get(`/customers/${id}/orders`, { params });
-    return response.data as PaginatedResponse<Order>;
-  },
-};
 
 // Agents API
 export const agentsApi = {
@@ -323,6 +292,60 @@ export const statisticsApi = {
   getTopProducts: async (params?: { limit?: number; startDate?: string; endDate?: string }) => {
     const response = await api.get('/statistics/top-products', { params });
     return response.data;
+  },
+};
+
+// Customers API
+export const customersApi = {
+  getCustomers: async (params?: PaginationParams & { agentId?: string }): Promise<PaginatedResponse<Customer>> => {
+    const response = await api.get('/customers', { params });
+    return response.data as PaginatedResponse<Customer>;
+  },
+
+  getCustomer: async (id: string): Promise<Customer> => {
+    const response = await api.get(`/customers/${id}`);
+    return response.data as Customer;
+  },
+
+  createCustomer: async (data: CreateCustomerRequest): Promise<Customer> => {
+    const response = await api.post('/customers', data);
+    return response.data as Customer;
+  },
+
+  updateCustomer: async (id: string, data: Partial<CreateCustomerRequest>): Promise<Customer> => {
+    const response = await api.patch(`/customers/${id}`, data);
+    return response.data as Customer;
+  },
+
+  deleteCustomer: async (id: string): Promise<void> => {
+    await api.delete(`/customers/${id}`);
+  },
+
+  getCustomerStats: async (): Promise<{
+    totalCustomers: number;
+    topCustomer: {
+      id: string;
+      name: string;
+      totalSpent: number;
+    };
+  }> => {
+    const response = await api.get('/customers/stats');
+    return response.data as {
+      totalCustomers: number;
+      topCustomer: {
+        id: string;
+        name: string;
+        totalSpent: number;
+      };
+    };
+  },
+
+  // Load customers by agent
+  getCustomersByAgent: async (agentId: string, params?: Omit<PaginationParams, 'agentId'>): Promise<PaginatedResponse<Customer>> => {
+    const response = await api.get('/customers', { 
+      params: { ...params, agentId }
+    });
+    return response.data as PaginatedResponse<Customer>;
   },
 };
 
