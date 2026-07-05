@@ -65,9 +65,21 @@ export class CustomersService {
       ];
     }
 
-    // Aggregation pipeline để tính tổng đơn hàng và giá trị
-    const pipeline = [
+    // Đếm KHÔNG cần lookup — lookup chỉ thêm field, không đổi số bản ghi match.
+    // (Filter search theo agentName dùng field agentName đã lưu sẵn trên customer,
+    // nên đếm chỉ cần $match, không phụ thuộc lookup.)
+    const countPipeline: any[] = [
       { $match: matchFilter },
+      { $count: 'total' }
+    ];
+
+    // Dữ liệu: PHÂN TRANG TRƯỚC rồi mới $lookup, nên chỉ join đúng số khách của
+    // trang hiện tại thay vì toàn bộ. Giữ nguyên thứ tự tự nhiên (không thêm
+    // $sort) => kết quả trả về không đổi so với trước, chỉ nhanh hơn.
+    const paginatedPipeline: any[] = [
+      { $match: matchFilter },
+      { $skip: skip },
+      { $limit: safeLimit },
       {
         $addFields: {
           // Convert _id to string for comparison
@@ -142,19 +154,6 @@ export class CustomersService {
           customerIdString: 0
         }
       }
-    ];
-
-    // Get paginated data
-    const paginatedPipeline = [
-      ...pipeline,
-      { $skip: skip },
-      { $limit: safeLimit }
-    ];
-
-    // Get total count
-    const countPipeline = [
-      ...pipeline,
-      { $count: 'total' }
     ];
 
     const [dataResult, countResult] = await Promise.all([

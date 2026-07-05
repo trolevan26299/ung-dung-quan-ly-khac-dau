@@ -81,9 +81,15 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/khacdau-backend:latest
           docker pull ${{ secrets.DOCKER_USERNAME }}/khacdau-frontend:latest
 
-          # Start/refresh containers (redis + backend + frontend).
-          # up -d chỉ tạo lại container nào có thay đổi, redis giữ nguyên volume.
+          # docker-compose v1.29.2 trên VPS bị bug KeyError 'ContainerConfig' khi
+          # RECREATE container từ image build bằng BuildKit. Xoá container cũ của
+          # backend + frontend để up -d đi đường "tạo mới" (né bug). KHÔNG xoá redis
+          # => giữ nguyên cache + volume. Filter name chỉ khớp app này, không đụng
+          # các dự án khác trên cùng server.
+          docker rm -f khacdau-backend khacdau-frontend 2>/dev/null || true
+
+          # Tạo lại backend + frontend (redis giữ nguyên vì đã up-to-date)
           docker-compose up -d
 
           # Clean up unused images
-          docker image prune -f 
+          docker image prune -f

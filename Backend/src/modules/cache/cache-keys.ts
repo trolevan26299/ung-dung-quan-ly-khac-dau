@@ -60,10 +60,19 @@ export const CACHE_INVALIDATION: Record<string, CacheNamespace[]> = {
   users: [CacheNamespace.USERS, CacheNamespace.ORDERS],
 };
 
-/** TTL (giây) — backstop trên nền invalidation tường minh. */
+/**
+ * TTL (giây) — chỉ là "lưới an toàn" trên nền invalidation tường minh.
+ *
+ * Cơ chế làm mới CHÍNH là invalidate() chạy sau mỗi lần ghi (xem CACHE_INVALIDATION),
+ * nên dữ liệu luôn tươi ngay khi có thay đổi qua app. TTL dài để cache "lưu lâu",
+ * giảm tối đa số lần phải chạy lại query nặng. KHÔNG để vô hạn: nếu lỡ có đường ghi
+ * nào quên invalidate (hoặc sửa DB trực tiếp), TTL đảm bảo cache tự lành lại sau tối
+ * đa khoảng thời gian này thay vì sai vĩnh viễn. (Redis đang bật allkeys-lru 256MB nên
+ * key cũ vẫn bị đẩy ra khi thiếu bộ nhớ.)
+ */
 export const CacheTTL = {
-  LIST: 120,
-  DETAIL: 300,
-  STATISTICS: 300,
-  SHORT: 60,
+  LIST: 21600,        // 6 giờ — danh sách
+  DETAIL: 43200,      // 12 giờ — chi tiết 1 bản ghi
+  STATISTICS: 10800,  // 3 giờ — thống kê (ngắn hơn để tránh lệch ở mốc chuyển ngày/tháng)
+  SHORT: 300,         // 5 phút
 };

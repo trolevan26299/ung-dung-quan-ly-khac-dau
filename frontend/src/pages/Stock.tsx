@@ -30,7 +30,6 @@ import { formatCurrency } from '../lib/utils';
 import { useToast } from '../contexts/ToastContext';
 import { useDispatch } from 'react-redux';
 import { updateTransaction, deleteTransaction } from '../store/slices/stockSlice';
-import * as XLSX from 'xlsx';
 
 // Product Stock Table Component
 interface ProductStockTableProps {
@@ -660,6 +659,8 @@ export const Stock: React.FC = () => {
     const handleExportProductsExcel = async () => {
         try {
             setIsLoading(true);
+            // Tải xlsx theo yêu cầu (dynamic import) để không nằm trong bundle chính
+            const XLSX = await import('xlsx');
             // Gọi API với page=1 và limit=999999 để lấy tất cả sản phẩm
             const response = await productsApi.getProducts({
                 page: 1,

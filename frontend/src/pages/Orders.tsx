@@ -18,7 +18,6 @@ import { usePagination, useConfirm } from '../hooks';
 import { useToast } from '../contexts/ToastContext';
 import { ordersApi } from '../services/api';
 import type { CreateOrderRequest, Order, OrderQuery, CreateAgentRequest, Agent } from '../types';
-import * as XLSX from 'xlsx';
 import { formatTableDate, formatCurrency } from '../lib/utils';
 
 type ViewMode = 'grid' | 'table';
@@ -315,7 +314,8 @@ export const Orders: React.FC = () => {
 
     const handleExportExcel = async () => {
         try {
-            
+            // Tải xlsx theo yêu cầu (dynamic import) để không nằm trong bundle chính
+            const XLSX = await import('xlsx');
 
             // Gọi API riêng cho xuất Excel với các filter hiện tại
             const exportParams: any = {};

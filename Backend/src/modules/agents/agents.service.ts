@@ -42,9 +42,20 @@ export class AgentsService {
       ];
     }
 
-    // Aggregation pipeline với lookup orders
-    const pipeline: any[] = [
+    // Đếm KHÔNG cần lookup — lookup chỉ thêm field, không đổi số bản ghi match.
+    // Tách riêng để việc đếm chỉ chạm index của $match, nhẹ hơn nhiều.
+    const countPipeline: any[] = [
       { $match: matchFilter },
+      { $count: 'total' }
+    ];
+
+    // Dữ liệu: PHÂN TRANG TRƯỚC rồi mới $lookup, nên chỉ join đúng số đại lý của
+    // trang hiện tại (vd 10) thay vì toàn bộ. Giữ nguyên thứ tự tự nhiên (không
+    // thêm $sort) => kết quả trả về không đổi so với trước, chỉ nhanh hơn.
+    const paginatedPipeline: any[] = [
+      { $match: matchFilter },
+      { $skip: skip },
+      { $limit: safeLimit },
       {
         $addFields: {
           // Convert _id to string for comparison
@@ -103,19 +114,6 @@ export class AgentsService {
           agentIdString: 0
         }
       }
-    ];
-
-    // Get paginated data
-    const paginatedPipeline = [
-      ...pipeline,
-      { $skip: skip },
-      { $limit: safeLimit }
-    ];
-
-    // Get total count
-    const countPipeline = [
-      ...pipeline,
-      { $count: 'total' }
     ];
 
     const [dataResult, countResult] = await Promise.all([
