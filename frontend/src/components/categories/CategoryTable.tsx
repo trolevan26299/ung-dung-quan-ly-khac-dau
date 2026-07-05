@@ -55,26 +55,26 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
 
     return (
         <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[calc(100vh-300px)]">
                 <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Tên danh mục
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Mô tả
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Số sản phẩm
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Trạng thái
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Ngày tạo
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Thao tác
                             </th>
                         </tr>
@@ -82,7 +82,7 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
                     <tbody className="bg-white divide-y divide-gray-200">
                         {(categories || []).map((category) => (
                             <tr key={category._id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-2.5 whitespace-nowrap">
                                     <div className="flex items-center">
                                         <Tag className="w-5 h-5 text-gray-400 mr-3" />
                                         <div className="text-sm font-medium text-gray-900">
@@ -90,17 +90,17 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-4 py-2.5">
                                     <div className="text-sm text-gray-900 max-w-xs truncate">
                                         {safeString(category.description) || '-'}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-2.5 whitespace-nowrap">
                                     <span className="text-sm font-medium text-gray-900">
                                         {safeNumber(category.productCount)}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-2.5 whitespace-nowrap">
                                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                                         category.isActive
                                             ? 'bg-green-100 text-green-800'
@@ -109,12 +109,12 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
                                         {category.isActive ? 'Hoạt động' : 'Không hoạt động'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className="px-4 py-2.5 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">
                                         {formatDate(category.createdAt)}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <td className="px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex space-x-1">
                                         <Button
                                             variant="light"

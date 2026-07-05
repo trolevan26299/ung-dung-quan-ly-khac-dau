@@ -51,32 +51,32 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
     return (
         <>
             <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[calc(100vh-300px)]">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Khách hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Liên hệ
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Địa chỉ
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Đại lý
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     MST
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Đơn hàng
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Tổng giá trị
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Thao tác
                                 </th>
                             </tr>
@@ -84,7 +84,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                         <tbody className="bg-white divide-y divide-gray-200">
                             {(customers || []).map((customer) => (
                                 <tr key={customer._id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap">
                                         <div>
                                             <div className="text-sm font-medium text-gray-900">
                                                 {safeString(customer.name)}
@@ -94,7 +94,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <Phone className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
@@ -102,7 +102,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 py-2.5">
                                         <div className="flex items-start">
                                             <MapPin className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
                                             <span className="text-sm text-gray-900 line-clamp-2">
@@ -110,7 +110,7 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <Users className="w-4 h-4 text-gray-400 mr-2" />
                                             <span className="text-sm text-gray-900">
@@ -118,22 +118,22 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap">
                                         <span className="text-sm text-gray-900">
                                             {safeString(customer.taxCode, '-')}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap">
                                         <div className="text-sm font-medium text-blue-600">
                                             {safeNumber(customer.totalOrders)} đơn
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap">
                                         <div className="text-sm font-semibold text-green-600">
                                             {formatCurrency(customer.totalAmount)}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex space-x-1">
                                             <Button
                                                 variant="light"

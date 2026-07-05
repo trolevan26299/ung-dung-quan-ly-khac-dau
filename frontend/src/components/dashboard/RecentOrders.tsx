@@ -66,9 +66,9 @@ export const RecentOrders: React.FC = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
                         {recentOrders.length > 0 ? recentOrders.map((order: any) => (
-                            <div key={order._id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 p-3.5 transition-colors hover:bg-gray-100">
+                            <div key={order._id} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition-colors hover:bg-gray-100">
                                 <div className="min-w-0">
                                     <p className="font-semibold text-gray-900">{order.orderNumber}</p>
                                     <p className="truncate text-sm text-gray-500">{order.customer?.name || 'N/A'}</p>

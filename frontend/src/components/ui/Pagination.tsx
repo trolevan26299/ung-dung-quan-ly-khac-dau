@@ -1,7 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
-import { Button } from './Button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
   currentPage: number;
@@ -15,133 +13,115 @@ interface PaginationProps {
   className?: string;
 }
 
+// Danh sách số trang hiển thị (rút gọn bằng dấu … khi quá nhiều trang).
+const getPageNumbers = (currentPage: number, totalPages: number): (number | string)[] => {
+  const pages: (number | string)[] = [];
+  const maxVisiblePages = 5;
+
+  if (totalPages <= maxVisiblePages) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else if (currentPage <= 3) {
+    pages.push(1, 2, 3, 4, '...', totalPages);
+  } else if (currentPage >= totalPages - 2) {
+    pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+  } else {
+    pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+  }
+
+  return pages;
+};
+
 export const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
   totalItems,
   pageSize,
-  pageSizeOptions = [10, 20, 50],
+  pageSizeOptions = [20, 50, 100],
   onPageChange,
   onPageSizeChange,
   showPageSizeSelector = true,
   className = '',
 }) => {
-  // Tính toán range hiển thị
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisiblePages = 5;
-
-    if (totalPages <= maxVisiblePages) {
-      // Hiển thị tất cả nếu ít trang
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Logic phức tạp hơn cho nhiều trang
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, 4, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-      }
-    }
-
-    return pages;
-  };
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className={`flex items-center justify-between bg-white px-4 py-3 border-t border-gray-200 ${className}`}>
-      {/* Left side - Empty for spacing */}
-      <div className="flex-1"></div>
-
-      {/* Center - Navigation */}
-      <div className="flex items-center space-x-1">
-        {/* Previous Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
-        {/* Page Numbers */}
-        <div className="flex items-center space-x-1">
-          {getPageNumbers().map((page, index) => {
-            if (page === '...') {
-              return (
-                <span key={`ellipsis-${index}`} className="px-2 py-1 text-gray-500">
-                  <MoreHorizontal className="h-4 w-4" />
-                </span>
-              );
-            }
-
-            const pageNumber = Number(page);
-            const isActive = Number(currentPage) === pageNumber;
-            
-            return (
-              <div
-                key={pageNumber}
-                className="inline-block rounded-md"
-                style={{
-                  backgroundColor: isActive ? '#2563eb' : 'transparent',
-                  color: isActive ? 'white' : '#374151'
-                }}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onPageChange(pageNumber)}
-                  className="h-8 w-8 p-0"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: 'inherit',
-                    border: 'none'
-                  }}
-                >
-                  {pageNumber}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Next Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Right side - Page Size Selector */}
-      <div className="flex-1 flex justify-end">
+    <div
+      className={`flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
+    >
+      {/* Thông tin + chọn số dòng mỗi trang */}
+      <div className="flex items-center gap-4 text-sm text-gray-600">
+        <span className="tabular-nums">
+          <span className="font-semibold text-gray-900">{startItem}</span>
+          <span className="mx-0.5">–</span>
+          <span className="font-semibold text-gray-900">{endItem}</span>
+          <span className="mx-1 text-gray-400">/</span>
+          <span className="font-semibold text-gray-900">{totalItems}</span>
+        </span>
         {showPageSizeSelector && (
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-700">Hiển thị:</span>
-            <Select value={pageSize.toString()} onValueChange={(value) => onPageSizeChange(Number(value))}>
-              <SelectTrigger className="w-20 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pageSizeOptions.map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-gray-700">mục</span>
-          </div>
+          <label className="flex items-center gap-2">
+            <span className="hidden text-gray-500 sm:inline">Hiển thị</span>
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="h-8 rounded-lg border border-gray-200 bg-white pl-2.5 pr-7 text-sm text-gray-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            >
+              {pageSizeOptions.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
+
+      {/* Điều hướng trang */}
+      {totalPages > 1 && (
+        <nav className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            aria-label="Trang trước"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          {getPageNumbers(currentPage, totalPages).map((page, index) =>
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className="px-1.5 text-sm text-gray-400">
+                …
+              </span>
+            ) : (
+              <button
+                key={page}
+                type="button"
+                onClick={() => onPageChange(Number(page))}
+                aria-current={currentPage === page ? 'page' : undefined}
+                className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-medium tabular-nums transition-colors ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {page}
+              </button>
+            )
+          )}
+
+          <button
+            type="button"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            aria-label="Trang sau"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
+      )}
     </div>
   );
 };

@@ -24,7 +24,7 @@ const initialState: ProductsState = {
   searchTerm: '',
   pagination: {
     page: 1,
-    limit: 10,
+    limit: 20,
     total: 0,
     totalPages: 0,
   },
@@ -117,7 +117,7 @@ const productsSlice = createSlice({
         state.products = action.payload.data || action.payload;
         state.pagination = {
           page: action.payload.page || 1,
-          limit: action.payload.limit || 10,
+          limit: action.payload.limit || 20,
           total: action.payload.total || 0,
           totalPages: action.payload.totalPages || 0,
         };

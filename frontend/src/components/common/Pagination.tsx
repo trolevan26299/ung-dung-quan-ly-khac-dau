@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '../ui/Button';
 import type { PaginationState } from '../../hooks/usePagination';
 
 interface PaginationProps {
@@ -24,131 +23,114 @@ export const Pagination: React.FC<PaginationProps> = ({
 }) => {
     const { currentPage, totalPages, total, limit } = pagination;
 
-    // Always show pagination, but hide navigation when only 1 page
     const showNavigation = totalPages > 1;
-
-    const startItem = (currentPage - 1) * limit + 1;
+    const startItem = total === 0 ? 0 : (currentPage - 1) * limit + 1;
     const endItem = Math.min(currentPage * limit, total);
 
-    // Generate page numbers to show
-    const getPageNumbers = () => {
+    // Danh sách số trang hiển thị (rút gọn bằng dấu … khi quá nhiều trang).
+    const getPageNumbers = (): (number | string)[] => {
         const pages: (number | string)[] = [];
         const maxVisible = 5;
 
         if (totalPages <= maxVisible) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else {
-            // Always show first page
             pages.push(1);
+            if (currentPage > 3) pages.push('...');
 
-            if (currentPage > 3) {
-                pages.push('...');
-            }
-
-            // Show pages around current page
             const start = Math.max(2, currentPage - 1);
             const end = Math.min(totalPages - 1, currentPage + 1);
-
             for (let i = start; i <= end; i++) {
-                if (i !== 1 && i !== totalPages) {
-                    pages.push(i);
-                }
+                if (i !== 1 && i !== totalPages) pages.push(i);
             }
 
-            if (currentPage < totalPages - 2) {
-                pages.push('...');
-            }
-
-            // Always show last page
-            if (totalPages > 1) {
-                pages.push(totalPages);
-            }
+            if (currentPage < totalPages - 2) pages.push('...');
+            if (totalPages > 1) pages.push(totalPages);
         }
 
         return pages;
     };
 
     return (
-        <div className={`flex items-center justify-between ${className}`}>
-            <div className="flex items-center space-x-4">
+        <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}>
+            {/* Thông tin + chọn số dòng mỗi trang */}
+            <div className="flex items-center gap-4 text-sm text-gray-600">
                 {showInfo && (
-                    <div className="text-sm text-gray-700">
-                        Hiển thị <span className="font-medium">{startItem}</span> đến{' '}
-                        <span className="font-medium">{endItem}</span> trong{' '}
-                        <span className="font-medium">{total}</span> kết quả
-                    </div>
+                    <span className="tabular-nums">
+                        <span className="font-semibold text-gray-900">{startItem}</span>
+                        <span className="mx-0.5">–</span>
+                        <span className="font-semibold text-gray-900">{endItem}</span>
+                        <span className="mx-1 text-gray-400">/</span>
+                        <span className="font-semibold text-gray-900">{total}</span>
+                    </span>
                 )}
-                
-                {/* Page Size Selector */}
+
                 {onLimitChange && (
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">Hiển thị:</span>
+                    <label className="flex items-center gap-2">
+                        <span className="hidden text-gray-500 sm:inline">Hiển thị</span>
                         <select
                             value={limit}
                             onChange={(e) => onLimitChange(Number(e.target.value))}
-                            className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="h-8 rounded-lg border border-gray-200 bg-white pl-2.5 pr-7 text-sm text-gray-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                         >
                             <option value={20}>20</option>
-                            <option value={40}>40</option>
-                            <option value={60}>60</option>
-                            <option value={80}>80</option>
+                            <option value={50}>50</option>
                             <option value={100}>100</option>
                         </select>
-                        <span className="text-sm text-gray-600">mục/trang</span>
-                    </div>
+                    </label>
                 )}
             </div>
 
+            {/* Điều hướng trang */}
             {showNavigation ? (
-                <nav className="flex items-center space-x-2">
-                    <Button
-                        variant="secondary"
-                        size="sm"
+                <nav className="flex items-center gap-1">
+                    <button
+                        type="button"
                         onClick={onPreviousPage}
                         disabled={currentPage === 1}
-                        className="flex items-center"
+                        aria-label="Trang trước"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40"
                     >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Trước
-                    </Button>
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
 
-                    <div className="flex items-center space-x-1">
-                        {getPageNumbers().map((page, index) => (
-                            <React.Fragment key={index}>
-                                {page === '...' ? (
-                                    <span className="px-3 py-2 text-gray-500">...</span>
-                                ) : (
-                                    <Button
-                                        variant={currentPage === page ? 'active' : 'secondary'}
-                                        size="sm"
-                                        onClick={() => onPageChange(page as number)}
-                                        className="min-w-[40px]"
-                                    >
-                                        {page}
-                                    </Button>
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
+                    {getPageNumbers().map((page, index) =>
+                        page === '...' ? (
+                            <span key={`ellipsis-${index}`} className="px-1.5 text-sm text-gray-400">
+                                …
+                            </span>
+                        ) : (
+                            <button
+                                key={page}
+                                type="button"
+                                onClick={() => onPageChange(page as number)}
+                                aria-current={currentPage === page ? 'page' : undefined}
+                                className={`flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-medium tabular-nums transition-colors ${
+                                    currentPage === page
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        )
+                    )}
 
-                    <Button
-                        variant="secondary"
-                        size="sm"
+                    <button
+                        type="button"
                         onClick={onNextPage}
                         disabled={currentPage === totalPages}
-                        className="flex items-center"
+                        aria-label="Trang sau"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-40"
                     >
-                        Sau
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
                 </nav>
             ) : (
-                <div className="text-sm text-gray-500">
-                    {total > 0 ? 'Tất cả dữ liệu hiển thị trên 1 trang' : 'Không có dữ liệu'}
-                </div>
+                <span className="text-sm text-gray-400">
+                    {total > 0 ? 'Tất cả trên 1 trang' : 'Không có dữ liệu'}
+                </span>
             )}
         </div>
     );
-}; 
+};

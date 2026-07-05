@@ -24,12 +24,11 @@ export const Customers: React.FC = () => {
     const { confirm, confirmProps } = useConfirm();
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [hasProcessedUrlAction, setHasProcessedUrlAction] = useState(false);
 
     // Hooks - Khởi tạo với page hiện tại từ Redux nếu có
     const {
-        pagination: paginationState,
         params,
         setSearch,
     } = usePagination();

@@ -47,7 +47,7 @@ export const UserTable: React.FC<UserTableProps> = ({
     }
 
     return (
-        <Table>
+        <Table wrapperClassName="max-h-[calc(100vh-300px)] rounded-xl border border-gray-100">
             <TableHeader>
                 <TableRow>
                     <TableHead>Tên đăng nhập</TableHead>

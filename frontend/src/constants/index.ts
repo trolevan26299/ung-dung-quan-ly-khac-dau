@@ -1,8 +1,8 @@
 // Pagination constants
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
-  DEFAULT_LIMIT: 10,
-  ITEMS_PER_PAGE_OPTIONS: [10, 20, 50, 100]
+  DEFAULT_LIMIT: 20,
+  ITEMS_PER_PAGE_OPTIONS: [20, 50, 100]
 } as const;
 
 // Order status - KHỚP VỚI BACKEND

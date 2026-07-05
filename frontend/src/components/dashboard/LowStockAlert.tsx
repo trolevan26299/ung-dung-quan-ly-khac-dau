@@ -43,9 +43,9 @@ export const LowStockAlert: React.FC = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
                         {lowStockProducts.length > 0 ? lowStockProducts.map((product: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between rounded-xl border border-orange-100 bg-orange-50/70 p-3.5 transition-colors hover:bg-orange-50">
+                            <div key={index} className="flex items-center justify-between rounded-xl border border-orange-100 bg-orange-50/70 p-3 transition-colors hover:bg-orange-50">
                                 <div className="min-w-0">
                                     <p className="truncate font-semibold text-gray-900">{product.name}</p>
                                 </div>

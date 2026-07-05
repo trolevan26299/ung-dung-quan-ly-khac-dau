@@ -67,7 +67,7 @@ const Users: React.FC = () => {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | undefined>();
     const [viewMode, setViewMode] = useState<ViewMode>('table'); // Mặc định là table view
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
 
     // Kiểm tra quyền admin với fallback
     const localStorageUser = JSON.parse(localStorage.getItem('user') || 'null');

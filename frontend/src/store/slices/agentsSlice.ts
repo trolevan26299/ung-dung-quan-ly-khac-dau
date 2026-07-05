@@ -24,7 +24,7 @@ const initialState: AgentsState = {
   searchTerm: '',
   pagination: {
     page: 1,
-    limit: 10,
+    limit: 20,
     total: 0,
     totalPages: 0,
   },

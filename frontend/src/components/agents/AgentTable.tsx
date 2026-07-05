@@ -62,38 +62,38 @@ export const AgentTable: React.FC<AgentTableProps> = ({
         <>
             <Card>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto max-h-[calc(100vh-300px)]">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         <div className="flex items-center">
                                             <Users className="w-4 h-4 mr-2" />
                                             Đại lý
                                         </div>
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         <div className="flex items-center">
                                             <Phone className="w-4 h-4 mr-2" />
                                             Liên hệ
                                         </div>
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         <div className="flex items-center">
                                             <MapPin className="w-4 h-4 mr-2" />
                                             Địa chỉ
                                         </div>
                                     </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         <div className="flex items-center justify-center">
                                             <ShoppingBag className="w-4 h-4 mr-2" />
                                             Đơn hàng
                                         </div>
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Tổng giá trị
                                     </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Thao tác
                                     </th>
                                 </tr>
@@ -101,34 +101,34 @@ export const AgentTable: React.FC<AgentTableProps> = ({
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {(agents || []).map((agent) => (
                                     <tr key={agent._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-2.5">
                                             <div>
                                                 <div className="font-medium text-gray-900 line-clamp-1">
                                                     {safeString(agent.name)}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-2.5">
                                             <div className="text-sm text-gray-900 line-clamp-1">
                                                 {safeString(agent.phone)}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-2.5">
                                             <div className="text-sm text-gray-900 line-clamp-2 max-w-xs">
                                                 {safeString(agent.address)}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-4 py-2.5 text-center">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                 {safeNumber(agent.totalOrders)} đơn
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-4 py-2.5 text-right">
                                             <div className="font-semibold text-green-600">
                                                 {formatCurrency(agent.totalAmount)}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-2.5">
                                             <div className="flex space-x-1">
                                                 <Button
                                                     variant="light"
