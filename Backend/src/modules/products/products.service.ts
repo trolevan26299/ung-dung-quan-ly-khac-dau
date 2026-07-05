@@ -4,11 +4,14 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from '../../schemas/product.schema';
 import { CreateProductDto, UpdateProductDto, ImportProductDto } from './dto/product.dto';
 import { PaginationQuery, PaginationResult } from '../../types/common.types';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -18,10 +21,13 @@ export class ProductsService {
     }
 
     const product = new this.productModel(createProductDto);
-    return product.save();
+    const saved = await product.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.products);
+    return saved;
   }
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Product>> {
+    return this.cache.wrap(CacheNamespace.PRODUCTS, { findAll: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 10, search } = query;
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
@@ -37,7 +43,7 @@ export class ProductsService {
     }
 
     const [data, total] = await Promise.all([
-      this.productModel.find(filter).skip(skip).limit(safeLimit).exec(),
+      this.productModel.find(filter).skip(skip).limit(safeLimit).lean().exec(),
       this.productModel.countDocuments(filter),
     ]);
 
@@ -48,22 +54,27 @@ export class ProductsService {
       limit: safeLimit,
       totalPages: Math.ceil(total / safeLimit),
     };
+    });
   }
 
   async findOne(id: string): Promise<Product> {
-    const product = await this.productModel.findById(id).exec();
-    if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm');
-    }
-    return product;
+    return this.cache.wrap(CacheNamespace.PRODUCTS, { findOne: id }, CacheTTL.DETAIL, async () => {
+      const product = await this.productModel.findById(id).exec();
+      if (!product) {
+        throw new NotFoundException('Không tìm thấy sản phẩm');
+      }
+      return product;
+    });
   }
 
   async findByCode(code: string): Promise<Product> {
-    const product = await this.productModel.findOne({ code }).exec();
-    if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm với mã: ' + code);
-    }
-    return product;
+    return this.cache.wrap(CacheNamespace.PRODUCTS, { findByCode: code }, CacheTTL.DETAIL, async () => {
+      const product = await this.productModel.findOne({ code }).exec();
+      if (!product) {
+        throw new NotFoundException('Không tìm thấy sản phẩm với mã: ' + code);
+      }
+      return product;
+    });
   }
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
@@ -72,10 +83,11 @@ export class ProductsService {
       updateProductDto,
       { new: true }
     ).exec();
-    
+
     if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
+    await this.cache.invalidate(CACHE_INVALIDATION.products);
     return product;
   }
 
@@ -84,6 +96,7 @@ export class ProductsService {
     if (!result) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
     }
+    await this.cache.invalidate(CACHE_INVALIDATION.products);
   }
 
   // Cập nhật số lượng tồn kho
@@ -124,13 +137,16 @@ export class ProductsService {
 
   // Lấy sản phẩm sắp hết hàng
   async getLowStockProducts(): Promise<Product[]> {
-    return this.productModel.find({
-      $expr: { $lte: ['$stockQuantity', '$minStock'] }
-    }).exec();
+    return this.cache.wrap(CacheNamespace.PRODUCTS, { lowStock: true }, CacheTTL.LIST, async () => {
+      return this.productModel.find({
+        $expr: { $lte: ['$stockQuantity', '$minStock'] }
+      }).lean().exec();
+    });
   }
 
   // Lấy sản phẩm bán chạy nhất
   async getTopSellingProducts(limit: number = 10): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.PRODUCTS, { topSelling: limit }, CacheTTL.LIST, async () => {
     return this.productModel.aggregate([
       { $match: {} },
       {
@@ -170,5 +186,6 @@ export class ProductsService {
         }
       }
     ]);
+    });
   }
-} 
+}

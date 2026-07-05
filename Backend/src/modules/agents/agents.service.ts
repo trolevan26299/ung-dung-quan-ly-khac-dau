@@ -4,16 +4,21 @@ import { Model } from 'mongoose';
 import { Agent, AgentDocument } from '../../schemas/agent.schema';
 import { CreateAgentDto, UpdateAgentDto } from './dto/agent.dto';
 import { PaginationQuery, PaginationResult } from '../../types/common.types';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class AgentsService {
   constructor(
     @InjectModel(Agent.name) private agentModel: Model<AgentDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   async create(createAgentDto: CreateAgentDto): Promise<Agent> {
     const agent = new this.agentModel(createAgentDto);
-    return agent.save();
+    const saved = await agent.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.agents);
+    return saved;
   }
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Agent>> {
@@ -23,7 +28,8 @@ export class AgentsService {
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
     const search = query.search;
-    
+
+    return this.cache.wrap(CacheNamespace.AGENTS, { findAll: query }, CacheTTL.LIST, async () => {
     const skip = (page - 1) * safeLimit;
 
     // Build match filter
@@ -126,14 +132,17 @@ export class AgentsService {
       limit: safeLimit,
       totalPages: Math.ceil(total / safeLimit),
     };
+    });
   }
 
   async findOne(id: string): Promise<Agent> {
-    const agent = await this.agentModel.findById(id).exec();
-    if (!agent) {
-      throw new NotFoundException('Không tìm thấy đại lý');
-    }
-    return agent;
+    return this.cache.wrap(CacheNamespace.AGENTS, { findOne: id }, CacheTTL.DETAIL, async () => {
+      const agent = await this.agentModel.findById(id).exec();
+      if (!agent) {
+        throw new NotFoundException('Không tìm thấy đại lý');
+      }
+      return agent;
+    });
   }
 
   async update(id: string, updateAgentDto: UpdateAgentDto): Promise<Agent> {
@@ -142,10 +151,11 @@ export class AgentsService {
       updateAgentDto,
       { new: true }
     ).exec();
-    
+
     if (!agent) {
       throw new NotFoundException('Không tìm thấy đại lý');
     }
+    await this.cache.invalidate(CACHE_INVALIDATION.agents);
     return agent;
   }
 
@@ -154,23 +164,27 @@ export class AgentsService {
     if (!result) {
       throw new NotFoundException('Không tìm thấy đại lý');
     }
+    await this.cache.invalidate(CACHE_INVALIDATION.agents);
   }
 
   async search(keyword: string): Promise<Agent[]> {
-    return this.agentModel.find({
-      $or: [
-        { name: { $regex: keyword, $options: 'i' } },
-        { phone: { $regex: keyword, $options: 'i' } },
-        { email: { $regex: keyword, $options: 'i' } },
-      ]
-    }).exec();
+    return this.cache.wrap(CacheNamespace.AGENTS, { search: keyword }, CacheTTL.LIST, async () => {
+      return this.agentModel.find({
+        $or: [
+          { name: { $regex: keyword, $options: 'i' } },
+          { phone: { $regex: keyword, $options: 'i' } },
+          { email: { $regex: keyword, $options: 'i' } },
+        ]
+      }).exec();
+    });
   }
 
   // Lấy đại lý có doanh số cao nhất
   async getTopAgents(limit: number = 5): Promise<any[]> {
     // Đảm bảo limit là số
     const limitNum = parseInt(String(limit), 10);
-    
+
+    return this.cache.wrap(CacheNamespace.AGENTS, { topAgents: limitNum }, CacheTTL.LIST, async () => {
     return this.agentModel.aggregate([
       { $match: {} },
       {
@@ -219,5 +233,6 @@ export class AgentsService {
         }
       }
     ]);
+    });
   }
-} 
+}

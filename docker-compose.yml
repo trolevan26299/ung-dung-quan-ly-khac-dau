@@ -13,6 +13,19 @@ services:
       - MONGODB_URI=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/khacdau_tamtin?authSource=admin&maxPoolSize=10&serverSelectionTimeoutMS=5000&socketTimeoutMS=45000
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - REDIS_URL=redis://khacdau-redis:6379
+    networks:
+      - tamtin-main-network
+    depends_on:
+      - khacdau-redis
+
+  khacdau-redis:
+    image: redis:7-alpine
+    container_name: khacdau-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - khacdau-redis-data:/data
     networks:
       - tamtin-main-network
 
@@ -26,6 +39,9 @@ services:
       - tamtin-main-network
     depends_on:
       - khacdau-backend
+
+volumes:
+  khacdau-redis-data:
 
 networks:
   tamtin-main-network:

@@ -7,11 +7,14 @@ import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { UserResponseDto, PaginatedUsersDto } from './dto/user-response.dto';
 import { USER_ROLES, ERROR_MESSAGES } from '../../constants';
 import { UserRole } from '../../types/common.types';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   async create(createUserDto: CreateUserDto, currentUser: any): Promise<UserResponseDto> {
@@ -35,10 +38,12 @@ export class UsersService {
     });
 
     const savedUser = await user.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.users);
     return this.toResponseDto(savedUser);
   }
 
   async findAll(query: UserQueryDto): Promise<PaginatedUsersDto> {
+    return this.cache.wrap(CacheNamespace.USERS, { findAll: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 10, search, role, isActive } = query;
     const skip = (page - 1) * limit;
 
@@ -71,14 +76,17 @@ export class UsersService {
       total,
       totalPages: Math.ceil(total / limit),
     };
+    });
   }
 
   async findOne(id: string): Promise<UserResponseDto> {
+    return this.cache.wrap(CacheNamespace.USERS, { findOne: id }, CacheTTL.DETAIL, async () => {
     const user = await this.userModel.findById(id);
     if (!user) {
       throw new NotFoundException(ERROR_MESSAGES.NOT_FOUND);
     }
     return this.toResponseDto(user);
+    });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto, currentUser: any): Promise<UserResponseDto> {
@@ -103,6 +111,7 @@ export class UsersService {
     }
 
     const updatedUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
+    await this.cache.invalidate(CACHE_INVALIDATION.users);
     return this.toResponseDto(updatedUser);
   }
 
@@ -128,9 +137,11 @@ export class UsersService {
     }
 
     await this.userModel.findByIdAndDelete(id);
+    await this.cache.invalidate(CACHE_INVALIDATION.users);
   }
 
   async getStats() {
+    return this.cache.wrap(CacheNamespace.USERS, { stats: true }, CacheTTL.STATISTICS, async () => {
     const [
       totalUsers,
       adminCount,
@@ -149,6 +160,7 @@ export class UsersService {
       employeeCount,
       activeCount
     };
+    });
   }
 
   private toResponseDto(user: UserDocument): UserResponseDto {

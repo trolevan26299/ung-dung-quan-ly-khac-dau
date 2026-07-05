@@ -15,4 +15,7 @@ export class Category {
   isActive: boolean; // Trạng thái hoạt động
 }
 
-export const CategorySchema = SchemaFactory.createForClass(Category); 
+export const CategorySchema = SchemaFactory.createForClass(Category);
+
+// Indexes (name đã unique nên tự có index)
+CategorySchema.index({ isActive: 1 }); // Lọc danh mục đang hoạt động

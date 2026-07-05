@@ -63,4 +63,13 @@ export class Invoice {
   printedBy: string; // Người in
 }
 
-export const InvoiceSchema = SchemaFactory.createForClass(Invoice); 
+export const InvoiceSchema = SchemaFactory.createForClass(Invoice);
+
+// Indexes (invoiceCode đã unique nên tự có index)
+InvoiceSchema.index({ orderId: 1 }); // Tra hóa đơn theo đơn hàng
+InvoiceSchema.index({ orderCode: 1 }); // Tra theo mã đơn hàng
+InvoiceSchema.index({ customerName: 1 }); // Tìm kiếm theo tên khách
+InvoiceSchema.index({ paymentStatus: 1 }); // Lọc theo trạng thái thanh toán
+InvoiceSchema.index({ isPrinted: 1 }); // Lọc hóa đơn chưa/đã in
+InvoiceSchema.index({ invoiceDate: -1 }); // Sắp xếp/khoảng ngày
+InvoiceSchema.index({ paymentStatus: 1, invoiceDate: -1 }); // Lọc kết hợp phổ biến

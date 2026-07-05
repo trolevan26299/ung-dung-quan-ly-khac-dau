@@ -1,0 +1,69 @@
+/**
+ * Cache namespaces + cross-module invalidation map.
+ *
+ * Mỗi entity khi ghi (create/update/delete) sẽ xóa cache của TẤT CẢ namespace
+ * mà nó ảnh hưởng tới (kể cả gián tiếp qua denormalize/populate/aggregate).
+ * Bảng CACHE_INVALIDATION là nguồn sự thật duy nhất — sửa quan hệ cache ở đây.
+ */
+export enum CacheNamespace {
+  ORDERS = 'orders',
+  PRODUCTS = 'products',
+  CUSTOMERS = 'customers',
+  AGENTS = 'agents',
+  CATEGORIES = 'categories',
+  STOCK = 'stock',
+  STATISTICS = 'statistics',
+  INVOICES = 'invoices',
+  USERS = 'users',
+}
+
+/**
+ * Lý do phụ thuộc:
+ * - orders: ghi đơn hàng làm thay đổi tồn kho (products) + giao dịch kho (stock),
+ *   tổng tiền của khách (customers) & đại lý (agents), thống kê (statistics),
+ *   và ảnh hưởng snapshot hóa đơn (invoices).
+ * - stock: giao dịch kho đổi tồn kho sản phẩm (products) + thống kê tồn kho (statistics).
+ * - products: đổi sản phẩm ảnh hưởng đếm theo danh mục (categories) + thống kê (statistics).
+ * - categories: đổi tên danh mục cascade sang products; productCount đổi.
+ * - customers: tên khách hiển thị qua populate ở danh sách đơn (orders); top khách + thống kê.
+ * - agents: tên đại lý hiển thị qua populate ở đơn (orders) + denormalize agentName ở customers.
+ * - invoices: tạo hóa đơn chỉ đọc order, không ghi ngược → chỉ xóa cache invoices.
+ * - users: tên người tạo hiển thị qua populate ở danh sách đơn (orders).
+ */
+export const CACHE_INVALIDATION: Record<string, CacheNamespace[]> = {
+  orders: [
+    CacheNamespace.ORDERS,
+    CacheNamespace.PRODUCTS,
+    CacheNamespace.STOCK,
+    CacheNamespace.CUSTOMERS,
+    CacheNamespace.AGENTS,
+    CacheNamespace.STATISTICS,
+    CacheNamespace.INVOICES,
+  ],
+  stock: [CacheNamespace.STOCK, CacheNamespace.PRODUCTS, CacheNamespace.STATISTICS],
+  // products: đổi/tạo/xóa sản phẩm đổi cả tồn kho (stockSummary nằm ở namespace stock)
+  products: [
+    CacheNamespace.PRODUCTS,
+    CacheNamespace.CATEGORIES,
+    CacheNamespace.STATISTICS,
+    CacheNamespace.STOCK,
+  ],
+  categories: [CacheNamespace.CATEGORIES, CacheNamespace.PRODUCTS],
+  customers: [CacheNamespace.CUSTOMERS, CacheNamespace.ORDERS, CacheNamespace.STATISTICS],
+  agents: [
+    CacheNamespace.AGENTS,
+    CacheNamespace.CUSTOMERS,
+    CacheNamespace.ORDERS,
+    CacheNamespace.STATISTICS,
+  ],
+  invoices: [CacheNamespace.INVOICES],
+  users: [CacheNamespace.USERS, CacheNamespace.ORDERS],
+};
+
+/** TTL (giây) — backstop trên nền invalidation tường minh. */
+export const CacheTTL = {
+  LIST: 120,
+  DETAIL: 300,
+  STATISTICS: 300,
+  SHORT: 60,
+};

@@ -52,8 +52,22 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/product'
-    
+
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Đồng bộ docker-compose.yml (đã có redis + REDIS_URL) lên VPS.
+    # Chỉ ghi đè đúng file compose của app khac dau; .env trên VPS không bị đụng.
+    - name: Sync docker-compose.yml to VPS
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        password: ${{ secrets.VPS_PASSWORD }}
+        source: docker-compose.yml
+        target: /root/khacdau-app
+
     - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.0
       with:
@@ -62,16 +76,14 @@ jobs:
         password: ${{ secrets.VPS_PASSWORD }}
         script: |
           cd /root/khacdau-app
-          
+
           # Pull latest images
           docker pull ${{ secrets.DOCKER_USERNAME }}/khacdau-backend:latest
           docker pull ${{ secrets.DOCKER_USERNAME }}/khacdau-frontend:latest
-          
-          # Stop and remove old containers
-          docker-compose down
-          
-          # Start new containers
+
+          # Start/refresh containers (redis + backend + frontend).
+          # up -d chỉ tạo lại container nào có thay đổi, redis giữ nguyên volume.
           docker-compose up -d
-          
+
           # Clean up unused images
           docker image prune -f 

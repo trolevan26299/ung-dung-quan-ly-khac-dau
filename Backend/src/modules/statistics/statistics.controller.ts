@@ -33,8 +33,6 @@ export class StatisticsController {
       endDate: endDate ? new Date(endDate) : undefined
     } : undefined;
 
-    console.log('🎯 Controller Debug:', { period, startDate, endDate, statisticsPeriod });
-
     return this.statisticsService.getStatisticsForFrontend(statisticsPeriod);
   }
 

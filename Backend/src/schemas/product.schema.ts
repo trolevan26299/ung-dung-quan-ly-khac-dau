@@ -48,7 +48,7 @@ export class Product {
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 // Tạo index để tối ưu performance
-ProductSchema.index({ code: 1 }); // Index cho mã hàng (unique)
+// (code đã unique nên tự có index — không khai báo lại để tránh cảnh báo duplicate index)
 ProductSchema.index({ name: 1 }); // Index cho tên sản phẩm
 ProductSchema.index({ category: 1 }); // Index cho loại sản phẩm
 ProductSchema.index({ color: 1 }); // Index cho màu sắc

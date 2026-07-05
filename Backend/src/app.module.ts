@@ -11,6 +11,7 @@ import { StockModule } from './modules/stock/stock.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CacheModule } from './modules/cache/cache.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/khac_dau_db'),
+    CacheModule,
     CategoriesModule,
     AuthModule,
     UsersModule,

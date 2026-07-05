@@ -35,4 +35,8 @@ export class User {
   updatedAt?: Date;
 }
 
-export const UserSchema = SchemaFactory.createForClass(User); 
+export const UserSchema = SchemaFactory.createForClass(User);
+
+// Indexes (username KHÔNG unique để tránh lỗi build index trên dữ liệu cũ; vẫn tăng tốc lookup đăng nhập)
+UserSchema.index({ username: 1 }); // Lookup đăng nhập: findOne({ username, isActive })
+UserSchema.index({ role: 1 }); // Lọc theo vai trò

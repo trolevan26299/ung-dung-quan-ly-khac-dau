@@ -54,4 +54,12 @@ export class StockTransaction {
   stockAfter: number; // Tồn kho sau giao dịch
 }
 
-export const StockTransactionSchema = SchemaFactory.createForClass(StockTransaction); 
+export const StockTransactionSchema = SchemaFactory.createForClass(StockTransaction);
+
+// Indexes
+StockTransactionSchema.index({ productId: 1 }); // Lịch sử giao dịch theo sản phẩm
+StockTransactionSchema.index({ transactionType: 1 }); // Lọc theo loại giao dịch
+StockTransactionSchema.index({ orderId: 1 }); // Liên kết đơn hàng
+StockTransactionSchema.index({ userId: 1 }); // Theo người thực hiện
+StockTransactionSchema.index({ transactionDate: -1 }); // Sắp xếp/khoảng ngày
+StockTransactionSchema.index({ productId: 1, transactionDate: -1 }); // Báo cáo theo sản phẩm + thời gian

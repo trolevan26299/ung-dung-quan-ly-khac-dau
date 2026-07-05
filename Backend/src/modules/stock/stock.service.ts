@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { StockTransaction, StockTransactionDocument } from '../../schemas/stock-transaction.schema';
@@ -6,12 +6,17 @@ import { Product, ProductDocument } from '../../schemas/product.schema';
 import { CreateStockTransactionDto, ImportStockDto, AdjustStockDto, StockReportQueryDto } from './dto/stock.dto';
 import { PaginationResult, TransactionType } from '../../types/common.types';
 import { TimezoneUtil } from '../../utils/timezone.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class StockService {
+  private readonly logger = new Logger(StockService.name);
+
   constructor(
     @InjectModel(StockTransaction.name) private stockTransactionModel: Model<StockTransactionDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   // Helper method để cleanup và fix bad userId data 
@@ -40,7 +45,7 @@ export class StockService {
       ).exec();
 
     } catch (error) {
-      console.error('❌ Error fixing system userId:', error);
+      this.logger.error('Error fixing system userId', error?.stack || error);
     }
   }
 
@@ -118,12 +123,14 @@ export class StockService {
       reason: createStockTransactionDto.reason,
       notes: createStockTransactionDto.notes,
       totalValue: createStockTransactionDto.type === TransactionType.IMPORT ? totalImportValue : 0,
-      transactionDate: createStockTransactionDto.transactionDate ? 
-        TimezoneUtil.parseVietnamDateTime(createStockTransactionDto.transactionDate) : 
+      transactionDate: createStockTransactionDto.transactionDate ?
+        TimezoneUtil.parseVietnamDateTime(createStockTransactionDto.transactionDate) :
         new Date()
     });
 
-    return transaction.save();
+    const saved = await transaction.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.stock);
+    return saved;
   }
 
   // Nhập kho
@@ -173,7 +180,9 @@ export class StockService {
       notes: importStockDto.notes
     });
 
-    return transaction.save();
+    const saved = await transaction.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.stock);
+    return saved;
   }
 
   // Điều chỉnh kho
@@ -212,7 +221,9 @@ export class StockService {
       notes: adjustStockDto.notes
     });
 
-    return transaction.save();
+    const saved = await transaction.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.stock);
+    return saved;
   }
 
   // Xuất kho (cho đơn hàng)
@@ -297,6 +308,7 @@ export class StockService {
 
   // Lấy báo cáo giao dịch kho
   async getStockReport(query: StockReportQueryDto = {}): Promise<PaginationResult<StockTransaction>> {
+    return this.cache.wrap(CacheNamespace.STOCK, { report: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 10, search, transactionType, productId, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
@@ -338,6 +350,7 @@ export class StockService {
           .sort({ transactionDate: -1 })
           .skip(skip)
           .limit(limit)
+          .lean()
           .exec(),
         this.stockTransactionModel.countDocuments(filter),
       ]);
@@ -350,7 +363,7 @@ export class StockService {
         totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
-      console.error('❌ Error in getStockReport:', error);
+      this.logger.error('Error in getStockReport', error?.stack || error);
       // Fallback: return data without populate if populate fails
       const [data, total] = await Promise.all([
         this.stockTransactionModel
@@ -358,6 +371,7 @@ export class StockService {
           .sort({ transactionDate: -1 })
           .skip(skip)
           .limit(limit)
+          .lean()
           .exec(),
         this.stockTransactionModel.countDocuments(filter),
       ]);
@@ -370,30 +384,36 @@ export class StockService {
         totalPages: Math.ceil(total / limit),
       };
     }
+    });
   }
 
   // Lấy lịch sử giao dịch của sản phẩm
   async getProductTransactionHistory(productId: string): Promise<StockTransaction[]> {
+    return this.cache.wrap(CacheNamespace.STOCK, { history: productId }, CacheTTL.LIST, async () => {
     await this.fixSystemUserIds();
-    
+
     try {
       return this.stockTransactionModel
         .find({ productId })
         .populate('userId', 'username fullName role')
         .sort({ transactionDate: -1 })
+        .lean()
         .exec();
     } catch (error) {
-      console.error('❌ Error in getProductTransactionHistory:', error);
+      this.logger.error('Error in getProductTransactionHistory', error?.stack || error);
       // Fallback: return data without populate if populate fails
       return this.stockTransactionModel
         .find({ productId })
         .sort({ transactionDate: -1 })
+        .lean()
         .exec();
     }
+    });
   }
 
   // Thống kê tồn kho
   async getStockSummary(): Promise<any> {
+    return this.cache.wrap(CacheNamespace.STOCK, { summary: true }, CacheTTL.STATISTICS, async () => {
     const totalProducts = await this.productModel.countDocuments({});
     const lowStockProducts = await this.productModel.countDocuments({
       $expr: { $lte: ['$stockQuantity', '$minStock'] }
@@ -416,6 +436,7 @@ export class StockService {
       lowStockProducts,
       totalStockValue: stockValue[0]?.totalValue || 0
     };
+    });
   }
 
   // Cập nhật giao dịch kho
@@ -545,6 +566,7 @@ export class StockService {
       { new: true }
     );
 
+    await this.cache.invalidate(CACHE_INVALIDATION.stock);
     return updatedTransaction;
   }
 
@@ -573,6 +595,7 @@ export class StockService {
 
     // Xóa giao dịch
     await this.stockTransactionModel.findByIdAndDelete(transactionId);
+    await this.cache.invalidate(CACHE_INVALIDATION.stock);
   }
 
   // Helper method để hoàn nguyên hiệu ứng của giao dịch

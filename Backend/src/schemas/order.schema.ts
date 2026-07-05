@@ -90,7 +90,7 @@ export class Order {
 export const OrderSchema = SchemaFactory.createForClass(Order);
 
 // Tạo index để tối ưu performance
-OrderSchema.index({ orderNumber: 1 }); // Index cho mã đơn hàng (unique)
+// (orderNumber đã unique nên tự có index — không khai báo lại để tránh cảnh báo duplicate index)
 OrderSchema.index({ customerId: 1 }); // Index cho khách hàng
 OrderSchema.index({ agentId: 1 }); // Index cho đại lý
 OrderSchema.index({ status: 1 }); // Index cho trạng thái đơn hàng

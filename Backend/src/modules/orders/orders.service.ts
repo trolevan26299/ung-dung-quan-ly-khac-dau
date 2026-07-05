@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument } from '../../schemas/order.schema';
@@ -10,9 +10,13 @@ import { CreateOrderDto, UpdateOrderDto, OrderQueryDto } from './dto/order.dto';
 import { PaginationResult, OrderStatus, PaymentStatus } from '../../types/common.types';
 import { StockService } from '../stock/stock.service';
 import { TimezoneUtil } from '../../utils/timezone.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
@@ -20,6 +24,7 @@ export class OrdersService {
     @InjectModel(Agent.name) private agentModel: Model<AgentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private stockService: StockService,
+    private readonly cache: RedisCacheService,
   ) {}
 
   // Helper method để lấy system user ID
@@ -218,11 +223,13 @@ export class OrdersService {
         product: item.productId // Map productId to product for frontend compatibility
       }));
     }
-    
+
+    await this.cache.invalidate(CACHE_INVALIDATION.orders);
     return transformedOrder;
   }
 
   async findAll(query: OrderQueryDto = {}): Promise<PaginationResult<Order>> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { findAll: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 10, search, paymentStatus, status, customerId, agentId, dateFrom, dateTo } = query;
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -248,12 +255,9 @@ export class OrdersService {
     // Date filter
     if (dateFrom || dateTo) {
       const dateFilter = TimezoneUtil.createDateRangeFilter(dateFrom, dateTo);
-      console.log('🔍 Date filter input:', { dateFrom, dateTo });
-      console.log('🔍 Date filter output:', dateFilter);
       // Thay đổi từ createdAt thành deliveryDate để filter theo ngày lên đơn
       if (dateFilter.createdAt) {
         filter.deliveryDate = dateFilter.createdAt;
-        console.log('🔍 Final deliveryDate filter:', filter.deliveryDate);
       }
     }
 
@@ -308,9 +312,11 @@ export class OrdersService {
       limit: Number(limit),
       totalPages: Math.ceil(total / Number(limit)),
     };
+    });
   }
 
   async findOne(id: string): Promise<Order> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { findOne: id }, CacheTTL.DETAIL, async () => {
     const order = await this.orderModel
       .findById(id)
       .populate('customerId', 'name phone address email')
@@ -327,7 +333,7 @@ export class OrdersService {
     const transformedOrder = order.toObject() as any;
     transformedOrder.customer = transformedOrder.customerId;
     transformedOrder.agent = transformedOrder.agentId;
-    
+
     // Transform items để frontend có thể access product info
     if (transformedOrder.items) {
       transformedOrder.items = transformedOrder.items.map(item => ({
@@ -335,8 +341,9 @@ export class OrdersService {
         product: item.productId // Map productId to product for frontend compatibility
       }));
     }
-    
+
     return transformedOrder;
+    });
   }
 
   // Method riêng để lấy order mà không populate productId (để xử lý stock)
@@ -364,8 +371,6 @@ export class OrdersService {
 
     // Update order with new data
     const updatedFields: any = { ...updateOrderDto };
-
-    console.log('📤 Fields to update:', updatedFields);
 
     // Handle items update if provided
     if (updateOrderDto.items && updateOrderDto.items.length > 0) {
@@ -504,7 +509,8 @@ export class OrdersService {
         product: item.productId // Map productId to product for frontend compatibility
       }));
     }
-    
+
+    await this.cache.invalidate(CACHE_INVALIDATION.orders);
     return transformedOrder;
   }
 
@@ -533,11 +539,13 @@ export class OrdersService {
       { new: true }
     ).exec();
 
+    await this.cache.invalidate(CACHE_INVALIDATION.orders);
     return updatedOrder;
   }
 
   // Thống kê đơn hàng
   async getOrderStats(startDate?: Date, endDate?: Date): Promise<any> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { orderStats: { startDate: startDate ?? null, endDate: endDate ?? null } }, CacheTTL.STATISTICS, async () => {
     const now = TimezoneUtil.nowInVietnam();
     let currentPeriodStart: Date;
     let currentPeriodEnd: Date;
@@ -678,30 +686,36 @@ export class OrdersService {
         previousEnd: previousPeriodEnd
       }
     };
+    });
   }
 
   // Lấy đơn hàng theo khách hàng
   async getOrdersByCustomer(customerId: string): Promise<Order[]> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { byCustomer: customerId }, CacheTTL.LIST, async () => {
     return this.orderModel
       .find({ customerId, status: OrderStatus.ACTIVE })
       .sort({ createdAt: -1 })
       .populate('items.productId', 'code name')
       .exec();
+    });
   }
 
   // Lấy đơn hàng theo đại lý
   async getOrdersByAgent(agentId: string): Promise<Order[]> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { byAgent: agentId }, CacheTTL.LIST, async () => {
     return this.orderModel
       .find({ agentId, status: OrderStatus.ACTIVE })
       .sort({ createdAt: -1 })
       .populate('items.productId', 'code name')
       .exec();
+    });
   }
 
   // Đơn hàng chưa thanh toán
   async getPendingPaymentOrders(): Promise<Order[]> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { pendingPayment: true }, CacheTTL.LIST, async () => {
     return this.orderModel
-      .find({ 
+      .find({
         status: OrderStatus.ACTIVE,
         paymentStatus: { $in: [PaymentStatus.PENDING, PaymentStatus.DEBT] }
       })
@@ -709,6 +723,7 @@ export class OrdersService {
       .populate('customerId', 'name phone')
       .populate('agentId', 'name phone')
       .exec();
+    });
   }
 
   // Cập nhật trạng thái thanh toán
@@ -723,6 +738,7 @@ export class OrdersService {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
+    await this.cache.invalidate(CACHE_INVALIDATION.orders);
     return order;
   }
 
@@ -735,18 +751,20 @@ export class OrdersService {
         { new: true }
       ).exec();
 
+      await this.cache.invalidate(CACHE_INVALIDATION.orders);
       return {
         success: true,
         updated: result.modifiedCount
       };
     } catch (error) {
-      console.error('Error in bulkUpdatePaymentStatus:', error);
+      this.logger.error('Error in bulkUpdatePaymentStatus', error?.stack || error);
       throw new BadRequestException('Có lỗi xảy ra khi cập nhật trạng thái thanh toán');
     }
   }
 
   // Doanh thu theo tháng
   async getMonthlyRevenue(year: number): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.ORDERS, { monthlyRevenue: year }, CacheTTL.STATISTICS, async () => {
     return this.orderModel.aggregate([
       {
         $match: {
@@ -767,6 +785,7 @@ export class OrdersService {
       },
       { $sort: { '_id': 1 } }
     ]);
+    });
   }
 
   async remove(id: string, employeeId: string, employeeName: string): Promise<void> {
@@ -790,5 +809,7 @@ export class OrdersService {
     if (!result) {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
+
+    await this.cache.invalidate(CACHE_INVALIDATION.orders);
   }
 }

@@ -6,12 +6,15 @@ import { Order, OrderDocument } from '../../schemas/order.schema';
 import { CreateInvoiceDto, InvoiceQueryDto } from './dto/invoice.dto';
 import { PaginationResult } from '../../types/common.types';
 import { TimezoneUtil } from '../../utils/timezone.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class InvoicesService {
   constructor(
     @InjectModel(Invoice.name) private invoiceModel: Model<InvoiceDocument>,
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   // Tạo hóa đơn từ đơn hàng
@@ -66,11 +69,14 @@ export class InvoicesService {
       isPrinted: false
     });
 
-    return invoice.save();
+    const saved = await invoice.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.invoices);
+    return saved;
   }
 
   // Lấy danh sách hóa đơn
   async findAll(query: InvoiceQueryDto = {}): Promise<PaginationResult<Invoice>> {
+    return this.cache.wrap(CacheNamespace.INVOICES, { findAll: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 10, search, paymentStatus, isPrinted, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
@@ -108,6 +114,7 @@ export class InvoicesService {
         .skip(skip)
         .limit(limit)
         .populate('orderId', 'items')
+        .lean()
         .exec(),
       this.invoiceModel.countDocuments(filter),
     ]);
@@ -119,10 +126,12 @@ export class InvoicesService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+    });
   }
 
   // Lấy hóa đơn theo ID
   async findOne(id: string): Promise<Invoice> {
+    return this.cache.wrap(CacheNamespace.INVOICES, { findOne: id }, CacheTTL.DETAIL, async () => {
     const invoice = await this.invoiceModel
       .findById(id)
       .populate({
@@ -132,6 +141,7 @@ export class InvoicesService {
           select: 'code name sellingPrice'
         }
       })
+      .lean()
       .exec();
 
     if (!invoice) {
@@ -139,10 +149,12 @@ export class InvoicesService {
     }
 
     return invoice;
+    });
   }
 
   // Lấy hóa đơn theo mã đơn hàng
   async findByOrderCode(orderCode: string): Promise<Invoice> {
+    return this.cache.wrap(CacheNamespace.INVOICES, { byOrderCode: orderCode }, CacheTTL.DETAIL, async () => {
     const invoice = await this.invoiceModel
       .findOne({ orderCode })
       .populate({
@@ -152,6 +164,7 @@ export class InvoicesService {
           select: 'code name sellingPrice'
         }
       })
+      .lean()
       .exec();
 
     if (!invoice) {
@@ -159,6 +172,7 @@ export class InvoicesService {
     }
 
     return invoice;
+    });
   }
 
   // Đánh dấu đã in hóa đơn
@@ -177,6 +191,7 @@ export class InvoicesService {
       throw new NotFoundException('Không tìm thấy hóa đơn');
     }
 
+    await this.cache.invalidate(CACHE_INVALIDATION.invoices);
     return invoice;
   }
 
@@ -225,8 +240,9 @@ export class InvoicesService {
 
   // Thống kê hóa đơn
   async getInvoiceStats(startDate?: Date, endDate?: Date): Promise<any> {
+    return this.cache.wrap(CacheNamespace.INVOICES, { stats: { startDate, endDate } }, CacheTTL.STATISTICS, async () => {
     const filter: any = {};
-    
+
     if (startDate || endDate) {
       const dateFilter = TimezoneUtil.createDateRangeFilter(startDate, endDate);
       if (dateFilter.createdAt) {
@@ -267,13 +283,17 @@ export class InvoicesService {
       totalDebt: 0,
       printedInvoices: 0
     };
+    });
   }
 
   // Lấy hóa đơn chưa in
   async getUnprintedInvoices(): Promise<Invoice[]> {
-    return this.invoiceModel
-      .find({ isPrinted: false })
-      .sort({ createdAt: -1 })
-      .exec();
+    return this.cache.wrap(CacheNamespace.INVOICES, { unprinted: true }, CacheTTL.LIST, async () => {
+      return this.invoiceModel
+        .find({ isPrinted: false })
+        .sort({ createdAt: -1 })
+        .lean()
+        .exec();
+    });
   }
 } 

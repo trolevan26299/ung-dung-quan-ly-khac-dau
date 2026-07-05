@@ -1,14 +1,19 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as compression from 'compression';
 import { AppModule } from './app.module';
 import { AuthService } from './modules/auth/auth.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   // Enable CORS
   app.enableCors();
+
+  // Gzip response compression
+  app.use(compression());
 
   // Global validation pipe
   app.useGlobalPipes(new ValidationPipe());
@@ -30,8 +35,8 @@ async function bootstrap() {
 
   const port = process.env.PORT || 8085;
   await app.listen(port);
-  
-  console.log('🚀 Server is running on: http://localhost:' + port);
-  console.log('📚 Swagger API: http://localhost:' + port + '/api');
+
+  logger.log('Server is running on: http://localhost:' + port);
+  logger.log('Swagger API: http://localhost:' + port + '/api');
 }
 bootstrap(); 

@@ -15,6 +15,8 @@ import {
   PaymentStatus 
 } from '../../types/common.types';
 import { TimezoneUtil } from '../../utils/timezone.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL } from '../cache/cache-keys';
 
 @Injectable()
 export class StatisticsService {
@@ -23,6 +25,7 @@ export class StatisticsService {
     @InjectModel(Customer.name) private customerModel: Model<CustomerDocument>,
     @InjectModel(Agent.name) private agentModel: Model<AgentDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   // Thống kê tổng quan
@@ -32,6 +35,7 @@ export class StatisticsService {
     customers: CustomerStats;
     agents: AgentStats;
   }> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { overview: period ?? null }, CacheTTL.STATISTICS, async () => {
     const dateFilter = this.buildDateFilter(period);
 
     const [orderStats, productStats, customerStats, agentStats] = await Promise.all([
@@ -47,6 +51,7 @@ export class StatisticsService {
       customers: customerStats,
       agents: agentStats
     };
+    });
   }
 
   // Thống kê đơn hàng
@@ -148,69 +153,6 @@ export class StatisticsService {
       productsFound: 0,
       totalItems: 0
     };
-
-    console.log('🔍 Profit Debug Enhanced:', {
-      filter,
-      profitStatsLength: profitStats.length,
-      profitStats,
-      profitResult,
-      totalCost: profitResult.totalCost,
-      totalSalesValue: profitResult.totalSalesValue,
-      productsFound: profitResult.productsFound,
-      totalItems: profitResult.totalItems
-    });
-
-    // Debug: Kiểm tra có orders nào match filter không
-    const ordersCount = await this.orderModel.countDocuments(filter);
-    console.log('📊 Orders matching filter:', ordersCount);
-
-    // Debug: Kiểm tra orders có items không và có productId hợp lệ không
-    const ordersWithItems = await this.orderModel.find(filter).select('items').limit(2);
-    console.log('📦 Sample orders with items:', JSON.stringify(ordersWithItems, null, 2));
-
-    // Debug: Kiểm tra aggregation từng bước
-    const stepByStep = await this.orderModel.aggregate([
-      { $match: filter },
-      { $unwind: '$items' },
-      { $limit: 3 },
-      {
-        $addFields: {
-          'items.productObjectId': {
-            $cond: {
-              if: { $type: '$items.productId' },
-              then: {
-                $cond: {
-                  if: { $eq: [{ $type: '$items.productId' }, 'objectId'] },
-                  then: '$items.productId',
-                  else: { $toObjectId: '$items.productId' }
-                }
-              },
-              else: null
-            }
-          }
-        }
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'items.productObjectId', 
-          foreignField: '_id',
-          as: 'product'
-        }
-      },
-      {
-        $project: {
-          'items.productId': 1,
-          'items.productObjectId': 1,
-          'items.quantity': 1,
-          'items.unitPrice': 1,
-          'product.avgImportPrice': 1,
-          'product.name': 1,
-          deliveryDate: 1
-        }
-      }
-    ]);
-    console.log('🔍 Step by step debug:', JSON.stringify(stepByStep, null, 2));
 
     const totalProfit = profitResult.totalSalesValue - profitResult.totalCost;
 
@@ -331,8 +273,9 @@ export class StatisticsService {
 
   // Doanh thu theo thời gian
   async getRevenueByPeriod(period: 'month' | 'quarter' | 'year', year?: number): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { revenueByPeriod: { period, year: year ?? null } }, CacheTTL.STATISTICS, async () => {
     const currentYear = year || new Date().getFullYear();
-    
+
     let groupBy: any;
     let matchCondition: any = {
       status: OrderStatus.ACTIVE, // Tính tất cả đơn hàng active, bao gồm cả công nợ
@@ -455,21 +398,22 @@ export class StatisticsService {
       };
     });
 
-    console.log('📊 Revenue by period result:', result);
     return result;
+    });
   }
 
   // Top khách hàng
   async getTopCustomers(limit: number = 10, period?: StatisticsPeriod): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { topCustomers: { limit, period: period ?? null } }, CacheTTL.STATISTICS, async () => {
     const dateFilter = this.buildDateFilter(period);
-    
+
     return this.orderModel.aggregate([
-      { 
-        $match: { 
+      {
+        $match: {
           status: OrderStatus.ACTIVE,
           customerId: { $exists: true },
-          ...dateFilter 
-        } 
+          ...dateFilter
+        }
       },
       {
         $group: {
@@ -484,19 +428,21 @@ export class StatisticsService {
       { $sort: { totalSpent: -1 } },
       { $limit: limit }
     ]);
+    });
   }
 
   // Top đại lý
   async getTopAgents(limit: number = 10, period?: StatisticsPeriod): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { topAgents: { limit, period: period ?? null } }, CacheTTL.STATISTICS, async () => {
     const dateFilter = this.buildDateFilter(period);
-    
+
     return this.orderModel.aggregate([
-      { 
-        $match: { 
+      {
+        $match: {
           status: OrderStatus.ACTIVE,
           agentId: { $exists: true },
-          ...dateFilter 
-        } 
+          ...dateFilter
+        }
       },
       {
         $group: {
@@ -510,12 +456,14 @@ export class StatisticsService {
       { $sort: { totalSales: -1 } },
       { $limit: limit }
     ]);
+    });
   }
 
   // Top sản phẩm bán chạy
   async getTopSellingProducts(limit: number = 10, period?: StatisticsPeriod): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { topSelling: { limit, period: period ?? null } }, CacheTTL.STATISTICS, async () => {
     const dateFilter = this.buildDateFilter(period);
-    
+
     return this.orderModel.aggregate([
       { 
         $match: { 
@@ -554,10 +502,12 @@ export class StatisticsService {
       { $sort: { totalQuantity: -1 } },
       { $limit: limit }
     ]);
+    });
   }
 
   // Báo cáo công nợ
   async getDebtReport(): Promise<any> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { debtReport: true }, CacheTTL.STATISTICS, async () => {
     const debtOrders = await this.orderModel.aggregate([
       { 
         $match: { 
@@ -588,18 +538,11 @@ export class StatisticsService {
       debtCount: debtOrders.length,
       debtOrders
     };
+    });
   }
 
   // Xây dựng bộ lọc ngày
   private buildDateFilter(period?: StatisticsPeriod): any {
-    console.log('🔍 buildDateFilter input:', {
-      period,
-      hasStartDate: !!period?.startDate,
-      hasEndDate: !!period?.endDate,
-      startDateValue: period?.startDate,
-      endDateValue: period?.endDate
-    });
-
     if (!period) return {};
 
     let startDate: Date;
@@ -646,12 +589,6 @@ export class StatisticsService {
       }
     };
 
-    console.log('🔍 buildDateFilter output:', {
-      filter,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString()
-    });
-
     return filter;
   }
 
@@ -682,24 +619,21 @@ export class StatisticsService {
       profit: number;
     }>;
   }> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { forFrontend: period ?? null }, CacheTTL.STATISTICS, async () => {
     const dateFilter = this.buildDateFilter(period);
-    console.log('🔍 Date Filter Debug:', { period, dateFilter });
 
     // Lấy thống kê cơ bản từ orders
     const orderStats = await this.getOrderStats(dateFilter);
-    
+
     // Lấy top customers với full data
     const topCustomers = await this.getTopCustomersWithFullData(5, period);
-    console.log('👥 Top Customers Count:', topCustomers.length);
-    
+
     // Lấy top agents với full data
     const topAgents = await this.getTopAgentsWithFullData(5, period);
-    console.log('🏢 Top Agents Count:', topAgents.length);
-    
+
     // Lấy top products với full data
     const topProducts = await this.getTopProductsWithFullData(5, period);
-    console.log('📦 Top Products Count:', topProducts.length);
-    
+
     // Lấy revenue by month và transform format (KHÔNG áp dụng date filter - độc lập)
     const rawRevenueData = await this.getRevenueByPeriod('month');
     const revenueByMonth = this.transformRevenueData(rawRevenueData);
@@ -714,6 +648,7 @@ export class StatisticsService {
       topProducts,
       revenueByMonth
     };
+    });
   }
 
   // Transform revenue data to frontend format
@@ -930,6 +865,7 @@ export class StatisticsService {
 
   // Lấy dữ liệu doanh thu theo năm
   async getYearlyRevenue(year?: number): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.STATISTICS, { yearly: year ?? null }, CacheTTL.STATISTICS, async () => {
     const currentYear = year || new Date(TimezoneUtil.nowInVietnam().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })).getFullYear();
 
     return this.orderModel.aggregate([
@@ -952,5 +888,6 @@ export class StatisticsService {
       },
       { $sort: { '_id': 1 } }
     ]);
+    });
   }
-} 
+}

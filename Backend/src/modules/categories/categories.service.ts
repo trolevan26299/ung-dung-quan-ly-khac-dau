@@ -5,29 +5,35 @@ import { Category, CategoryDocument } from '../../schemas/category.schema';
 import { Product, ProductDocument } from '../../schemas/product.schema';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { PaginationQuery } from '../../types/common.types';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
     // Check if category with the same name already exists
-    const existingCategory = await this.categoryModel.findOne({ 
-      name: { $regex: new RegExp(`^${createCategoryDto.name}$`, 'i') } 
+    const existingCategory = await this.categoryModel.findOne({
+      name: { $regex: new RegExp(`^${createCategoryDto.name}$`, 'i') }
     });
-    
+
     if (existingCategory) {
       throw new ConflictException('Danh mục với tên này đã tồn tại');
     }
 
     const category = new this.categoryModel(createCategoryDto);
-    return category.save();
+    const saved = await category.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.categories);
+    return saved;
   }
 
   async findAll(query: PaginationQuery) {
+    return this.cache.wrap(CacheNamespace.CATEGORIES, { findAll: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 20, search } = query;
     const skip = (page - 1) * limit;
 
@@ -46,22 +52,17 @@ export class CategoriesService {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
+        .lean()
         .exec(),
       this.categoryModel.countDocuments(filter)
     ]);
 
-    // Calculate productCount for each category
-    const categoriesWithCount = await Promise.all(
-      categories.map(async (category) => {
-        const productCount = await this.productModel.countDocuments({ 
-          category: category.name 
-        });
-        return {
-          ...category.toObject(),
-          productCount
-        };
-      })
-    );
+    // Calculate productCount in a single aggregation (avoids N+1 countDocuments)
+    const countMap = await this.getProductCountMap(categories.map((c) => c.name));
+    const categoriesWithCount = categories.map((category) => ({
+      ...category,
+      productCount: countMap.get(category.name) || 0
+    }));
 
     return {
       data: categoriesWithCount,
@@ -70,45 +71,53 @@ export class CategoriesService {
       limit,
       totalPages: Math.ceil(total / limit)
     };
+    });
+  }
+
+  // Đếm số sản phẩm theo danh mục trong 1 truy vấn aggregation duy nhất
+  private async getProductCountMap(names: string[]): Promise<Map<string, number>> {
+    if (!names.length) return new Map();
+    const counts = await this.productModel.aggregate([
+      { $match: { category: { $in: names } } },
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+    return new Map(counts.map((c) => [c._id, c.count]));
   }
 
   async findActive(): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.CATEGORIES, { findActive: true }, CacheTTL.LIST, async () => {
     const categories = await this.categoryModel
       .find({ isActive: true })
       .sort({ name: 1 })
+      .lean()
       .exec();
 
-    // Calculate productCount for each active category
-    const categoriesWithCount = await Promise.all(
-      categories.map(async (category) => {
-        const productCount = await this.productModel.countDocuments({ 
-          category: category.name 
-        });
-        return {
-          ...category.toObject(),
-          productCount
-        };
-      })
-    );
-
-    return categoriesWithCount;
+    // Calculate productCount in a single aggregation (avoids N+1 countDocuments)
+    const countMap = await this.getProductCountMap(categories.map((c) => c.name));
+    return categories.map((category) => ({
+      ...category,
+      productCount: countMap.get(category.name) || 0
+    }));
+    });
   }
 
   async findOne(id: string): Promise<any> {
+    return this.cache.wrap(CacheNamespace.CATEGORIES, { findOne: id }, CacheTTL.DETAIL, async () => {
     const category = await this.categoryModel.findById(id);
     if (!category) {
       throw new NotFoundException('Không tìm thấy danh mục');
     }
 
     // Calculate productCount for this category
-    const productCount = await this.productModel.countDocuments({ 
-      category: category.name 
+    const productCount = await this.productModel.countDocuments({
+      category: category.name
     });
 
     return {
       ...category.toObject(),
       productCount
     };
+    });
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<any> {
@@ -145,10 +154,11 @@ export class CategoriesService {
     }
 
     // Calculate productCount for updated category
-    const productCount = await this.productModel.countDocuments({ 
-      category: category.name 
+    const productCount = await this.productModel.countDocuments({
+      category: category.name
     });
 
+    await this.cache.invalidate(CACHE_INVALIDATION.categories);
     return {
       ...category.toObject(),
       productCount
@@ -171,5 +181,6 @@ export class CategoriesService {
     }
 
     await this.categoryModel.findByIdAndDelete(id);
+    await this.cache.invalidate(CACHE_INVALIDATION.categories);
   }
 } 

@@ -6,12 +6,15 @@ import { Agent, AgentDocument } from '../../schemas/agent.schema';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { PaginationQuery, PaginationResult } from '../../types/common.types';
 import { TimezoneUtil } from '../../utils/timezone.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace, CacheTTL, CACHE_INVALIDATION } from '../cache/cache-keys';
 
 @Injectable()
 export class CustomersService {
   constructor(
     @InjectModel(Customer.name) private customerModel: Model<CustomerDocument>,
     @InjectModel(Agent.name) private agentModel: Model<AgentDocument>,
+    private readonly cache: RedisCacheService,
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto): Promise<Customer> {
@@ -26,10 +29,13 @@ export class CustomersService {
     }
 
     const customer = new this.customerModel(customerData);
-    return customer.save();
+    const saved = await customer.save();
+    await this.cache.invalidate(CACHE_INVALIDATION.customers);
+    return saved;
   }
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Customer>> {
+    return this.cache.wrap(CacheNamespace.CUSTOMERS, { findAll: query }, CacheTTL.LIST, async () => {
     const { page = 1, limit = 10, search, agentId } = query;
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
@@ -165,17 +171,20 @@ export class CustomersService {
       limit: safeLimit,
       totalPages: Math.ceil(total / safeLimit),
     };
+    });
   }
 
   async findOne(id: string): Promise<Customer> {
-    const customer = await this.customerModel
-      .findById(id)
-      .populate('agentId', 'name phone email')
-      .exec();
-    if (!customer) {
-      throw new NotFoundException('Không tìm thấy khách hàng');
-    }
-    return customer;
+    return this.cache.wrap(CacheNamespace.CUSTOMERS, { findOne: id }, CacheTTL.DETAIL, async () => {
+      const customer = await this.customerModel
+        .findById(id)
+        .populate('agentId', 'name phone email')
+        .exec();
+      if (!customer) {
+        throw new NotFoundException('Không tìm thấy khách hàng');
+      }
+      return customer;
+    });
   }
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<Customer> {
@@ -202,6 +211,7 @@ export class CustomersService {
     if (!customer) {
       throw new NotFoundException('Không tìm thấy khách hàng');
     }
+    await this.cache.invalidate(CACHE_INVALIDATION.customers);
     return customer;
   }
 
@@ -210,37 +220,43 @@ export class CustomersService {
     if (!result) {
       throw new NotFoundException('Không tìm thấy khách hàng');
     }
+    await this.cache.invalidate(CACHE_INVALIDATION.customers);
   }
 
   async search(keyword: string): Promise<Customer[]> {
-    return this.customerModel.find({
-      $or: [
-        { name: { $regex: keyword, $options: 'i' } },
-        { phone: { $regex: keyword, $options: 'i' } },
-        { email: { $regex: keyword, $options: 'i' } },
-        { agentName: { $regex: keyword, $options: 'i' } },
-      ]
-    }).populate('agentId', 'name phone').exec();
+    return this.cache.wrap(CacheNamespace.CUSTOMERS, { search: keyword }, CacheTTL.LIST, async () => {
+      return this.customerModel.find({
+        $or: [
+          { name: { $regex: keyword, $options: 'i' } },
+          { phone: { $regex: keyword, $options: 'i' } },
+          { email: { $regex: keyword, $options: 'i' } },
+          { agentName: { $regex: keyword, $options: 'i' } },
+        ]
+      }).populate('agentId', 'name phone').exec();
+    });
   }
 
   // Lấy khách hàng theo đại lý
   async getCustomersByAgent(agentId: string): Promise<Customer[]> {
-    // Convert string to ObjectId for proper comparison
-    let agentObjectId;
-    try {
-      agentObjectId = new Types.ObjectId(agentId);
-    } catch (error) {
-      return []; // If agentId is not a valid ObjectId, return empty array
-    }
-    
-    return this.customerModel
-      .find({ agentId: agentObjectId })
-      .populate('agentId', 'name phone')
-      .exec();
+    return this.cache.wrap(CacheNamespace.CUSTOMERS, { byAgent: agentId }, CacheTTL.LIST, async () => {
+      // Convert string to ObjectId for proper comparison
+      let agentObjectId;
+      try {
+        agentObjectId = new Types.ObjectId(agentId);
+      } catch (error) {
+        return []; // If agentId is not a valid ObjectId, return empty array
+      }
+
+      return this.customerModel
+        .find({ agentId: agentObjectId })
+        .populate('agentId', 'name phone')
+        .exec();
+    });
   }
 
   // Top khách hàng mua nhiều nhất
   async getTopCustomers(limit: number = 5): Promise<any[]> {
+    return this.cache.wrap(CacheNamespace.CUSTOMERS, { topCustomers: limit }, CacheTTL.LIST, async () => {
     return this.customerModel.aggregate([
       { $match: {} },
       {
@@ -289,10 +305,12 @@ export class CustomersService {
         }
       }
     ]);
+    });
   }
 
   // Thống kê khách hàng
   async getCustomerStats(): Promise<any> {
+    return this.cache.wrap(CacheNamespace.CUSTOMERS, { customerStats: true }, CacheTTL.STATISTICS, async () => {
     // Lấy tổng số khách hàng
     const totalCustomers = await this.customerModel.countDocuments();
 
@@ -336,5 +354,6 @@ export class CustomersService {
       customersChange,
       customersChangeFormatted: `${customersChange >= 0 ? '+' : ''}${customersChange}%`
     };
+    });
   }
 }
