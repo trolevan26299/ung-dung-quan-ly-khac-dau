@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatCurrency } from '../../lib/utils';
 
 interface RevenueChartProps {
     data: Array<{
@@ -8,25 +9,41 @@ interface RevenueChartProps {
     }>;
 }
 
+// Rút gọn số tiền thành dạng "1,2Tr" / "850K" cho trục và nhãn cột cho gọn.
+const shortMoney = (n: number): string => {
+    if (!n) return '0';
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}Tr`;
+    if (n >= 1_000) return `${Math.round(n / 1000)}K`;
+    return `${Math.round(n)}`;
+};
+
 export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
     const [periodType, setPeriodType] = useState<'3months' | 'year'>('3months');
+
+    // Ô chọn khoảng thời gian (dùng chung cho cả trạng thái rỗng và có dữ liệu)
+    const periodSelect = (
+        <select
+            value={periodType}
+            onChange={(e) => setPeriodType(e.target.value as '3months' | 'year')}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+            <option value="3months">3 tháng gần nhất</option>
+            <option value="year">Theo năm (12 tháng)</option>
+        </select>
+    );
 
     // Kiểm tra data trước khi sử dụng
     if (!data || data.length === 0) {
         return (
             <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="font-medium text-gray-900">Doanh thu theo tháng</h3>
-                    <select
-                        value={periodType}
-                        onChange={(e) => setPeriodType(e.target.value as '3months' | 'year')}
-                        className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="3months">3 tháng gần nhất</option>
-                        <option value="year">Theo năm (12 tháng)</option>
-                    </select>
+                <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
+                        <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                        Doanh thu theo tháng
+                    </span>
+                    {periodSelect}
                 </div>
-                <div className="text-center text-gray-500 py-8">
+                <div className="py-12 text-center text-gray-400">
                     Chưa có dữ liệu doanh thu
                 </div>
             </div>
@@ -39,7 +56,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
             // Lấy tháng hiện tại và 2 tháng trước
             const currentMonth = new Date().getMonth() + 1; // 1-12
             const targetMonths = [];
-            
+
             for (let i = 2; i >= 0; i--) {
                 let month = currentMonth - i;
                 if (month <= 0) {
@@ -80,85 +97,87 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
     const validRevenues = displayData.filter(d => d && typeof d.revenue === 'number' && !isNaN(d.revenue)).map(d => d.revenue);
     const maxRevenue = validRevenues.length > 0 ? Math.max(...validRevenues) : 1;
 
+    // 5 mốc trục Y (trên xuống dưới): max, 3/4, 1/2, 1/4, 0
+    const yTicks = [1, 0.75, 0.5, 0.25, 0].map(f => maxRevenue * f);
+
+    const gap = periodType === 'year' ? 'gap-1.5' : 'gap-6';
+
+    const totalRevenue = displayData.reduce((sum, item) => sum + (typeof item?.revenue === 'number' ? item.revenue : 0), 0);
+    const totalProfit = displayData.reduce((sum, item) => sum + (typeof item?.profit === 'number' ? item.profit : 0), 0);
+
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="font-medium text-gray-900">Doanh thu theo tháng</h3>
-                <select
-                    value={periodType}
-                    onChange={(e) => setPeriodType(e.target.value as '3months' | 'year')}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="3months">3 tháng gần nhất</option>
-                    <option value="year">Theo năm (12 tháng)</option>
-                </select>
+            <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
+                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                    Doanh thu theo tháng
+                </span>
+                {periodSelect}
             </div>
-            
-            {/* Biểu đồ cột đứng với container cố định */}
-            <div className="relative bg-gray-50 rounded-lg p-4" style={{ height: '320px' }}>
-                {/* Trục Y labels */}
-                <div className="absolute left-2 top-4 bottom-16 flex flex-col justify-between text-xs text-gray-500 w-8">
-                    <span>{(maxRevenue / 1000).toFixed(0)}K</span>
-                    <span>{(maxRevenue / 2000).toFixed(0)}K</span>
-                    <span>0</span>
+
+            {/* Vùng vẽ biểu đồ */}
+            <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                <div className="relative" style={{ height: '224px' }}>
+                    {/* Đường lưới ngang + nhãn trục Y */}
+                    <div className="absolute inset-0 flex flex-col justify-between">
+                        {yTicks.map((tick, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                                <span className="w-10 shrink-0 text-right text-[10px] tabular-nums text-gray-400">
+                                    {shortMoney(tick)}
+                                </span>
+                                <div className="h-px flex-1 bg-gray-200" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Các cột (đặt chồng lên lưới, chừa chỗ nhãn trục Y bên trái) */}
+                    <div className={`absolute inset-0 flex items-end pl-12 ${gap}`}>
+                        {displayData.map((item, index) => {
+                            if (!item) return null;
+
+                            const revenue = typeof item.revenue === 'number' ? item.revenue : 0;
+                            const profit = typeof item.profit === 'number' ? item.profit : 0;
+                            const pct = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
+                            // Cột có doanh thu tối thiểu cao 3% để luôn nhìn thấy được.
+                            const barPct = revenue > 0 ? Math.max(pct, 3) : 0;
+
+                            return (
+                                <div key={index} className="group relative flex h-full flex-1 items-end justify-center">
+                                    {/* Tooltip khi hover */}
+                                    <div className="pointer-events-none absolute -top-2 left-1/2 z-20 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-center text-xs text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100">
+                                        <div className="font-semibold">{formatCurrency(revenue)}</div>
+                                        <div className="text-gray-300">LN: {formatCurrency(profit)}</div>
+                                        <div className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
+                                    </div>
+
+                                    {/* Cột doanh thu */}
+                                    <div
+                                        className={`w-full max-w-[46px] rounded-t-md transition-all duration-300 ${
+                                            revenue > 0
+                                                ? 'bg-gradient-to-t from-blue-600 to-blue-400 group-hover:from-blue-700 group-hover:to-blue-500'
+                                                : 'bg-gray-200'
+                                        }`}
+                                        style={{ height: revenue > 0 ? `${barPct}%` : '2px' }}
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* Container biểu đồ */}
-                <div className={`ml-10 h-64 flex items-end justify-between ${
-                    periodType === 'year' ? 'space-x-1' : 'space-x-4'
-                }`}>
+                {/* Nhãn tháng (căn thẳng với các cột) */}
+                <div className={`mt-2 flex pl-12 ${gap}`}>
                     {displayData.map((item, index) => {
-                        if (!item) return null;
-                        
-                        const revenue = typeof item.revenue === 'number' ? item.revenue : 0;
-                        const profit = typeof item.profit === 'number' ? item.profit : 0;
-                        const month = item.month ? item.month.replace('Tháng ', 'T') : `T${index + 1}`;
-                        const heightPercentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
-                        const barHeight = Math.max(heightPercentage * 2.2, revenue > 0 ? 8 : 2); // Tăng multiplier để cột cao hơn
-                        
+                        const revenue = typeof item?.revenue === 'number' ? item.revenue : 0;
+                        const month = item?.month ? item.month.replace('Tháng ', 'T') : `T${index + 1}`;
                         return (
-                            <div key={index} className="flex flex-col items-center flex-1 group relative">
-                                {/* Tooltip hiện khi hover - fixed positioning */}
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap absolute -top-12 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
-                                    <div className="text-center">
-                                        <div>{revenue.toLocaleString('vi-VN')}₫</div>
-                                        <div>LN: {profit.toLocaleString('vi-VN')}₫</div>
-                                    </div>
-                                    {/* Arrow xuống */}
-                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-                                </div>
-                                
-                                {/* Cột */}
-                                <div className="flex flex-col justify-end items-center w-full mb-2" style={{ height: '220px' }}>
-                                    <div
-                                        className={`w-full rounded-t transition-all duration-300 min-h-0.5 flex items-end justify-center ${
-                                            revenue > 0 
-                                                ? 'bg-gradient-to-t from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500' 
-                                                : 'bg-gray-300'
-                                        }`}
-                                        style={{ height: `${Math.min(barHeight, 220)}px` }}
-                                    >
-                                        {revenue > 0 && barHeight > 40 && periodType === '3months' && (
-                                            <span className="text-white text-xs font-medium mb-2 transform -rotate-90 origin-center">
-                                                {(revenue / 1000).toFixed(0)}K
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                
-                                {/* Label tháng */}
-                                <div className={`font-medium text-center ${
-                                    periodType === 'year' ? 'text-xs' : 'text-sm'
-                                } ${revenue > 0 ? 'text-gray-700' : 'text-gray-400'} mb-1`}>
+                            <div key={index} className="flex-1 text-center">
+                                <div className={`font-medium ${periodType === 'year' ? 'text-[11px]' : 'text-sm'} ${revenue > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
                                     {month}
                                 </div>
-                                
-                                {/* Giá trị dưới - chỉ hiện khi có data hoặc là 3 tháng */}
-                                {(revenue > 0 || periodType === '3months') && (
-                                    <div className={`text-center ${
-                                        periodType === 'year' ? 'text-xs' : 'text-sm'
-                                    } ${revenue > 0 ? 'text-gray-600' : 'text-gray-400'}`}>
-                                        {revenue > 0 ? `${(revenue / 1000).toFixed(0)}K` : '0'}
+                                {periodType === '3months' && (
+                                    <div className={`text-xs tabular-nums ${revenue > 0 ? 'text-gray-500' : 'text-gray-300'}`}>
+                                        {shortMoney(revenue)}
                                     </div>
                                 )}
                             </div>
@@ -168,29 +187,20 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
             </div>
 
             {/* Summary */}
-            <div className="pt-2 border-t border-gray-200">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span className="text-gray-600">Tổng doanh thu:</span>
-                        <div className="font-semibold text-blue-600">
-                            {displayData.reduce((sum, item) => {
-                                const revenue = typeof item?.revenue === 'number' ? item.revenue : 0;
-                                return sum + revenue;
-                            }, 0).toLocaleString('vi-VN')}₫
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-gray-600">Lợi nhuận ước tính:</span>
-                        <div className="font-semibold text-green-600">
-                            {displayData.reduce((sum, item) => {
-                                const profit = typeof item?.profit === 'number' ? item.profit : 0;
-                                return sum + profit;
-                            }, 0).toLocaleString('vi-VN')}₫
-                        </div>
+            <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                <div>
+                    <span className="text-sm text-gray-500">Tổng doanh thu</span>
+                    <div className="text-lg font-bold tabular-nums text-blue-600">
+                        {formatCurrency(totalRevenue)}
                     </div>
                 </div>
-               
+                <div>
+                    <span className="text-sm text-gray-500">Lợi nhuận ước tính</span>
+                    <div className="text-lg font-bold tabular-nums text-emerald-600">
+                        {formatCurrency(totalProfit)}
+                    </div>
+                </div>
             </div>
         </div>
     );
-}; 
+};

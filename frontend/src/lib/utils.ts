@@ -6,9 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Format currency to Vietnamese format
+// VND không có phần lẻ -> làm tròn để tránh hiển thị kiểu "1.234.927,5 ₫".
 export function formatCurrency(amount: number | undefined | null): string {
   if (amount == null || isNaN(amount)) return '0 ₫';
-  return amount.toLocaleString('vi-VN') + ' ₫';
+  return Math.round(amount).toLocaleString('vi-VN') + ' ₫';
 }
 
 // Format date to Vietnamese format with Vietnam timezone

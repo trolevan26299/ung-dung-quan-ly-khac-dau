@@ -80,7 +80,7 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
 
     if (isLoading) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-soft">
                 <div className="animate-pulse">
                     <div className="h-12 bg-gray-200 rounded-t-lg"></div>
                     {Array.from({ length: 5 }).map((_, index) => (
@@ -93,7 +93,7 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
 
     if (!products || products.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-soft p-12 text-center">
                 <div className="text-gray-400 mb-4">
                     <Package className="w-12 h-12 mx-auto" />
                 </div>
@@ -104,7 +104,7 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
     }
 
     return (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">

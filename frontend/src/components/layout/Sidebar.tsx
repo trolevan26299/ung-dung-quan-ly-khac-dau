@@ -63,18 +63,22 @@ export const Sidebar: React.FC = () => {
     };
 
     return (
-        <div className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col sticky top-0">
-            {/* Logo */}
-            <div className="p-6 border-b border-gray-200">
-                <h1 className="text-xl font-bold text-gray-800">
-                    🖋️ Khắc Dấu TT
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">Quản lý cửa hàng</p>
+        // h-screen + shrink-0: sidebar cao đúng màn hình và không bị co lại.
+        <div className="w-64 shrink-0 bg-white border-r border-gray-200 h-screen flex flex-col">
+            {/* Logo / Brand */}
+            <div className="flex items-center gap-3 px-5 h-16 border-b border-gray-100 shrink-0">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-lg shadow-sm">
+                    🖋️
+                </div>
+                <div className="leading-tight">
+                    <h1 className="text-[15px] font-bold text-gray-800">Khắc Dấu TT</h1>
+                    <p className="text-xs text-gray-400">Quản lý cửa hàng</p>
+                </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 p-4">
-                <ul className="space-y-2">
+            {/* Navigation — cuộn nội bộ nếu menu dài hơn màn hình */}
+            <nav className="flex-1 p-3 overflow-y-auto">
+                <ul className="space-y-1">
                     {/* Main menu items */}
                     {mainMenuItems.map((item) => {
                         const Icon = item.icon;
@@ -85,13 +89,13 @@ export const Sidebar: React.FC = () => {
                                 <Link
                                     to={item.path}
                                     className={cn(
-                                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-gray-100",
+                                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                                         isActive
-                                            ? "bg-primary-50 text-primary-600 border border-primary-200"
-                                            : "text-gray-700 hover:text-gray-900"
+                                            ? "bg-blue-600 text-white shadow-sm"
+                                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                     )}
                                 >
-                                    <Icon className="h-4 w-4" />
+                                    <Icon className="h-[18px] w-[18px]" />
                                     {item.label}
                                 </Link>
                             </li>
@@ -103,16 +107,16 @@ export const Sidebar: React.FC = () => {
                         <button
                             onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
                             className={cn(
-                                "flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors duration-200",
+                                "flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                                 isInSettingsSection
-                                    ? "bg-primary-50 text-primary-600"
-                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    ? "bg-blue-50 text-blue-700"
+                                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                             )}
                         >
-                            <div className="flex items-center">
-                                <Settings className="w-5 h-5 mr-3" />
-                                <span className="font-medium">Cài đặt</span>
-                            </div>
+                            <span className="flex items-center gap-3">
+                                <Settings className="h-[18px] w-[18px]" />
+                                Cài đặt
+                            </span>
                             {isSettingsExpanded ? (
                                 <ChevronDown className="w-4 h-4" />
                             ) : (
@@ -120,9 +124,9 @@ export const Sidebar: React.FC = () => {
                             )}
                         </button>
 
-                        {/* Submenu */}
+                        {/* Submenu — thụt vào với đường kẻ dẫn hướng bên trái */}
                         {isSettingsExpanded && (
-                            <ul className="mt-2 ml-4 space-y-1">
+                            <ul className="mt-1 ml-4 space-y-1 border-l border-gray-100 pl-3">
                                 {filteredSettingsItems.map((item) => {
                                     const Icon = item.icon;
                                     const isActive = location.pathname === item.path;
@@ -132,13 +136,13 @@ export const Sidebar: React.FC = () => {
                                             <Link
                                                 to={item.path}
                                                 className={cn(
-                                                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-gray-100",
+                                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                                                     isActive
-                                                        ? "bg-primary-50 text-primary-600 border border-primary-200"
-                                                        : "text-gray-700 hover:text-gray-900"
+                                                        ? "bg-blue-600 text-white shadow-sm"
+                                                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                                                 )}
                                             >
-                                                <Icon className="h-4 w-4" />
+                                                <Icon className="h-[18px] w-[18px]" />
                                                 {item.label}
                                             </Link>
                                         </li>
@@ -151,13 +155,13 @@ export const Sidebar: React.FC = () => {
             </nav>
 
             {/* Logout */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-3 border-t border-gray-100 shrink-0">
                 <button
                     onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
                 >
-                    <LogOut className="w-5 h-5 mr-3" />
-                    <span className="font-medium">Đăng xuất</span>
+                    <LogOut className="h-[18px] w-[18px]" />
+                    Đăng xuất
                 </button>
             </div>
         </div>

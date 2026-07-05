@@ -24,7 +24,7 @@
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 224 71.4% 4.1%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   * {
@@ -42,6 +42,10 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     line-height: 1.5;
+    /* Chữ mượt hơn trên màn Retina/macOS */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   #root {
@@ -121,20 +125,29 @@
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — mảnh, bo tròn, chừa viền trong suốt cho gọn */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #f3f4f6;
+  background-color: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background-color: #d1d5db;
-  border-radius: 3px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: #9ca3af;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
 }

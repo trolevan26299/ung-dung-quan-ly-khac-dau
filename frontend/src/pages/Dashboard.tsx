@@ -1,4 +1,4 @@
-import { Calendar } from 'lucide-react';
+import { Calendar, Plus, Package, Users, BarChart3 } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardStats } from '../components/dashboard/DashboardStats';
 import { RecentOrders } from '../components/dashboard/RecentOrders';
 import { LowStockAlert } from '../components/dashboard/LowStockAlert';
+
+// Thao tác nhanh — mỗi ô một icon + màu chip riêng cho dễ nhận biết.
+const QUICK_ACTIONS = [
+    { action: 'add-order', label: 'Thêm đơn hàng', icon: Plus, bg: 'bg-blue-50', text: 'text-blue-600' },
+    { action: 'manage-stock', label: 'Quản lý kho', icon: Package, bg: 'bg-amber-50', text: 'text-amber-600' },
+    { action: 'add-customer', label: 'Thêm khách hàng', icon: Users, bg: 'bg-violet-50', text: 'text-violet-600' },
+    { action: 'view-reports', label: 'Xem báo cáo', icon: BarChart3, bg: 'bg-emerald-50', text: 'text-emerald-600' },
+] as const;
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -59,45 +67,24 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-primary-900 mb-4">Thao tác nhanh</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div 
-                        className="text-center cursor-pointer hover:bg-primary-200 rounded-lg p-3 transition-colors"
-                        onClick={() => handleQuickAction('add-order')}
-                    >
-                        <div className="w-12 h-12 bg-primary-500 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                            <span className="text-white font-bold">+</span>
-                        </div>
-                        <p className="text-sm font-medium text-primary-800">Thêm đơn hàng</p>
-                    </div>
-                    <div 
-                        className="text-center cursor-pointer hover:bg-primary-200 rounded-lg p-3 transition-colors"
-                        onClick={() => handleQuickAction('manage-stock')}
-                    >
-                        <div className="w-12 h-12 bg-primary-500 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                            <span className="text-white font-bold">📦</span>
-                        </div>
-                        <p className="text-sm font-medium text-primary-800">Quản lý kho</p>
-                    </div>
-                    <div 
-                        className="text-center cursor-pointer hover:bg-primary-200 rounded-lg p-3 transition-colors"
-                        onClick={() => handleQuickAction('add-customer')}
-                    >
-                        <div className="w-12 h-12 bg-primary-500 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                            <span className="text-white font-bold">👥</span>
-                        </div>
-                        <p className="text-sm font-medium text-primary-800">Thêm khách hàng</p>
-                    </div>
-                    <div 
-                        className="text-center cursor-pointer hover:bg-primary-200 rounded-lg p-3 transition-colors"
-                        onClick={() => handleQuickAction('view-reports')}
-                    >
-                        <div className="w-12 h-12 bg-primary-500 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                            <span className="text-white font-bold">📊</span>
-                        </div>
-                        <p className="text-sm font-medium text-primary-800">Xem báo cáo</p>
-                    </div>
+            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-soft">
+                <h3 className="mb-4 text-lg font-semibold text-gray-900">Thao tác nhanh</h3>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {QUICK_ACTIONS.map((qa) => {
+                        const Icon = qa.icon;
+                        return (
+                            <button
+                                key={qa.action}
+                                onClick={() => handleQuickAction(qa.action)}
+                                className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3 text-left transition-all hover:border-blue-200 hover:bg-blue-50"
+                            >
+                                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${qa.bg}`}>
+                                    <Icon className={`h-5 w-5 ${qa.text}`} />
+                                </span>
+                                <span className="text-sm font-medium text-gray-800">{qa.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </div>

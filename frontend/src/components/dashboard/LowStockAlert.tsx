@@ -16,8 +16,10 @@ export const LowStockAlert: React.FC = () => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center text-orange-600">
-                    <AlertTriangle className="w-5 h-5 mr-2" />
+                <CardTitle className="flex items-center gap-2 text-lg text-orange-600">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                        <AlertTriangle className="h-[18px] w-[18px]" />
+                    </span>
                     Cảnh báo tồn kho
                 </CardTitle>
                 <CardDescription>
@@ -43,12 +45,14 @@ export const LowStockAlert: React.FC = () => {
                 ) : (
                     <div className="space-y-4">
                         {lowStockProducts.length > 0 ? lowStockProducts.map((product: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
-                                <div>
-                                    <p className="font-medium text-gray-900">{product.name}</p>
+                            <div key={index} className="flex items-center justify-between rounded-xl border border-orange-100 bg-orange-50/70 p-3.5 transition-colors hover:bg-orange-50">
+                                <div className="min-w-0">
+                                    <p className="truncate font-semibold text-gray-900">{product.name}</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-lg font-bold text-orange-600">{product.stockQuantity}</p>
+                                <div className="ml-3 shrink-0 text-right">
+                                    <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-lg bg-orange-100 px-2 py-1 text-base font-bold tabular-nums text-orange-700">
+                                        {product.stockQuantity}
+                                    </span>
                                 </div>
                             </div>
                         )) : (

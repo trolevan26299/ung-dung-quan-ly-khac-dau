@@ -99,7 +99,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
     if (isLoading) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-soft">
                 <div className="animate-pulse">
                     <div className="h-12 bg-gray-200 rounded-t-lg"></div>
                     {Array.from({ length: 5 }).map((_, index) => (
@@ -112,7 +112,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
     if (!orders || orders.length === 0) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-soft p-12 text-center">
                 <div className="text-gray-400 mb-4">
                     <ShoppingCart className="w-12 h-12 mx-auto" />
                 </div>
@@ -129,7 +129,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
     return (
         <>
-            <div className="bg-white rounded-lg border border-gray-200 flex flex-col h-full overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-soft flex flex-col h-full overflow-hidden">
                 {/* Single Table with Fixed Header */}
                 <div className="overflow-x-auto overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 293px)' }}>
                     <table className="min-w-full table-fixed">

@@ -11,10 +11,10 @@ interface StatisticsCardsProps {
 export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) => {
     if (!statistics) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {Array(4).fill(0).map((_, i) => (
                     <Card key={i}>
-                        <CardContent className="p-6">
+                        <CardContent className="p-5">
                             <div className="animate-pulse">
                                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                                 <div className="h-8 bg-gray-200 rounded w-3/4"></div>
@@ -26,71 +26,36 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) 
         );
     }
 
+    // 4 chỉ số chính — mỗi thẻ một màu chip icon riêng cho dễ phân biệt.
+    const cards = [
+        { label: 'Tổng doanh thu', value: formatCurrency(statistics.totalRevenue), icon: DollarSign, bg: 'bg-emerald-50', text: 'text-emerald-600' },
+        { label: 'Lợi nhuận', value: formatCurrency(statistics.totalProfit), icon: TrendingUp, bg: 'bg-blue-50', text: 'text-blue-600' },
+        { label: 'Công nợ', value: formatCurrency(statistics.totalDebt), icon: TrendingDown, bg: 'bg-orange-50', text: 'text-orange-600' },
+        { label: 'Tổng đơn hàng', value: formatNumber(statistics.totalOrders), icon: ShoppingCart, bg: 'bg-violet-50', text: 'text-violet-600' },
+    ];
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                            <DollarSign className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-500">Tổng doanh thu</p>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {formatCurrency(statistics.totalRevenue)}
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <TrendingUp className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-500">Lợi nhuận</p>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {formatCurrency(statistics.totalProfit)}
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center">
-                        <div className="p-2 bg-orange-100 rounded-lg">
-                            <TrendingDown className="w-6 h-6 text-orange-600" />
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-500">Công nợ</p>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {formatCurrency(statistics.totalDebt)}
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <ShoppingCart className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-500">Tổng đơn hàng</p>
-                            <p className="text-2xl font-bold text-gray-900">
-                                {formatNumber(statistics.totalOrders)}
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {cards.map((c) => {
+                const Icon = c.icon;
+                return (
+                    <Card key={c.label} className="transition-shadow hover:shadow-md">
+                        <CardContent className="p-5">
+                            <div className="flex items-center gap-4">
+                                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${c.bg}`}>
+                                    <Icon className={`h-6 w-6 ${c.text}`} />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-500">{c.label}</p>
+                                    <p className="mt-1 truncate text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                                        {c.value}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
         </div>
     );
-}; 
+};

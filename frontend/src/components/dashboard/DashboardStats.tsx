@@ -26,11 +26,20 @@ const ICON_MAP = {
     Package
 } as const;
 
+// Pill "so với tháng trước": nền nhạt + chữ đậm theo chiều tăng/giảm.
 const CHANGE_TYPE_COLORS = {
-    positive: 'text-green-600',
-    negative: 'text-red-600',
-    neutral: 'text-gray-600'
+    positive: 'bg-green-50 text-green-700',
+    negative: 'bg-red-50 text-red-700',
+    neutral: 'bg-gray-100 text-gray-500'
 } as const;
+
+// Màu chip icon riêng cho từng thẻ (theo thứ tự hiển thị) để bảng số đỡ đơn điệu.
+const STAT_ACCENTS = [
+    { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+    { bg: 'bg-blue-50', text: 'text-blue-600' },
+    { bg: 'bg-violet-50', text: 'text-violet-600' },
+    { bg: 'bg-amber-50', text: 'text-amber-600' },
+] as const;
 
 export const DashboardStats: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -121,27 +130,36 @@ export const DashboardStats: React.FC = () => {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {dashboardStats.map((stat, index) => {
                 const Icon = ICON_MAP[stat.icon as keyof typeof ICON_MAP];
+                const accent = STAT_ACCENTS[index] ?? STAT_ACCENTS[0];
                 return (
-                    <Card key={index} className="hover:shadow-lg transition-shadow">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                                    <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                    <Card key={index} className="transition-shadow hover:shadow-md">
+                        <CardContent className="p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                                    <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                                        {stat.value}
+                                    </p>
                                 </div>
-                                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                                    <Icon className="w-6 h-6 text-primary-600" />
+                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent.bg}`}>
+                                    <Icon className={`h-[22px] w-[22px] ${accent.text}`} />
                                 </div>
                             </div>
-                            <div className="mt-4 flex items-center">
-                                <span className={`text-sm font-medium ${getChangeColor(stat.changeType)}`}>
-                                    {stat.change}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-2">{stat.description}</span>
-                            </div>
+                            {(stat.change || stat.description) && (
+                                <div className="mt-4 flex items-center gap-2">
+                                    {stat.change && (
+                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${getChangeColor(stat.changeType)}`}>
+                                            {stat.change}
+                                        </span>
+                                    )}
+                                    {stat.description && (
+                                        <span className="text-xs text-gray-400">{stat.description}</span>
+                                    )}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 );

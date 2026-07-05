@@ -13,20 +13,18 @@ export const TopCustomersChart: React.FC<TopCustomersChartProps> = ({ topCustome
             title=""
             items={topCustomers}
             renderItem={(item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-600">
-                                {index + 1}
-                            </span>
+                <div key={index} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition-colors hover:bg-gray-100">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600">
+                            {index + 1}
                         </div>
-                        <div className="ml-3">
-                            <p className="font-medium text-gray-900">{item.customer.name}</p>
+                        <div className="min-w-0">
+                            <p className="truncate font-medium text-gray-900">{item.customer.name}</p>
                             <p className="text-sm text-gray-500">{item.totalOrders} đơn hàng</p>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <p className="font-bold text-green-600">
+                    <div className="ml-3 shrink-0 text-right">
+                        <p className="font-bold tabular-nums text-emerald-600">
                             {formatCurrency(item.totalAmount)}
                         </p>
                     </div>
