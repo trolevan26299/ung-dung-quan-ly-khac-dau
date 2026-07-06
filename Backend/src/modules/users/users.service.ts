@@ -44,7 +44,7 @@ export class UsersService {
 
   async findAll(query: UserQueryDto): Promise<PaginatedUsersDto> {
     return this.cache.wrap(CacheNamespace.USERS, { findAll: query }, CacheTTL.LIST, async () => {
-    const { page = 1, limit = 10, search, role, isActive } = query;
+    const { page = 1, limit = 20, search, role, isActive } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};

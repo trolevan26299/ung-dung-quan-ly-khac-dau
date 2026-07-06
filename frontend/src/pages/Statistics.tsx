@@ -82,15 +82,15 @@ export const Statistics: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <BarChart3 className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <BarChart3 className="w-7 h-7 mr-3 text-primary-600" />
                         Thống kê báo cáo
                     </h1>
-                    <p className="text-gray-500 mt-1">
+                    <p className="text-gray-500 mt-0.5 text-sm">
                         Phân tích doanh thu và hiệu suất kinh doanh
                     </p>
                 </div>

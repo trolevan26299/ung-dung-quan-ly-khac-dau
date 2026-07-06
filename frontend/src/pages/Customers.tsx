@@ -162,16 +162,18 @@ export const Customers: React.FC = () => {
         }
 
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {customers.map((customer) => (
-                    <CustomerCard
-                        key={customer._id}
-                        customer={customer}
-                        onEdit={formModal.openEditModal}
-                        onView={detailModal.openDetailModal}
-                        onDelete={handleDeleteCustomer}
-                    />
-                ))}
+            <div className="h-full overflow-auto pr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {customers.map((customer) => (
+                        <CustomerCard
+                            key={customer._id}
+                            customer={customer}
+                            onEdit={formModal.openEditModal}
+                            onView={detailModal.openDetailModal}
+                            onDelete={handleDeleteCustomer}
+                        />
+                    ))}
+                </div>
             </div>
         );
     };
@@ -193,12 +195,14 @@ export const Customers: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 123px)', minHeight: '400px' }}>
+            {/* Fixed: header + filters */}
+            <div className="flex-shrink-0 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <Users className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <Users className="w-7 h-7 mr-3 text-primary-600" />
                         Quản lý khách hàng
                     </h1>
                 </div>
@@ -255,13 +259,16 @@ export const Customers: React.FC = () => {
                     {error}
                 </div>
             )}
+            </div>
 
-            {/* Customers Content */}
-            {renderContent()}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-hidden min-h-0 mt-4">
+                {renderContent()}
+            </div>
 
-            {/* Pagination */}
+            {/* Pinned pagination */}
             {paginationData && paginationData.total > 0 && (
-                <Card>
+                <div className="flex-shrink-0 mt-3 rounded-xl border border-gray-100 bg-white shadow-soft">
                     <Pagination
                         currentPage={currentPage}
                         totalPages={paginationData.totalPages}
@@ -270,7 +277,7 @@ export const Customers: React.FC = () => {
                         onPageChange={handlePageChange}
                         onPageSizeChange={handlePageSizeChange}
                     />
-                </Card>
+                </div>
             )}
 
             {/* Modals */}

@@ -28,7 +28,7 @@ export class ProductsService {
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Product>> {
     return this.cache.wrap(CacheNamespace.PRODUCTS, { findAll: query }, CacheTTL.LIST, async () => {
-    const { page = 1, limit = 10, search } = query;
+    const { page = 1, limit = 20, search } = query;
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
     const skip = (page - 1) * safeLimit;

@@ -230,7 +230,7 @@ export class OrdersService {
 
   async findAll(query: OrderQueryDto = {}): Promise<PaginationResult<Order>> {
     return this.cache.wrap(CacheNamespace.ORDERS, { findAll: query }, CacheTTL.LIST, async () => {
-    const { page = 1, limit = 10, search, paymentStatus, status, customerId, agentId, dateFrom, dateTo } = query;
+    const { page = 1, limit = 20, search, paymentStatus, status, customerId, agentId, dateFrom, dateTo } = query;
     const skip = (Number(page) - 1) * Number(limit);
 
     let filter: any = {};

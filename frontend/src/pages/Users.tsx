@@ -250,18 +250,20 @@ const Users: React.FC = () => {
         }
 
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredUsers.map((user) => (
-                    <UserCard
-                        key={user._id}
-                        user={user}
-                        isAdmin={isAdmin}
-                        currentUserId={currentAuthUser?._id || localStorageUser?._id}
-                        onView={handleViewUser}
-                        onEdit={handleEditUser}
-                        onDelete={handleDeleteUser}
-                    />
-                ))}
+            <div className="h-full overflow-auto pr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredUsers.map((user) => (
+                        <UserCard
+                            key={user._id}
+                            user={user}
+                            isAdmin={isAdmin}
+                            currentUserId={currentAuthUser?._id || localStorageUser?._id}
+                            onView={handleViewUser}
+                            onEdit={handleEditUser}
+                            onDelete={handleDeleteUser}
+                        />
+                    ))}
+                </div>
             </div>
         );
     };
@@ -269,19 +271,15 @@ const Users: React.FC = () => {
     const renderContent = () => {
         if (viewMode === 'table') {
             return (
-                <Card>
-                    <CardContent className="pt-6">
-                        <UserTable
-                            users={filteredUsers}
-                            isLoading={isLoading}
-                            isAdmin={isAdmin}
-                            currentUserId={currentAuthUser?._id || localStorageUser?._id}
-                            onViewUser={handleViewUser}
-                            onEditUser={handleEditUser}
-                            onDeleteUser={handleDeleteUser}
-                        />
-                    </CardContent>
-                </Card>
+                <UserTable
+                    users={filteredUsers}
+                    isLoading={isLoading}
+                    isAdmin={isAdmin}
+                    currentUserId={currentAuthUser?._id || localStorageUser?._id}
+                    onViewUser={handleViewUser}
+                    onEditUser={handleEditUser}
+                    onDeleteUser={handleDeleteUser}
+                />
             );
         }
 
@@ -289,12 +287,14 @@ const Users: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 123px)', minHeight: '400px' }}>
+            {/* Fixed: header + stats + filters */}
+            <div className="flex-shrink-0 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <UsersIcon className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <UsersIcon className="w-7 h-7 mr-3 text-primary-600" />
                         Quản lý người dùng
                     </h1>
                     <p className="text-gray-500 mt-1">
@@ -419,13 +419,16 @@ const Users: React.FC = () => {
                     </Button>
                 </div>
             )}
+            </div>
 
-            {/* Users Content */}
-            {renderContent()}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-hidden min-h-0 mt-4">
+                {renderContent()}
+            </div>
 
-            {/* Pagination */}
+            {/* Pinned pagination */}
             {pagination.total > 0 && (
-                <Card>
+                <div className="flex-shrink-0 mt-3 rounded-xl border border-gray-100 bg-white shadow-soft">
                     <Pagination
                         currentPage={currentPage}
                         totalPages={pagination.totalPages}
@@ -437,7 +440,7 @@ const Users: React.FC = () => {
                             setCurrentPage(1);
                         }}
                     />
-                </Card>
+                </div>
             )}
 
             {/* User Detail Dialog */}

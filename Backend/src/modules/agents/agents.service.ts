@@ -24,7 +24,7 @@ export class AgentsService {
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Agent>> {
     // Parse số một cách rõ ràng để tránh lỗi aggregation
     const page = parseInt(String(query.page || 1), 10);
-    const limit = parseInt(String(query.limit || 10), 10);
+    const limit = parseInt(String(query.limit || 20), 10);
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
     const search = query.search;

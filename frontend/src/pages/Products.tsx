@@ -173,16 +173,18 @@ export const Products: React.FC = () => {
         }
 
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product) => (
-                    <ProductCard
-                        key={product._id}
-                        product={product}
-                        onView={() => handleViewDetail(product)}
-                        onEdit={() => handleEdit(product)}
-                        onDelete={() => handleDeleteProduct(product._id)}
-                    />
-                ))}
+            <div className="h-full overflow-auto pr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {products.map((product) => (
+                        <ProductCard
+                            key={product._id}
+                            product={product}
+                            onView={() => handleViewDetail(product)}
+                            onEdit={() => handleEdit(product)}
+                            onDelete={() => handleDeleteProduct(product._id)}
+                        />
+                    ))}
+                </div>
             </div>
         );
     };
@@ -190,52 +192,18 @@ export const Products: React.FC = () => {
     const renderContent = () => {
         if (viewMode === 'table') {
             return (
-                <Card>
-                    <CardContent className="p-0">
-                        <ProductTable
-                            products={products}
-                            isLoading={isLoading}
-                            onView={handleViewDetail}
-                            onEdit={handleEdit}
-                            onDelete={handleDeleteProduct}
-                            onAdd={handleAddNew}
-                        />
-                        {/* Table View Pagination */}
-                        {pagination.total > 0 && (
-                            <Card>
-                                <Pagination
-                                    currentPage={pagination.page}
-                                    totalPages={pagination.totalPages}
-                                    totalItems={pagination.total}
-                                    pageSize={pagination.limit}
-                                    onPageChange={handlePageChange}
-                                    onPageSizeChange={handlePageSizeChange}
-                                />
-                            </Card>
-                        )}
-                    </CardContent>
-                </Card>
+                <ProductTable
+                    products={products}
+                    isLoading={isLoading}
+                    onView={handleViewDetail}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteProduct}
+                    onAdd={handleAddNew}
+                />
             );
         }
 
-        return (
-            <div className="space-y-6">
-                {renderProductsGrid()}
-                {/* Grid View Pagination */}
-                {pagination.total > 0 && (
-                    <Card>
-                        <Pagination
-                            currentPage={pagination.page}
-                            totalPages={pagination.totalPages}
-                            totalItems={pagination.total}
-                            pageSize={pagination.limit}
-                            onPageChange={handlePageChange}
-                            onPageSizeChange={handlePageSizeChange}
-                        />
-                    </Card>
-                )}
-            </div>
-        );
+        return renderProductsGrid();
     };
 
     if (isLoading && products.length === 0) {
@@ -250,12 +218,14 @@ export const Products: React.FC = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 123px)', minHeight: '400px' }}>
+            {/* Fixed: header + filters */}
+            <div className="flex-shrink-0 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <Package className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <Package className="w-7 h-7 mr-3 text-primary-600" />
                         Quản lý sản phẩm
                     </h1>
                 </div>
@@ -317,9 +287,26 @@ export const Products: React.FC = () => {
                     {error}
                 </div>
             )}
+            </div>
 
-            {/* Products Content */}
-            {renderContent()}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-hidden min-h-0 mt-4">
+                {renderContent()}
+            </div>
+
+            {/* Pinned pagination */}
+            {pagination.total > 0 && (
+                <div className="flex-shrink-0 mt-3 rounded-xl border border-gray-100 bg-white shadow-soft">
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.total}
+                        pageSize={pagination.limit}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                    />
+                </div>
+            )}
 
             {/* Loading overlay */}
             {isLoading && products.length > 0 && (

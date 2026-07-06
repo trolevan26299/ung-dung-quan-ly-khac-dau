@@ -176,16 +176,18 @@ export const Agents: React.FC = () => {
         }
 
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {agents.map((agent) => (
-                    <AgentCard
-                        key={agent._id}
-                        agent={agent}
-                        onView={handleViewDetail}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteAgent}
-                    />
-                ))}
+            <div className="h-full overflow-auto pr-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {agents.map((agent) => (
+                        <AgentCard
+                            key={agent._id}
+                            agent={agent}
+                            onView={handleViewDetail}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteAgent}
+                        />
+                    ))}
+                </div>
             </div>
         );
     };
@@ -208,12 +210,14 @@ export const Agents: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 123px)', minHeight: '400px' }}>
+            {/* Fixed: header + filters */}
+            <div className="flex-shrink-0 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <UserCheck className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <UserCheck className="w-7 h-7 mr-3 text-primary-600" />
                         Quản lý đại lý
                     </h1>
                 </div>
@@ -275,13 +279,16 @@ export const Agents: React.FC = () => {
                     {error}
                 </div>
             )}
+            </div>
 
-            {/* Agents Content */}
-            {renderContent()}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-hidden min-h-0 mt-4">
+                {renderContent()}
+            </div>
 
-            {/* Pagination */}
+            {/* Pinned pagination */}
             {pagination.total > 0 && (
-                <Card>
+                <div className="flex-shrink-0 mt-3 rounded-xl border border-gray-100 bg-white shadow-soft">
                     <Pagination
                         currentPage={pagination.page}
                         totalPages={pagination.totalPages}
@@ -290,7 +297,7 @@ export const Agents: React.FC = () => {
                         onPageChange={handlePageChange}
                         onPageSizeChange={handlePageSizeChange}
                     />
-                </Card>
+                </div>
             )}
 
             {/* Modals */}

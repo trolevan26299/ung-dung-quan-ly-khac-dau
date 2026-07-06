@@ -60,9 +60,9 @@ export const AgentTable: React.FC<AgentTableProps> = ({
 
     return (
         <>
-            <Card>
-                <CardContent className="p-0">
-                    <div className="overflow-auto max-h-[calc(100vh-300px)]">
+            <Card className="h-full flex flex-col">
+                <CardContent className="p-0 flex-1 min-h-0 overflow-hidden">
+                    <div className="h-full overflow-auto">
                         <table className="w-full">
                             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                                 <tr>

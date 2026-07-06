@@ -34,7 +34,7 @@ export class CustomersController {
   findAll(@Query() query: CustomerQueryDto) {
     const paginationQuery = {
       page: query.page ? parseInt(query.page) : 1,
-      limit: query.limit ? parseInt(query.limit) : 10,
+      limit: query.limit ? parseInt(query.limit) : 20,
       search: query.search,
       agentId: query.agentId
     };

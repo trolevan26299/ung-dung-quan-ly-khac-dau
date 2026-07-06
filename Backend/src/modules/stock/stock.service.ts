@@ -309,7 +309,7 @@ export class StockService {
   // Lấy báo cáo giao dịch kho
   async getStockReport(query: StockReportQueryDto = {}): Promise<PaginationResult<StockTransaction>> {
     return this.cache.wrap(CacheNamespace.STOCK, { report: query }, CacheTTL.LIST, async () => {
-    const { page = 1, limit = 10, search, transactionType, productId, startDate, endDate } = query;
+    const { page = 1, limit = 20, search, transactionType, productId, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     // Fix any bad userId data first

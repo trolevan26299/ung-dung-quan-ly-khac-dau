@@ -106,8 +106,8 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
     }
 
     return (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden">
-            <div className="overflow-auto max-h-[calc(100vh-300px)]">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden h-full flex flex-col">
+            <div className="overflow-auto flex-1 min-h-0">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
@@ -261,7 +261,7 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
             
             {/* Pagination tích hợp trong bảng */}
             {pagination && (
-                <div className="flex items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
+                <div className="flex flex-shrink-0 items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-700">Hiển thị:</span>
                         <select

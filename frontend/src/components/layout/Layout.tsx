@@ -15,7 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 <Header />
                 <main className="flex-1 overflow-auto">
-                    <div className="p-4 sm:p-6 max-w-[1600px] mx-auto w-full">
+                    <div className="p-4 sm:p-6 w-full">
                         {children}
                     </div>
                 </main>

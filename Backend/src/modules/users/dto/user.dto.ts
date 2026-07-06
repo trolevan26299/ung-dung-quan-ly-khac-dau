@@ -69,7 +69,7 @@ export class UserQueryDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  limit?: number = 10;
+  limit?: number = 20;
 
   @ApiProperty({ description: 'Từ khóa tìm kiếm', required: false })
   @IsOptional()

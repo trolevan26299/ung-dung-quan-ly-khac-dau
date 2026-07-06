@@ -50,8 +50,8 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
 
     return (
         <>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden">
-                <div className="overflow-auto max-h-[calc(100vh-300px)]">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden h-full flex flex-col">
+                <div className="overflow-auto flex-1 min-h-0">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>

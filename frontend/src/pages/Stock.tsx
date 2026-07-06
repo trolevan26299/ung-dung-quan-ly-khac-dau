@@ -104,10 +104,10 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
     }
 
     return (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden">
-            <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-soft overflow-hidden h-full flex flex-col">
+            <div className="overflow-auto flex-1 min-h-0">
                 <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Sản phẩm
@@ -160,7 +160,7 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
             
             {/* Pagination tích hợp trong bảng */}
             {pagination && (
-                <div className="flex items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
+                <div className="flex flex-shrink-0 items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
                     <div className="flex items-center space-x-2">
                         <span className="text-sm text-gray-700">Hiển thị:</span>
                         <select
@@ -351,13 +351,13 @@ export const Stock: React.FC = () => {
         currentPage: 1,
         totalPages: 1,
         total: 0,
-        limit: 10
+        limit: 20
     });
     const [productPagination, setProductPagination] = useState({
         currentPage: 1,
         totalPages: 1,
         total: 0,
-        limit: 10
+        limit: 20
     });
     const [stats, setStats] = useState({
         todayImports: 0,
@@ -739,12 +739,14 @@ export const Stock: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 123px)', minHeight: '400px' }}>
+            {/* Fixed: header + stats + tabs + filters */}
+            <div className="flex-shrink-0 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <Package2 className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <Package2 className="w-7 h-7 mr-3 text-primary-600" />
                         Quản lý kho hàng
                     </h1>
                 </div>
@@ -755,7 +757,7 @@ export const Stock: React.FC = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                     <CardContent className="p-6">
                         <div className="flex items-center">
@@ -1010,10 +1012,12 @@ export const Stock: React.FC = () => {
                     {error}
                 </div>
             )}
+            </div>
 
-            {/* Content */}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-hidden min-h-0 mt-4">
             {activeTab === 'transactions' ? (
-                <div className="space-y-4">
+                <div className="h-full flex flex-col">
                     {/* Transactions List */}
                     {viewMode === 'table' ? (
                         <StockTransactionTable
@@ -1030,8 +1034,8 @@ export const Stock: React.FC = () => {
                             onLimitChange={handleTransactionLimitChange}
                         />
                     ) : (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="h-full overflow-auto pr-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {isLoading ? (
                                     // Loading skeleton
                                     Array.from({ length: 5 }).map((_, index) => (
@@ -1084,7 +1088,7 @@ export const Stock: React.FC = () => {
                 </div>
             ) : (
                 /* Products Stock List */
-                <div className="space-y-4">
+                <div className="h-full flex flex-col">
                     {productViewMode === 'table' ? (
                         <ProductStockTable
                             products={filteredProducts}
@@ -1096,8 +1100,8 @@ export const Stock: React.FC = () => {
                             onLimitChange={handleProductLimitChange}
                         />
                     ) : (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="h-full overflow-auto pr-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {isLoading ? (
                                     // Loading skeleton
                                     Array.from({ length: 6 }).map((_, index) => (
@@ -1149,6 +1153,7 @@ export const Stock: React.FC = () => {
                     )}
                 </div>
             )}
+            </div>
 
             {/* Modals */}
             <StockTransactionForm

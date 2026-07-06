@@ -77,7 +77,7 @@ export class InvoicesService {
   // Lấy danh sách hóa đơn
   async findAll(query: InvoiceQueryDto = {}): Promise<PaginationResult<Invoice>> {
     return this.cache.wrap(CacheNamespace.INVOICES, { findAll: query }, CacheTTL.LIST, async () => {
-    const { page = 1, limit = 10, search, paymentStatus, isPrinted, startDate, endDate } = query;
+    const { page = 1, limit = 20, search, paymentStatus, isPrinted, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};

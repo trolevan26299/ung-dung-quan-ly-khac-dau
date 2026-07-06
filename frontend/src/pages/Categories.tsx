@@ -136,12 +136,14 @@ export const Categories: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 123px)', minHeight: '400px' }}>
+            {/* Fixed: header + filters */}
+            <div className="flex-shrink-0 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                        <Tag className="w-8 h-8 mr-3 text-primary-600" />
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <Tag className="w-7 h-7 mr-3 text-primary-600" />
                         Quản lý danh mục sản phẩm
                     </h1>
                 </div>
@@ -177,36 +179,35 @@ export const Categories: React.FC = () => {
                     {error}
                 </div>
             )}
+            </div>
 
-            {/* Categories Table */}
-            <Card>
-                <CardContent className="p-0">
-                    <CategoryTable
-                        categories={categories}
-                        isLoading={isLoading}
-                        onEdit={openEditModal}
-                        onDelete={handleDeleteCategory}
-                        onAdd={openCreateModal}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-hidden min-h-0 mt-4">
+                <CategoryTable
+                    categories={categories}
+                    isLoading={isLoading}
+                    onEdit={openEditModal}
+                    onDelete={handleDeleteCategory}
+                    onAdd={openCreateModal}
+                />
+            </div>
+
+            {/* Pinned pagination */}
+            {storePagination.total > 0 && (
+                <div className="flex-shrink-0 mt-3 rounded-xl border border-gray-100 bg-white shadow-soft">
+                    <Pagination
+                        currentPage={storePagination.page}
+                        totalPages={storePagination.totalPages}
+                        totalItems={storePagination.total}
+                        pageSize={storePagination.limit}
+                        onPageChange={(page) => dispatch(setPage(page))}
+                        onPageSizeChange={(pageSize) => {
+                            dispatch(setPageSize(pageSize));
+                            dispatch(setPage(1));
+                        }}
                     />
-                    
-                    {/* Pagination */}
-                    {storePagination.total > 0 && (
-                        <Card>
-                            <Pagination
-                                currentPage={storePagination.page}
-                                totalPages={storePagination.totalPages}
-                                totalItems={storePagination.total}
-                                pageSize={storePagination.limit}
-                                onPageChange={(page) => dispatch(setPage(page))}
-                                onPageSizeChange={(pageSize) => {
-                                    dispatch(setPageSize(pageSize));
-                                    dispatch(setPage(1));
-                                }}
-                            />
-                        </Card>
-                    )}
-                </CardContent>
-            </Card>
+                </div>
+            )}
 
             {/* Category Form Modal */}
             <CategoryForm
