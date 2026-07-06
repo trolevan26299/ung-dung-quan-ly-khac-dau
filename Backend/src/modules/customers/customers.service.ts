@@ -36,14 +36,14 @@ export class CustomersService {
 
   async findAll(query: PaginationQuery = {}): Promise<PaginationResult<Customer>> {
     return this.cache.wrap(CacheNamespace.CUSTOMERS, { findAll: query }, CacheTTL.LIST, async () => {
-    const { page = 1, limit = 20, search, agentId } = query;
+    const { page = 1, limit = 20, search, agentId, light } = query;
     // Cho phép limit lớn hơn, tối đa 50000 records
     const safeLimit = Math.min(Math.max(limit, 1), 50000);
     const skip = (page - 1) * safeLimit;
 
     // Build match filter for search and agentId
     const matchFilter: any = {};
-    
+
     // Filter by agentId if provided
     if (agentId) {
       // Convert string to ObjectId for proper comparison
@@ -54,7 +54,7 @@ export class CustomersService {
         matchFilter.agentId = null;
       }
     }
-    
+
     // Search filter
     if (search) {
       matchFilter.$or = [
@@ -63,6 +63,29 @@ export class CustomersService {
         { email: { $regex: search, $options: 'i' } },
         { agentName: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    // LIGHT: dropdown chọn khách chỉ cần _id/name/phone → BỎ HẲN lookup orders (đắt
+    // nhất) và lookup agents. Chỉ find + phân trang trên index agentId. Nhanh ngay cả
+    // khi cache miss, nên không còn cảnh chọn đại lý xong đợi lâu.
+    if (light) {
+      const [data, total] = await Promise.all([
+        this.customerModel
+          .find(matchFilter)
+          .select('name phone email agentId agentName')
+          .skip(skip)
+          .limit(safeLimit)
+          .lean()
+          .exec(),
+        this.customerModel.countDocuments(matchFilter),
+      ]);
+      return {
+        data: data as any,
+        total,
+        page,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+      };
     }
 
     // Đếm KHÔNG cần lookup — lookup chỉ thêm field, không đổi số bản ghi match.

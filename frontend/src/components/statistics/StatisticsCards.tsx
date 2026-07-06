@@ -11,10 +11,10 @@ interface StatisticsCardsProps {
 export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) => {
     if (!statistics) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array(4).fill(0).map((_, i) => (
                     <Card key={i}>
-                        <CardContent className="p-5">
+                        <CardContent className="p-4">
                             <div className="animate-pulse">
                                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                                 <div className="h-8 bg-gray-200 rounded w-3/4"></div>
@@ -35,19 +35,19 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ statistics }) 
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {cards.map((c) => {
                 const Icon = c.icon;
                 return (
                     <Card key={c.label} className="transition-shadow hover:shadow-md">
-                        <CardContent className="p-5">
-                            <div className="flex items-center gap-4">
-                                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${c.bg}`}>
-                                    <Icon className={`h-6 w-6 ${c.text}`} />
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${c.bg}`}>
+                                    <Icon className={`h-5 w-5 ${c.text}`} />
                                 </div>
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-gray-500">{c.label}</p>
-                                    <p className="mt-1 truncate text-2xl font-bold tabular-nums tracking-tight text-gray-900">
+                                    <p className="mt-0.5 truncate text-2xl font-bold tabular-nums tracking-tight text-gray-900">
                                         {c.value}
                                     </p>
                                 </div>

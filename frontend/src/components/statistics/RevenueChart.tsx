@@ -106,7 +106,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
     const totalProfit = displayData.reduce((sum, item) => sum + (typeof item?.profit === 'number' ? item.profit : 0), 0);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
                     <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
@@ -116,8 +116,8 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
             </div>
 
             {/* Vùng vẽ biểu đồ */}
-            <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-                <div className="relative" style={{ height: '224px' }}>
+            <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                <div className="relative" style={{ height: '176px' }}>
                     {/* Đường lưới ngang + nhãn trục Y */}
                     <div className="absolute inset-0 flex flex-col justify-between">
                         {yTicks.map((tick, i) => (
@@ -187,7 +187,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
             </div>
 
             {/* Summary */}
-            <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+            <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-3">
                 <div>
                     <span className="text-sm text-gray-500">Tổng doanh thu</span>
                     <div className="text-lg font-bold tabular-nums text-blue-600">

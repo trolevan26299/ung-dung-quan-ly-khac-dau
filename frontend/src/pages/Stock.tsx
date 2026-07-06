@@ -21,6 +21,7 @@ import { useModal } from '../hooks/useModal';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useDebounce } from '../hooks/useDebounce';
 import { EmptyState } from '../components/common/EmptyState';
+import { Pagination } from '../components/common/Pagination';
 import { StockTransactionForm } from '../components/stock/StockTransactionForm';
 import { StockTransactionDetail } from '../components/stock/StockTransactionDetail';
 import { StockTransactionCard } from '../components/stock/StockTransactionCard';
@@ -158,82 +159,16 @@ const ProductStockTable: React.FC<ProductStockTableProps> = ({
                 </table>
             </div>
             
-            {/* Pagination tích hợp trong bảng */}
+            {/* Pagination tích hợp trong bảng (dùng component chung để đồng nhất toàn app) */}
             {pagination && (
-                <div className="flex flex-shrink-0 items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Hiển thị:</span>
-                        <select
-                            value={pagination.limit}
-                            onChange={(e) => {
-                                const newLimit = parseInt(e.target.value);
-                                if (onLimitChange) {
-                                    onLimitChange(newLimit);
-                                }
-                            }}
-                            className="border rounded px-2 py-1 text-sm"
-                        >
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                        </select>
-                        <span className="text-sm text-gray-600">mục/trang</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">
-                            Hiển thị {((pagination.currentPage - 1) * pagination.limit) + 1} đến{' '}
-                            {Math.min(pagination.currentPage * pagination.limit, pagination.total)} trong{' '}
-                            {pagination.total} kết quả
-                        </span>
-                        
-                        <div className="flex items-center space-x-1 ml-4">
-                            <button 
-                                onClick={onPreviousPage}
-                                disabled={pagination.currentPage === 1}
-                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
-                            >
-                                ‹ Trước
-                            </button>
-                            
-                            {/* Render page numbers */}
-                            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                                let pageNumber: number;
-                                if (pagination.totalPages <= 5) {
-                                    pageNumber = i + 1;
-                                } else if (pagination.currentPage <= 3) {
-                                    pageNumber = i + 1;
-                                } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                                    pageNumber = pagination.totalPages - 4 + i;
-                                } else {
-                                    pageNumber = pagination.currentPage - 2 + i;
-                                }
-                                
-                                return (
-                                    <button
-                                        key={pageNumber}
-                                        onClick={() => onPageChange && onPageChange(pageNumber)}
-                                        className={`px-3 py-1 text-sm border border-gray-300 rounded ${
-                                            pagination.currentPage === pageNumber
-                                                ? 'bg-blue-500 text-white border-blue-500'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        {pageNumber}
-                                    </button>
-                                );
-                            })}
-                            
-                            <button 
-                                onClick={onNextPage}
-                                disabled={pagination.currentPage === pagination.totalPages}
-                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
-                            >
-                                Sau ›
-                            </button>
-                        </div>
-                    </div>
+                <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+                    <Pagination
+                        pagination={pagination}
+                        onPageChange={(page) => onPageChange?.(page)}
+                        onPreviousPage={() => onPreviousPage?.()}
+                        onNextPage={() => onNextPage?.()}
+                        onLimitChange={onLimitChange ? (limit) => onLimitChange(limit) : undefined}
+                    />
                 </div>
             )}
         </div>
@@ -266,79 +201,16 @@ const EnhancedPagination: React.FC<EnhancedPaginationProps> = ({
     // Chỉ hiển thị pagination khi có nhiều hơn 1 trang hoặc tổng số items > limit
     if (pagination.totalPages <= 1 && pagination.total <= pagination.limit) return null;
 
+    // Dùng component Pagination chung (thống nhất giao diện với các trang khác), bọc trong khung card cho chế độ lưới.
     return (
-        <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
-            <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Hiển thị:</span>
-                <select
-                    value={pagination.limit}
-                    onChange={(e) => onLimitChange(Number(e.target.value))}
-                    className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                </select>
-                <span className="text-sm text-gray-700">mục</span>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">
-                    Hiển thị {((pagination.currentPage - 1) * pagination.limit) + 1} đến{' '}
-                    {Math.min(pagination.currentPage * pagination.limit, pagination.total)} trong{' '}
-                    {pagination.total} kết quả
-                </span>
-                
-                {/* Chỉ hiển thị navigation khi có nhiều trang */}
-                {pagination.totalPages > 1 && (
-                    <div className="flex items-center space-x-1 ml-4">
-                        <button 
-                            onClick={onPreviousPage}
-                            disabled={pagination.currentPage === 1}
-                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
-                        >
-                            ‹ Trước
-                        </button>
-                        
-                        {/* Render page numbers */}
-                        {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                            let pageNumber: number;
-                            if (pagination.totalPages <= 5) {
-                                pageNumber = i + 1;
-                            } else if (pagination.currentPage <= 3) {
-                                pageNumber = i + 1;
-                            } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                                pageNumber = pagination.totalPages - 4 + i;
-                            } else {
-                                pageNumber = pagination.currentPage - 2 + i;
-                            }
-                            
-                            return (
-                                <button
-                                    key={pageNumber}
-                                    onClick={() => onPageChange(pageNumber)}
-                                    className={`px-3 py-1 text-sm border border-gray-300 rounded ${
-                                        pagination.currentPage === pageNumber
-                                            ? 'bg-blue-500 text-white border-blue-500'
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    {pageNumber}
-                                </button>
-                            );
-                        })}
-                        
-                        <button 
-                            onClick={onNextPage}
-                            disabled={pagination.currentPage === pagination.totalPages}
-                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
-                        >
-                            Sau ›
-                        </button>
-                    </div>
-                )}
-            </div>
+        <div className="mt-4 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-soft">
+            <Pagination
+                pagination={pagination}
+                onPageChange={onPageChange}
+                onPreviousPage={onPreviousPage}
+                onNextPage={onNextPage}
+                onLimitChange={onLimitChange}
+            />
         </div>
     );
 };
@@ -932,13 +804,7 @@ export const Stock: React.FC = () => {
                                     <Button
                                         variant={viewMode === 'grid' ? 'active' : 'inactive'}
                                         size="sm"
-                                        onClick={() => {
-                                            setViewMode('grid');
-                                            // Chuyển về limit phù hợp cho grid mode
-                                            if (transactionPagination.limit === 10 || transactionPagination.limit === 25 || transactionPagination.limit === 50 || transactionPagination.limit === 100) {
-                                                setTransactionPagination(prev => ({ ...prev, limit: 10, currentPage: 1 }));
-                                            }
-                                        }}
+                                        onClick={() => setViewMode('grid')}
                                         className="h-8 w-8 p-0 rounded-md"
                                         title="Xem dạng lưới"
                                     >
@@ -947,13 +813,7 @@ export const Stock: React.FC = () => {
                                     <Button
                                         variant={viewMode === 'table' ? 'active' : 'inactive'}
                                         size="sm"
-                                        onClick={() => {
-                                            setViewMode('table');
-                                            // Chuyển về limit phù hợp cho table mode
-                                            if (transactionPagination.limit === 10 || transactionPagination.limit === 12 || transactionPagination.limit === 24 || transactionPagination.limit === 48) {
-                                                setTransactionPagination(prev => ({ ...prev, limit: 10, currentPage: 1 }));
-                                            }
-                                        }}
+                                        onClick={() => setViewMode('table')}
                                         className="h-8 w-8 p-0 rounded-md ml-1"
                                         title="Xem dạng bảng"
                                     >
@@ -968,13 +828,7 @@ export const Stock: React.FC = () => {
                                     <Button
                                         variant={productViewMode === 'grid' ? 'active' : 'inactive'}
                                         size="sm"
-                                        onClick={() => {
-                                            setProductViewMode('grid');
-                                            // Chuyển về limit phù hợp cho grid mode
-                                            if (productPagination.limit === 10 || productPagination.limit === 25 || productPagination.limit === 50 || productPagination.limit === 100) {
-                                                setProductPagination(prev => ({ ...prev, limit: 10, currentPage: 1 }));
-                                            }
-                                        }}
+                                        onClick={() => setProductViewMode('grid')}
                                         className="h-8 w-8 p-0 rounded-md"
                                         title="Xem dạng lưới"
                                     >
@@ -983,13 +837,7 @@ export const Stock: React.FC = () => {
                                     <Button
                                         variant={productViewMode === 'table' ? 'active' : 'inactive'}
                                         size="sm"
-                                        onClick={() => {
-                                            setProductViewMode('table');
-                                            // Chuyển về limit phù hợp cho table mode
-                                            if (productPagination.limit === 10 || productPagination.limit === 25 || productPagination.limit === 50 || productPagination.limit === 100) {
-                                                setProductPagination(prev => ({ ...prev, limit: 10, currentPage: 1 }));
-                                            }
-                                        }}
+                                        onClick={() => setProductViewMode('table')}
                                         className="h-8 w-8 p-0 rounded-md ml-1"
                                         title="Xem dạng bảng"
                                     >

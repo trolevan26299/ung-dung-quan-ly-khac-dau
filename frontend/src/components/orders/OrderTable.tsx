@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, Trash2, ShoppingCart, Calendar, DollarSign, Package } from 'lucide-react';
+import { Eye, Edit, Trash2, ShoppingCart, Calendar, Package } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Tooltip } from '../ui/tooltip';
 import { formatCurrency, safeString, safeNumber, formatTableDate } from '../../lib/utils';
@@ -135,7 +135,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                     <table className="min-w-full table-fixed">
                         <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
-                                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
                                     <input
                                         type="checkbox"
                                         checked={orders && orders.length > 0 && selectedOrders.length === orders.length}
@@ -143,37 +143,38 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                     />
                                 </th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                                     STT
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                                     Đơn hàng
                                 </th>
-                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">
+                                {/* Khách hàng & Đại lý: không đặt width cố định → tự chiếm toàn bộ chỗ dư */}
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Khách hàng
                                 </th>
-                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Đại lý
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Ngày lên đơn
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                                     Sản phẩm
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Tổng tiền
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Trạng thái
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Thanh toán
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                                     Khách thanh toán
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                <th className="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                     Thao tác
                                 </th>
                             </tr>
@@ -183,7 +184,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                 const stt = (currentPage - 1) * pageSize + index + 1;
                                 return (
                                     <tr key={order._id} className="hover:bg-gray-50">
-                                        <td className="px-3 py-2 whitespace-nowrap w-12 text-center">
+                                        <td className="px-2 py-2 whitespace-nowrap w-10 text-center">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedOrders.includes(order._id)}
@@ -191,19 +192,19 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                             />
                                         </td>
-                                        <td className="px-4 py-2 whitespace-nowrap w-16 text-center">
+                                        <td className="px-2 py-2 whitespace-nowrap w-12 text-center">
                                             <span className="text-sm text-gray-600 font-medium">
                                                 {stt}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-2 whitespace-nowrap w-32">
+                                        <td className="px-3 py-2 whitespace-nowrap w-28">
                                         <div className="text-sm font-medium text-gray-900">
                                             {order.orderNumber}
                                         </div>
                                     </td>
-                                    <td className="px-2 py-2 w-36">
-                                        <div className="max-w-36 overflow-hidden">
-                                            <Tooltip 
+                                    <td className="px-3 py-2">
+                                        <div className="overflow-hidden">
+                                            <Tooltip
                                                 content={`SĐT: ${safeString(order.customer?.phone || 'Chưa có')}`}
                                                 side="top"
                                             >
@@ -213,9 +214,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </Tooltip>
                                         </div>
                                     </td>
-                                    <td className="px-2 py-2 w-32">
-                                        <div className="max-w-32 overflow-hidden">
-                                            <Tooltip 
+                                    <td className="px-3 py-2">
+                                        <div className="overflow-hidden">
+                                            <Tooltip
                                                 content={`SĐT: ${safeString(order.agent?.phone || 'Chưa có')}`}
                                                 side="top"
                                             >
@@ -225,46 +226,43 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                                             </Tooltip>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap w-24">
+                                    <td className="px-2 py-2 whitespace-nowrap w-24">
                                         <div className="flex items-center">
-                                            <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                                            <Calendar className="w-3.5 h-3.5 text-gray-400 mr-1.5 shrink-0" />
                                             <span className="text-sm text-gray-900">
                                                 {formatTableDate(order.deliveryDate || order.createdAt)}
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap w-20">
+                                    <td className="px-2 py-2 whitespace-nowrap w-20">
                                         <div className="flex items-center">
-                                            <Package className="w-4 h-4 text-gray-400 mr-2" />
+                                            <Package className="w-3.5 h-3.5 text-gray-400 mr-1.5 shrink-0" />
                                             <span className="text-sm text-gray-900">
-                                                {safeNumber(order.items?.length || 0)} sản phẩm
+                                                {safeNumber(order.items?.length || 0)} SP
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap w-24">
-                                        <div className="flex items-center">
-                                            <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                                            <span className="text-sm font-semibold text-green-600">
-                                                {formatCurrency(order.totalAmount)}
-                                            </span>
-                                        </div>
+                                    <td className="px-2 py-2 whitespace-nowrap w-24">
+                                        <span className="text-sm font-semibold text-green-600">
+                                            {formatCurrency(order.totalAmount)}
+                                        </span>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap w-24">
+                                    <td className="px-2 py-2 whitespace-nowrap w-24">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                                             {getStatusText(order.status)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap w-24">
+                                    <td className="px-2 py-2 whitespace-nowrap w-24">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentStatusText(order.paymentStatus)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap w-28">
+                                    <td className="px-2 py-2 whitespace-nowrap w-28">
                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusColor(order.paymentStatus)}`}>
                                             {getPaymentMethodText(order.paymentMethod)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-2 whitespace-nowrap text-right text-sm font-medium w-24">
+                                    <td className="px-2 py-2 whitespace-nowrap text-right text-sm font-medium w-24">
                                         <div className="flex justify-end items-center space-x-1">
                                             <Button
                                                 variant="light"

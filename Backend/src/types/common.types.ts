@@ -3,6 +3,9 @@ export interface PaginationQuery {
   limit?: number;
   search?: string;
   agentId?: string;
+  // light=true: chỉ trả field cơ bản, BỎ QUA lookup orders/agents (dùng cho dropdown
+  // chọn khách hàng — không cần totalOrders/totalAmount). Query nhẹ, nhanh cả khi cache miss.
+  light?: boolean;
 }
 
 export interface PaginationResult<T> {

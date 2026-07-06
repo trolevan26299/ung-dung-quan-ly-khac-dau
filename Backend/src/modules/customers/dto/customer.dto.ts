@@ -22,6 +22,11 @@ export class CustomerQueryDto {
   @IsOptional()
   @IsMongoId()
   agentId?: string;
+
+  @ApiProperty({ description: 'Chỉ lấy field cơ bản, bỏ qua tính tổng đơn (dùng cho dropdown)', required: false })
+  @IsOptional()
+  @IsString()
+  light?: string;
 }
 
 export class CreateCustomerDto {

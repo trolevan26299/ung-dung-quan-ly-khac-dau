@@ -61,18 +61,22 @@ export const CACHE_INVALIDATION: Record<string, CacheNamespace[]> = {
 };
 
 /**
- * TTL (giây) — chỉ là "lưới an toàn" trên nền invalidation tường minh.
+ * TTL (giây). 0 = KHÔNG hết hạn (cache vĩnh viễn).
  *
  * Cơ chế làm mới CHÍNH là invalidate() chạy sau mỗi lần ghi (xem CACHE_INVALIDATION),
- * nên dữ liệu luôn tươi ngay khi có thay đổi qua app. TTL dài để cache "lưu lâu",
- * giảm tối đa số lần phải chạy lại query nặng. KHÔNG để vô hạn: nếu lỡ có đường ghi
- * nào quên invalidate (hoặc sửa DB trực tiếp), TTL đảm bảo cache tự lành lại sau tối
- * đa khoảng thời gian này thay vì sai vĩnh viễn. (Redis đang bật allkeys-lru 256MB nên
- * key cũ vẫn bị đẩy ra khi thiếu bộ nhớ.)
+ * nên dữ liệu luôn tươi ngay khi có thay đổi qua app — không cần TTL để "tự lành".
+ * Vì vậy các cache đọc nặng để VĨNH VIỄN (0): mỗi query nặng chỉ chạy DB đúng 1 lần
+ * sau khi bị xóa cache, còn lại luôn hit ngay lập tức → không còn cảnh "load đúng lúc
+ * hết hạn thì lâu". An toàn vì:
+ *   1) Mọi đường ghi qua app đều gọi invalidate() → cache không bao giờ cũ do thao tác app.
+ *   2) Redis chạy allkeys-lru 256MB (xem docker-compose) → key ít dùng tự bị đẩy khi
+ *      thiếu RAM, không phình vô hạn.
+ * LƯU Ý: nếu SỬA DB TRỰC TIẾP (không qua app) thì cache sẽ KHÔNG tự làm mới — phải
+ * flush Redis thủ công. SHORT (300s) vẫn giữ để dùng cho chỗ nào cần backstop ngắn.
  */
 export const CacheTTL = {
-  LIST: 21600,        // 6 giờ — danh sách
-  DETAIL: 43200,      // 12 giờ — chi tiết 1 bản ghi
-  STATISTICS: 10800,  // 3 giờ — thống kê (ngắn hơn để tránh lệch ở mốc chuyển ngày/tháng)
-  SHORT: 300,         // 5 phút
+  LIST: 0,        // vĩnh viễn — danh sách (làm mới qua invalidate)
+  DETAIL: 0,      // vĩnh viễn — chi tiết 1 bản ghi
+  STATISTICS: 0,  // vĩnh viễn — thống kê
+  SHORT: 300,     // 5 phút — backstop ngắn khi cần
 };

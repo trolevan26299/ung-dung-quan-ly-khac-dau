@@ -26,18 +26,18 @@ export const AdditionalMetrics: React.FC<AdditionalMetricsProps> = ({ statistics
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {metrics.map((m) => (
                 <Card key={m.title}>
-                    <CardHeader className="pb-2">
+                    <CardHeader className="pb-1.5">
                         <CardTitle className="text-base text-gray-600">{m.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center">
-                            <div className={`text-3xl font-bold tabular-nums tracking-tight ${m.color}`}>
+                            <div className={`text-2xl font-bold tabular-nums tracking-tight ${m.color}`}>
                                 {m.value}
                             </div>
-                            <p className="mt-1 text-sm text-gray-400">{m.hint}</p>
+                            <p className="mt-0.5 text-sm text-gray-400">{m.hint}</p>
                         </div>
                     </CardContent>
                 </Card>

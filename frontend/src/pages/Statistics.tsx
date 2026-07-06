@@ -14,11 +14,11 @@ import { formatTableDate } from '../lib/utils';
 // Statistics Components
 import { StatisticsCards } from '../components/statistics/StatisticsCards';
 import { RevenueChart } from '../components/statistics/RevenueChart';
-import { TopCustomersChart } from '../components/statistics/TopCustomersChart';
-import { TopAgentsChart } from '../components/statistics/TopAgentsChart';
+import { TopPartnersChart } from '../components/statistics/TopPartnersChart';
 import { TopProductsChart } from '../components/statistics/TopProductsChart';
 import { AdditionalMetrics } from '../components/statistics/AdditionalMetrics';
-import { DateRangePicker } from '../components/statistics/DateRangePicker';
+import { FinancialBreakdown } from '../components/statistics/FinancialBreakdown';
+import { PeriodFilter } from '../components/statistics/PeriodFilter';
 
 // Main Statistics Page
 export const Statistics: React.FC = () => {
@@ -109,15 +109,15 @@ export const Statistics: React.FC = () => {
             {/* Filters */}
             <Card>
                 <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <DateRangePicker
-                                startDate={startDate}
-                                endDate={endDate}
-                                onStartDateChange={setStartDate}
-                                onEndDateChange={setEndDate}
-                            />
-                        </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <PeriodFilter
+                            startDate={startDate}
+                            endDate={endDate}
+                            onChange={(start, end) => {
+                                setStartDate(start);
+                                setEndDate(end);
+                            }}
+                        />
                         <div className="text-sm text-gray-500">
                             Dữ liệu từ {formatTableDate(startDate)} đến {formatTableDate(endDate)}
                         </div>
@@ -146,55 +146,58 @@ export const Statistics: React.FC = () => {
                     {/* Overview Cards */}
                     <StatisticsCards statistics={statistics} />
 
-                    {/* Charts and Lists */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Charts and Lists — lưới 2×2 cân đối */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Revenue Chart */}
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Biểu đồ doanh thu</CardTitle>
-                               
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Biểu đồ doanh thu</CardTitle>
+                                <CardDescription>Doanh thu và lợi nhuận theo tháng</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <RevenueChart data={statistics.revenueByMonth} />
                             </CardContent>
                         </Card>
 
-                        {/* Top Customers */}
+                        {/* Đối tác hàng đầu — gộp Khách hàng + Đại lý vào một thẻ có tab */}
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Khách hàng hàng đầu</CardTitle>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Đối tác hàng đầu</CardTitle>
                                 <CardDescription>
-                                    Top khách hàng theo doanh thu
+                                    Top khách hàng &amp; đại lý theo doanh thu
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <TopCustomersChart topCustomers={statistics.topCustomers} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Top Agents */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Đại lý hàng đầu</CardTitle>
-                                <CardDescription>
-                                    Top đại lý theo doanh thu
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <TopAgentsChart topAgents={statistics.topAgents} />
+                                <TopPartnersChart
+                                    topCustomers={statistics.topCustomers}
+                                    topAgents={statistics.topAgents}
+                                />
                             </CardContent>
                         </Card>
 
                         {/* Top Products */}
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Sản phẩm bán chạy</CardTitle>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Sản phẩm bán chạy</CardTitle>
                                 <CardDescription>
                                     Top sản phẩm theo doanh thu
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <TopProductsChart topProducts={statistics.topProducts} />
+                            </CardContent>
+                        </Card>
+
+                        {/* Cơ cấu tài chính — biểu đồ bổ sung */}
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg">Cơ cấu tài chính</CardTitle>
+                                <CardDescription>
+                                    Lợi nhuận / giá vốn và tình hình thu hồi công nợ
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <FinancialBreakdown statistics={statistics} />
                             </CardContent>
                         </Card>
                     </div>

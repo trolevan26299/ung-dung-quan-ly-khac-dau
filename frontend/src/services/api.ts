@@ -341,9 +341,10 @@ export const customersApi = {
   },
 
   // Load customers by agent
+  // light=true: dropdown chỉ cần _id/name/phone → BE bỏ qua tính tổng đơn (nhanh hơn nhiều)
   getCustomersByAgent: async (agentId: string, params?: Omit<PaginationParams, 'agentId'>): Promise<PaginatedResponse<Customer>> => {
-    const response = await api.get('/customers', { 
-      params: { ...params, agentId }
+    const response = await api.get('/customers', {
+      params: { ...params, agentId, light: true }
     });
     return response.data as PaginatedResponse<Customer>;
   },

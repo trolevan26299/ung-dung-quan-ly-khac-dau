@@ -36,7 +36,8 @@ export class CustomersController {
       page: query.page ? parseInt(query.page) : 1,
       limit: query.limit ? parseInt(query.limit) : 20,
       search: query.search,
-      agentId: query.agentId
+      agentId: query.agentId,
+      light: query.light === 'true'
     };
     return this.customersService.findAll(paginationQuery);
   }

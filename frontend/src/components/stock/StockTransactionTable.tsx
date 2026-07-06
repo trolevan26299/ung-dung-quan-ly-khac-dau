@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, ArrowUpCircle, ArrowDownCircle, RotateCcw, Package, Calendar, DollarSign, User, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { Pagination } from '../common/Pagination';
 import { formatCurrency, formatDateTime, safeString, safeNumber } from '../../lib/utils';
 import type { StockTransaction } from '../../types';
 
@@ -259,77 +260,16 @@ export const StockTransactionTable: React.FC<StockTransactionTableProps> = ({
                 </table>
             </div>
             
-            {/* Pagination tích hợp trong bảng */}
+            {/* Pagination tích hợp trong bảng (dùng component chung để đồng nhất toàn app) */}
             {pagination && (
-                <div className="flex flex-shrink-0 items-center justify-between bg-white border-t border-gray-200 px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">Hiển thị:</span>
-                        <select
-                            value={pagination.limit}
-                            onChange={(e) => onLimitChange && onLimitChange(Number(e.target.value))}
-                            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                        </select>
-                        <span className="text-sm text-gray-700">mục</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-700">
-                            Hiển thị {((pagination.currentPage - 1) * pagination.limit) + 1} đến{' '}
-                            {Math.min(pagination.currentPage * pagination.limit, pagination.total)} trong{' '}
-                            {pagination.total} kết quả
-                        </span>
-                        
-                        <div className="flex items-center space-x-1 ml-4">
-                            <button 
-                                onClick={onPreviousPage}
-                                disabled={pagination.currentPage === 1}
-                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
-                            >
-                                ‹ Trước
-                            </button>
-                            
-                            {/* Render page numbers */}
-                            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                                let pageNumber: number;
-                                if (pagination.totalPages <= 5) {
-                                    pageNumber = i + 1;
-                                } else if (pagination.currentPage <= 3) {
-                                    pageNumber = i + 1;
-                                } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                                    pageNumber = pagination.totalPages - 4 + i;
-                                } else {
-                                    pageNumber = pagination.currentPage - 2 + i;
-                                }
-                                
-                                return (
-                                    <button
-                                        key={pageNumber}
-                                        onClick={() => onPageChange && onPageChange(pageNumber)}
-                                        className={`px-3 py-1 text-sm border border-gray-300 rounded ${
-                                            pagination.currentPage === pageNumber
-                                                ? 'bg-blue-500 text-white border-blue-500'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        {pageNumber}
-                                    </button>
-                                );
-                            })}
-                            
-                            <button 
-                                onClick={onNextPage}
-                                disabled={pagination.currentPage === pagination.totalPages}
-                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:text-gray-400 border border-gray-300 rounded"
-                            >
-                                Sau ›
-                            </button>
-                        </div>
-                    </div>
+                <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+                    <Pagination
+                        pagination={pagination}
+                        onPageChange={(page) => onPageChange?.(page)}
+                        onPreviousPage={() => onPreviousPage?.()}
+                        onNextPage={() => onNextPage?.()}
+                        onLimitChange={onLimitChange ? (limit) => onLimitChange(limit) : undefined}
+                    />
                 </div>
             )}
         </div>

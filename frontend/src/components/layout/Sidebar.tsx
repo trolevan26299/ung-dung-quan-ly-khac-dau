@@ -37,7 +37,12 @@ const settingsMenuItems = [
     { icon: Users, label: 'Khách hàng', path: '/customers' },
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+    collapsed?: boolean;
+    onToggle?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false }) => {
     const location = useLocation();
     const dispatch = useDispatch();
     const { user: currentAuthUser } = useSelector((state: RootState) => state.auth);
@@ -64,20 +69,33 @@ export const Sidebar: React.FC = () => {
 
     return (
         // h-screen + shrink-0: sidebar cao đúng màn hình và không bị co lại.
-        <div className="w-64 shrink-0 bg-white border-r border-gray-200 h-screen flex flex-col">
+        // collapsed => rail hẹp (w-16) chỉ hiện icon để nhường chỗ cho bảng dữ liệu.
+        <div
+            className={cn(
+                "shrink-0 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-200",
+                collapsed ? "w-16" : "w-64"
+            )}
+        >
             {/* Logo / Brand */}
-            <div className="flex items-center gap-3 px-5 h-16 border-b border-gray-100 shrink-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-lg shadow-sm">
+            <div
+                className={cn(
+                    "flex items-center h-16 border-b border-gray-100 shrink-0",
+                    collapsed ? "justify-center px-0" : "gap-3 px-5"
+                )}
+            >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-lg shadow-sm">
                     🖋️
                 </div>
-                <div className="leading-tight">
-                    <h1 className="text-[15px] font-bold text-gray-800">Khắc Dấu TT</h1>
-                    <p className="text-xs text-gray-400">Quản lý cửa hàng</p>
-                </div>
+                {!collapsed && (
+                    <div className="leading-tight">
+                        <h1 className="text-[15px] font-bold text-gray-800">Khắc Dấu TT</h1>
+                        <p className="text-xs text-gray-400">Quản lý cửa hàng</p>
+                    </div>
+                )}
             </div>
 
             {/* Navigation — cuộn nội bộ nếu menu dài hơn màn hình */}
-            <nav className="flex-1 p-3 overflow-y-auto">
+            <nav className={cn("flex-1 overflow-y-auto", collapsed ? "p-2" : "p-3")}>
                 <ul className="space-y-1">
                     {/* Main menu items */}
                     {mainMenuItems.map((item) => {
@@ -88,80 +106,116 @@ export const Sidebar: React.FC = () => {
                             <li key={item.path}>
                                 <Link
                                     to={item.path}
+                                    title={collapsed ? item.label : undefined}
                                     className={cn(
-                                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                                        "flex items-center rounded-lg text-sm font-medium transition-all",
+                                        collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5",
                                         isActive
                                             ? "bg-blue-600 text-white shadow-sm"
                                             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                     )}
                                 >
-                                    <Icon className="h-[18px] w-[18px]" />
-                                    {item.label}
+                                    <Icon className="h-[18px] w-[18px] shrink-0" />
+                                    {!collapsed && item.label}
                                 </Link>
                             </li>
                         );
                     })}
 
-                    {/* Settings menu with expandable submenu */}
-                    <li>
-                        <button
-                            onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
-                            className={cn(
-                                "flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                                isInSettingsSection
-                                    ? "bg-blue-50 text-blue-700"
-                                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                            )}
-                        >
-                            <span className="flex items-center gap-3">
-                                <Settings className="h-[18px] w-[18px]" />
-                                Cài đặt
-                            </span>
-                            {isSettingsExpanded ? (
-                                <ChevronDown className="w-4 h-4" />
-                            ) : (
-                                <ChevronRight className="w-4 h-4" />
-                            )}
-                        </button>
+                    {collapsed ? (
+                        /* Khi thu gọn: hiện phẳng từng mục Cài đặt dạng icon để vẫn bấm được */
+                        <>
+                            <li className="py-1">
+                                <div className="mx-2 border-t border-gray-100" />
+                            </li>
+                            {filteredSettingsItems.map((item) => {
+                                const Icon = item.icon;
+                                const isActive = location.pathname === item.path;
 
-                        {/* Submenu — thụt vào với đường kẻ dẫn hướng bên trái */}
-                        {isSettingsExpanded && (
-                            <ul className="mt-1 ml-4 space-y-1 border-l border-gray-100 pl-3">
-                                {filteredSettingsItems.map((item) => {
-                                    const Icon = item.icon;
-                                    const isActive = location.pathname === item.path;
+                                return (
+                                    <li key={item.path}>
+                                        <Link
+                                            to={item.path}
+                                            title={item.label}
+                                            className={cn(
+                                                "flex items-center justify-center rounded-lg px-0 py-2.5 text-sm font-medium transition-all",
+                                                isActive
+                                                    ? "bg-blue-600 text-white shadow-sm"
+                                                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                            )}
+                                        >
+                                            <Icon className="h-[18px] w-[18px] shrink-0" />
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </>
+                    ) : (
+                        /* Settings menu with expandable submenu */
+                        <li>
+                            <button
+                                onClick={() => setIsSettingsExpanded(!isSettingsExpanded)}
+                                className={cn(
+                                    "flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                                    isInSettingsSection
+                                        ? "bg-blue-50 text-blue-700"
+                                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                )}
+                            >
+                                <span className="flex items-center gap-3">
+                                    <Settings className="h-[18px] w-[18px]" />
+                                    Cài đặt
+                                </span>
+                                {isSettingsExpanded ? (
+                                    <ChevronDown className="w-4 h-4" />
+                                ) : (
+                                    <ChevronRight className="w-4 h-4" />
+                                )}
+                            </button>
 
-                                    return (
-                                        <li key={item.path}>
-                                            <Link
-                                                to={item.path}
-                                                className={cn(
-                                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                                                    isActive
-                                                        ? "bg-blue-600 text-white shadow-sm"
-                                                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                                                )}
-                                            >
-                                                <Icon className="h-[18px] w-[18px]" />
-                                                {item.label}
-                                            </Link>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
-                    </li>
+                            {/* Submenu — thụt vào với đường kẻ dẫn hướng bên trái */}
+                            {isSettingsExpanded && (
+                                <ul className="mt-1 ml-4 space-y-1 border-l border-gray-100 pl-3">
+                                    {filteredSettingsItems.map((item) => {
+                                        const Icon = item.icon;
+                                        const isActive = location.pathname === item.path;
+
+                                        return (
+                                            <li key={item.path}>
+                                                <Link
+                                                    to={item.path}
+                                                    className={cn(
+                                                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                                                        isActive
+                                                            ? "bg-blue-600 text-white shadow-sm"
+                                                            : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                                                    )}
+                                                >
+                                                    <Icon className="h-[18px] w-[18px]" />
+                                                    {item.label}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </li>
+                    )}
                 </ul>
             </nav>
 
             {/* Logout */}
-            <div className="p-3 border-t border-gray-100 shrink-0">
+            <div className={cn("border-t border-gray-100 shrink-0", collapsed ? "p-2" : "p-3")}>
                 <button
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+                    title={collapsed ? 'Đăng xuất' : undefined}
+                    className={cn(
+                        "flex w-full items-center rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all",
+                        collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
+                    )}
                 >
-                    <LogOut className="h-[18px] w-[18px]" />
-                    Đăng xuất
+                    <LogOut className="h-[18px] w-[18px] shrink-0" />
+                    {!collapsed && 'Đăng xuất'}
                 </button>
             </div>
         </div>

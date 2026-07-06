@@ -80,7 +80,15 @@ export class RedisCacheService implements OnModuleDestroy {
 
     // SET — best effort, lỗi ghi cache không ảnh hưởng response
     try {
-      await this.client.set(key, JSON.stringify(result), 'EX', ttlSeconds);
+      if (ttlSeconds && ttlSeconds > 0) {
+        await this.client.set(key, JSON.stringify(result), 'EX', ttlSeconds);
+      } else {
+        // ttl <= 0 => cache VĨNH VIỄN (không set EX). An toàn vì:
+        // (1) invalidate() xoá đúng namespace ngay sau mỗi lần ghi → luôn tươi;
+        // (2) Redis chạy allkeys-lru 256MB (xem docker-compose) nên key ít dùng
+        //     vẫn bị đẩy khi thiếu RAM → không phình bộ nhớ vô hạn.
+        await this.client.set(key, JSON.stringify(result));
+      }
     } catch (err: any) {
       // nuốt lỗi ghi cache
     }

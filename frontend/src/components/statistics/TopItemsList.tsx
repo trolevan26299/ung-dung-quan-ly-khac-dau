@@ -8,9 +8,9 @@ interface TopItemsListProps<T> {
 
 export function TopItemsList<T>({ title, items, renderItem }: TopItemsListProps<T>) {
     return (
-        <div className="space-y-3">
+        <div className="space-y-2">
             {title ? <h3 className="font-medium text-gray-900">{title}</h3> : null}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
                 {!items || items.length === 0 ? (
                     <p className="py-6 text-center text-sm text-gray-400">Chưa có dữ liệu</p>
                 ) : (
