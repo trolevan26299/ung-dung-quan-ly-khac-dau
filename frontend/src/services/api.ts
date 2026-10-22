@@ -384,3 +384,22 @@ export const categoriesApi = {
 
 export default api;
  
+// Tra cứu doanh nghiệp theo mã số thuế
+export interface CompanyLookupResult {
+  taxCode: string;
+  name: string;
+  internationalName?: string;
+  shortName?: string;
+  address: string;
+  representative?: string;
+  establishedDate?: string; // YYYY-MM-DD
+  status?: string;
+  sources: string[];
+}
+
+export const companyLookupApi = {
+  lookup: async (taxCode: string): Promise<CompanyLookupResult> => {
+    const response = await api.get(`/company-lookup/${encodeURIComponent(taxCode)}`);
+    return response.data as CompanyLookupResult;
+  },
+};

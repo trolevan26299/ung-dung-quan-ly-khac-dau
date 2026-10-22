@@ -12,6 +12,7 @@ import { StatisticsModule } from './modules/statistics/statistics.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CacheModule } from './modules/cache/cache.module';
+import { CompanyLookupModule } from './modules/company-lookup/company-lookup.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CacheModule } from './modules/cache/cache.module';
     StockModule,
     StatisticsModule,
     InvoicesModule,
+    CompanyLookupModule,
   ],
   controllers: [],
 })

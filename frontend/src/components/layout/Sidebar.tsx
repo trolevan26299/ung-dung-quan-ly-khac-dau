@@ -14,7 +14,8 @@ import {
     Settings,
     Tag,
     ChevronDown,
-    ChevronRight
+    ChevronRight,
+    FileSearch
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
@@ -27,6 +28,7 @@ const mainMenuItems = [
     { icon: ShoppingCart, label: 'Đơn hàng', path: '/orders' },
     { icon: Warehouse, label: 'Kho hàng', path: '/stock' },
     { icon: Package, label: 'Sản phẩm', path: '/products' },
+    { icon: FileSearch, label: 'Tra cứu MST', path: '/company-lookup' },
 ];
 
 // Menu con trong "Cài đặt"
