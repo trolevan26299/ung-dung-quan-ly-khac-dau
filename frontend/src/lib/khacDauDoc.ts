@@ -1,6 +1,8 @@
-// Tạo "Đơn đề nghị khắc dấu" dạng file Word (.doc) ngay trên trình duyệt.
-// File là HTML theo chuẩn Word (mso), mở được bằng MS Word / WPS / LibreOffice,
-// nên không cần thêm thư viện.
+// Tạo "Đơn đề nghị khắc dấu" dạng file Word thật (.docx) ngay trên trình duyệt.
+// Bố cục bám theo file mẫu gốc (0319755936.doc): A4, lề trên/dưới/trái 2.54cm, lề phải 1.25cm,
+// Times New Roman, đầu đơn 12pt đậm, tiêu đề 15pt đậm, nội dung 13pt thường,
+// giãn dòng 1.15 + cách sau 8pt (đoạn "Chức vụ" -> "Doanh nghiệp tự chịu..." giãn 1.5).
+import { zipStore } from './zipStore';
 
 export const OUR_COMPANY_NAME = 'CÔNG TY TNHH THƯƠNG MẠI VÀ KỸ THUẬT TÂM TÍN';
 
@@ -16,79 +18,153 @@ export interface KhacDauDocData {
     docDate: Date; // Ngày làm đơn
 }
 
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const BLANK = '......................';
+const LINE_NORMAL = 278; // ~1.15 dòng như file mẫu
+const LINE_WIDE = 360; // 1.5 dòng
 
-const esc = (s: string) =>
-    (s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+const xmlEsc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const val = (s: string, blank = BLANK) => (s && s.trim() ? esc(s.trim()) : blank);
+const val = (s: string, blank = BLANK) => (s && s.trim() ? s.trim() : blank);
+const spaces = (n: number) => ' '.repeat(n);
 
-export const buildKhacDauDocHtml = (d: KhacDauDocData): string => {
+interface ParaOpts {
+    center?: boolean;
+    bold?: boolean;
+    size?: number; // pt
+    line?: number;
+}
+
+// Khai báo font ở từng run: Pages/Quick Look bỏ qua font mặc định trong styles.xml
+// và tự thay bằng "Times" (lỗi hiển thị dấu tiếng Việt)
+const FONT = '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>';
+
+const rPr = ({ bold, size = 13 }: ParaOpts) =>
+    `<w:rPr>${FONT}${bold ? '<w:b/><w:bCs/>' : ''}<w:sz w:val="${size * 2}"/><w:szCs w:val="${size * 2}"/></w:rPr>`;
+
+// "\t" trong text => tab của Word
+const para = (text: string, opts: ParaOpts = {}) => {
+    const props = rPr(opts);
+    const runs = text
+        .split('\t')
+        .map(part => (part ? `<w:r>${props}<w:t xml:space="preserve">${xmlEsc(part)}</w:t></w:r>` : ''))
+        .join(`<w:r>${props}<w:tab/></w:r>`);
+    return (
+        `<w:p><w:pPr><w:spacing w:after="160" w:line="${opts.line || LINE_NORMAL}" w:lineRule="auto"/>` +
+        `${opts.center ? '<w:jc w:val="center"/>' : ''}${props}</w:pPr>${runs}</w:p>`
+    );
+};
+
+const buildDocumentXml = (d: KhacDauDocData) => {
     const day = String(d.docDate.getDate()).padStart(2, '0');
     const month = String(d.docDate.getMonth() + 1).padStart(2, '0');
     const year = d.docDate.getFullYear();
     const name = val(d.companyName.toUpperCase());
     const taxCode = val(d.taxCode);
     const issueDate = val(d.issueDate, '....../....../..........');
+    const head = { center: true, size: 12 };
+    const title = { center: true, bold: true, size: 15 };
+    const wide = { line: LINE_WIDE };
 
-    return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="utf-8">
-<title>Đơn đề nghị khắc dấu - ${taxCode}</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
-<style>
-@page WordSection1 { size: 595.3pt 841.9pt; margin: 2cm 2cm 2cm 3cm; }
-div.WordSection1 { page: WordSection1; }
-body { font-family: 'Times New Roman', serif; font-size: 13pt; }
-p { margin: 0 0 6pt 0; line-height: 1.4; font-family: 'Times New Roman', serif; font-size: 13pt; }
-p.center { text-align: center; }
-p.right { text-align: right; }
-p.header { text-align: center; font-size: 12pt; font-weight: bold; margin-bottom: 2pt; }
-p.title { text-align: center; font-size: 15pt; font-weight: bold; margin: 18pt 0 12pt 0; }
-p.justify { text-align: justify; }
-table.sign { width: 100%; border-collapse: collapse; margin-top: 6pt; }
-table.sign td { font-family: 'Times New Roman', serif; font-size: 13pt; vertical-align: top; }
-</style>
-</head>
-<body>
-<div class="WordSection1">
-<p class="header">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-<p class="header">Độc lập - Tự do - Hạnh phúc</p>
-<p class="center" style="margin-bottom:12pt">--------------------</p>
-<p class="right"><i>${val(d.place)}, ngày ${day} tháng ${month} năm ${year}</i></p>
-<p class="title">ĐƠN ĐỀ NGHỊ KHẮC DẤU</p>
-<p>Kính gửi: <b>${esc(OUR_COMPANY_NAME)}</b></p>
-<p>Tên doanh nghiệp: <b>${name}</b></p>
-<p>Địa chỉ trụ sở chính: ${val(d.address)}</p>
-<p>Giấy chứng nhận đăng ký doanh nghiệp số: <b>${taxCode}</b></p>
-<p>Ngày cấp: ${issueDate}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cấp bởi: ${val(d.issuedBy)}</p>
-<p>Người đại diện theo pháp luật: Ông/Bà <b>${val(d.representative.toUpperCase())}</b></p>
-<p>Chức vụ: ${val(d.position.toUpperCase())}</p>
-<p class="justify">${name} được thành lập ngày ${issueDate} theo giấy chứng nhận đăng ký doanh nghiệp số ${taxCode} hoạt động theo Luật Doanh nghiệp.</p>
-<p class="justify">Do mới thành lập nên có nhu cầu khắc dấu tròn Doanh nghiệp. Để tạo điều kiện thuận lợi hoạt động ${name} trong thời gian tới, đề nghị quý cơ quan khắc dấu trong thời gian sớm nhất.</p>
-<p>Hồ sơ đính kèm: GPKD bản gốc + CCCD đại diện pháp luật</p>
-<p class="justify">Doanh nghiệp tự chịu trách nhiệm trước pháp luật việc sử dụng con dấu hợp pháp.</p>
-<p>Tôi xin chân thành cám ơn!</p>
-<table class="sign"><tr>
-<td style="width:50%"></td>
-<td style="width:50%;text-align:center"><b>Người đề nghị</b><br><i>(Ký, ghi rõ họ tên)</i></td>
-</tr></table>
-</div>
-</body>
-</html>`;
+    const body = [
+        para('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { ...head, bold: true }),
+        para('Độc lập- Tự do- Hạnh phúc', { ...head, bold: true }),
+        para(`${spaces(66)}${val(d.place)}, ngày ${day} tháng ${month} năm ${year}`, head),
+        para('', title),
+        para('ĐƠN ĐỀ NGHỊ KHẮC DẤU', title),
+        para(`Kính gửi: ${OUR_COMPANY_NAME}`),
+        para(`Tên doanh nghiệp: ${name}`),
+        para(`Địa chỉ trụ sở chính: ${val(d.address)}`),
+        para(`Giấy chứng nhận đăng ký doanh nghiệp số${spaces(3)}:${spaces(3)}${taxCode}`),
+        para(`Ngày cấp:${spaces(2)}${issueDate}\tcấp bởi: ${val(d.issuedBy)}`),
+        para(`Người đại diện theo pháp luật: Ông/Bà ${val(d.representative.toUpperCase())}`),
+        para(`Chức vụ: ${val(d.position.toUpperCase())}`, wide),
+        para(
+            `${name} được thành lập ngày ${issueDate} theo giấy chứng nhận đăng ký doanh nghiệp số ${taxCode} hoạt động theo Luật Doanh nghiệp.`,
+            wide
+        ),
+        para(
+            `Do mới thành lập nên có nhu cầu khắc dấu tròn Doanh nghiệp. Để tạo điều kiện thuận lợi hoạt động ${name} trong thời gian tới, đề nghị quý cơ quan khắc dấu trong thời gian sớm nhất.`,
+            wide
+        ),
+        para('Hồ sơ đính kèm: GPKD bản gốc + CCCD đại diện pháp luật', wide),
+        para('Doanh nghiệp tự chịu trách nhiệm trước pháp luật việc sử dụng con dấu hợp pháp.', wide),
+        para(' Tôi xin chân thành cám ơn!'),
+        para(`${spaces(88)}Người đề nghị`),
+        para(`${spaces(84)}(Ký, ghi rõ họ tên)`),
+    ].join('');
+
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+        body +
+        '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>' +
+        '<w:pgMar w:top="1440" w:right="707" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>' +
+        '</w:sectPr></w:body></w:document>'
+    );
 };
 
+const STYLES_XML =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:docDefaults><w:rPrDefault><w:rPr>' +
+    '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman" w:cs="Times New Roman"/>' +
+    '<w:sz w:val="26"/><w:szCs w:val="26"/><w:lang w:val="vi-VN" w:eastAsia="en-US" w:bidi="ar-SA"/>' +
+    '</w:rPr></w:rPrDefault>' +
+    `<w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="${LINE_NORMAL}" w:lineRule="auto"/></w:pPr></w:pPrDefault>` +
+    '</w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
+    '</w:styles>';
+
+const SETTINGS_XML =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:defaultTabStop w:val="720"/>' +
+    '<w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat>' +
+    '</w:settings>';
+
+const CONTENT_TYPES_XML =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+    '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>' +
+    '</Types>';
+
+const ROOT_RELS_XML =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>';
+
+const DOCUMENT_RELS_XML =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>' +
+    '</Relationships>';
+
+export const buildKhacDauDocx = (d: KhacDauDocData): Blob =>
+    zipStore(
+        [
+            { name: '[Content_Types].xml', content: CONTENT_TYPES_XML },
+            { name: '_rels/.rels', content: ROOT_RELS_XML },
+            { name: 'word/document.xml', content: buildDocumentXml(d) },
+            { name: 'word/_rels/document.xml.rels', content: DOCUMENT_RELS_XML },
+            { name: 'word/styles.xml', content: STYLES_XML },
+            { name: 'word/settings.xml', content: SETTINGS_XML },
+        ],
+        DOCX_MIME
+    );
+
 export const downloadKhacDauDoc = (d: KhacDauDocData) => {
-    // BOM để Word nhận đúng UTF-8 tiếng Việt
-    const blob = new Blob(['﻿', buildKhacDauDocHtml(d)], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(buildKhacDauDocx(d));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${d.taxCode || 'don-de-nghi-khac-dau'}.doc`;
+    a.download = `${d.taxCode || 'don-de-nghi-khac-dau'}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

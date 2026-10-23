@@ -9,7 +9,7 @@ import { downloadKhacDauDoc, OUR_COMPANY_NAME } from '../lib/khacDauDoc';
 
 const MAX_COMPANIES = 10;
 const TAX_CODE_REGEX = /^\d{10}(-\d{3})?$/;
-const DEFAULT_ISSUED_BY = 'Sở Tài chính TP Hồ Chí Minh';
+const DEFAULT_ISSUED_BY = 'Sở tài chính TP Hồ Chí Minh';
 const DEFAULT_POSITION = 'GIÁM ĐỐC';
 const DEFAULT_PLACE = 'TP Hồ Chí Minh';
 

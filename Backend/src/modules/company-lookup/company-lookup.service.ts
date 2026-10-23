@@ -26,32 +26,35 @@ export class CompanyLookupService {
       throw new BadRequestException('Mã số thuế không hợp lệ (10 số hoặc 10 số-3 số)');
     }
 
-    // Gọi song song 2 nguồn:
+    // Gọi song song 3 nguồn:
     // - VietQR: dữ liệu từ Cục Thuế, cập nhật nhanh (tên, địa chỉ, tình trạng)
-    // - esgoo: có thêm người đại diện, ngày hoạt động (thường thiếu với DN mới thành lập)
-    const [vietqr, esgoo] = await Promise.all([
+    // - doanhnghiep.biz: người đại diện + ngày cấp, có cả DN mới thành lập vài ngày
+    // - esgoo: dự phòng người đại diện, ngày hoạt động
+    const [vietqr, dnb, esgoo] = await Promise.all([
       this.fromVietQR(taxCode),
+      this.fromDoanhNghiepBiz(taxCode),
       this.fromEsgoo(taxCode),
     ]);
 
-    if (!vietqr && !esgoo) {
+    if (!vietqr && !dnb && !esgoo) {
       throw new NotFoundException(`Không tìm thấy thông tin doanh nghiệp với MST ${taxCode}`);
     }
 
     const sources: string[] = [];
     if (vietqr) sources.push('vietqr');
+    if (dnb) sources.push('doanhnghiep.biz');
     if (esgoo) sources.push('esgoo');
 
     return {
       taxCode,
-      name: vietqr?.name || esgoo?.name || '',
+      name: vietqr?.name || dnb?.name || esgoo?.name || '',
       internationalName: vietqr?.internationalName || undefined,
       shortName: vietqr?.shortName || undefined,
       // Ưu tiên địa chỉ VietQR vì đã cập nhật theo đơn vị hành chính mới
-      address: vietqr?.address || esgoo?.address || '',
-      representative: esgoo?.representative || undefined,
-      establishedDate: esgoo?.establishedDate || undefined,
-      status: vietqr?.status || esgoo?.status || undefined,
+      address: vietqr?.address || esgoo?.address || dnb?.address || '',
+      representative: dnb?.representative || esgoo?.representative || undefined,
+      establishedDate: dnb?.establishedDate || esgoo?.establishedDate || undefined,
+      status: vietqr?.status || dnb?.status || esgoo?.status || undefined,
       sources,
     };
   }
@@ -68,6 +71,62 @@ export class CompanyLookupService {
       this.logger.warn(`Lỗi gọi ${url}: ${error?.message}`);
       return null;
     }
+  }
+
+  private async fetchText(url: string): Promise<string | null> {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (!res.ok) return null;
+      return await res.text();
+    } catch (error) {
+      this.logger.warn(`Lỗi gọi ${url}: ${error?.message}`);
+      return null;
+    }
+  }
+
+  private async fromDoanhNghiepBiz(taxCode: string) {
+    const html = await this.fetchText(`https://doanhnghiep.biz/${taxCode}`);
+    if (!html) return null;
+
+    const decode = (s: string) =>
+      s
+        .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+        .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;|&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const prop = (name: string) => {
+      const m = html.match(new RegExp(`itemprop="${name}"[^>]*>([^<]*)<`));
+      return m && decode(m[1]) ? decode(m[1]) : undefined;
+    };
+
+    // Trang không có DN sẽ trả về trang tìm kiếm chung, không có taxID khớp
+    if (prop('taxID') !== taxCode) return null;
+
+    // DD/MM/YYYY -> YYYY-MM-DD
+    const toIso = (s?: string) => {
+      const m = s?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      return m ? `${m[3]}-${m[2]}-${m[1]}` : undefined;
+    };
+    const owner = html.match(/<span itemprop="Owner"><a[^>]*>([^<]+)<\/a>/);
+    const nameMatch = html.match(/<th[^>]*itemprop="name"[^>]*>([^<]+)</);
+
+    return {
+      name: nameMatch ? decode(nameMatch[1]) : undefined,
+      address: prop('address'),
+      representative: owner ? decode(owner[1]) : undefined,
+      // "Ngày cấp" là ngày cấp GCN ĐKDN, thiếu thì lấy "Ngày hoạt động"
+      establishedDate: toIso(prop('IncorporatedDate')) || toIso(prop('StartDate')),
+      status: prop('Status'),
+    };
   }
 
   private async fromVietQR(taxCode: string) {
