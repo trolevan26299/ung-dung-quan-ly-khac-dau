@@ -9,7 +9,7 @@ import { useToast } from '../contexts/ToastContext';
 import { clientAccountsApi, ClientAccount, ClientAccountInput } from '../services/api';
 
 // Web đại lý tự tra MST và in đơn đề nghị khắc dấu
-export const CLIENT_PORTAL_URL = 'https://khacdau-client.pages.dev';
+export const CLIENT_PORTAL_URL = 'https://khacdautamtin.pages.dev';
 
 const EMPTY_FORM: ClientAccountInput = {
     username: '',

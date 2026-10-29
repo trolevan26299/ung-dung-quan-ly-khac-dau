@@ -7,12 +7,12 @@ import { AuthService } from './modules/auth/auth.service';
 
 const DEFAULT_CORS_ORIGINS = [
   'https://khacdau.tamtin.id.vn', // web nội bộ
-  'https://khacdau-client.pages.dev', // web đại lý
+  'https://khacdautamtin.pages.dev', // web đại lý (Cloudflare Pages)
   'http://localhost:3000',
   'http://localhost:3005',
   'http://localhost:5173',
 ];
-const CLIENT_PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]+\.khacdau-client\.pages\.dev$/;
+const CLIENT_PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]+\.khacdautamtin\.pages\.dev$/;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
