@@ -13,6 +13,7 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CacheModule } from './modules/cache/cache.module';
 import { CompanyLookupModule } from './modules/company-lookup/company-lookup.module';
+import { ClientPortalModule } from './modules/client-portal/client-portal.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CompanyLookupModule } from './modules/company-lookup/company-lookup.mod
     StatisticsModule,
     InvoicesModule,
     CompanyLookupModule,
+    ClientPortalModule,
   ],
   controllers: [],
 })

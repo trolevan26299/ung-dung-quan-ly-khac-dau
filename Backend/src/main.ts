@@ -5,12 +5,35 @@ import * as compression from 'compression';
 import { AppModule } from './app.module';
 import { AuthService } from './modules/auth/auth.service';
 
+const DEFAULT_CORS_ORIGINS = [
+  'https://khacdau.tamtin.id.vn', // web nội bộ
+  'https://khacdau-client.pages.dev', // web đại lý
+  'http://localhost:3000',
+  'http://localhost:3005',
+  'http://localhost:5173',
+];
+const CLIENT_PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]+\.khacdau-client\.pages\.dev$/;
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Enable CORS
-  app.enableCors();
+  // CORS: chỉ cho web nội bộ + web đại lý gọi API.
+  // Ghi đè bằng env CORS_ORIGINS="https://a.com,https://b.com" (hoặc "*" để mở hết).
+  const corsOrigins = (process.env.CORS_ORIGINS || DEFAULT_CORS_ORIGINS.join(','))
+    .split(',')
+    .map(o => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+  app.enableCors({
+    origin: (origin, callback) => {
+      const allowed =
+        !origin || // gọi từ server, curl, Swagger cùng domain
+        corsOrigins.includes('*') ||
+        corsOrigins.includes(origin) ||
+        CLIENT_PREVIEW_ORIGIN.test(origin); // bản preview của Cloudflare Pages
+      callback(null, allowed);
+    },
+  });
 
   // Gzip response compression
   app.use(compression());

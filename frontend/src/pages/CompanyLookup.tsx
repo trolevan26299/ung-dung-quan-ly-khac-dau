@@ -5,7 +5,13 @@ import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
 import { useToast } from '../contexts/ToastContext';
 import { companyLookupApi } from '../services/api';
-import { downloadKhacDauDoc, OUR_COMPANY_NAME } from '../lib/khacDauDoc';
+import {
+    AuthorizationInfo,
+    DEFAULT_ID_ISSUED_BY,
+    deriveLocality,
+    downloadKhacDauDoc,
+    OUR_COMPANY_NAME,
+} from '../lib/khacDauDoc';
 
 const MAX_COMPANIES = 10;
 const TAX_CODE_REGEX = /^\d{10}(-\d{3})?$/;
@@ -22,9 +28,20 @@ interface CompanyRow {
     address: string;
     issueDate: string;
     issuedBy: string;
+    place: string; // Nơi làm đơn
     representative: string;
     position: string;
 }
+
+const EMPTY_AUTH: AuthorizationInfo = {
+    type: 'individual',
+    name: '',
+    idNumber: '',
+    idIssueDate: '',
+    idIssuedBy: DEFAULT_ID_ISSUED_BY,
+    address: '',
+    phone: '',
+};
 
 // YYYY-MM-DD -> DD/MM/YYYY
 const toDisplayDate = (iso?: string) => {
@@ -46,7 +63,7 @@ export const CompanyLookup: React.FC = () => {
     const [input, setInput] = useState('');
     const [rows, setRows] = useState<CompanyRow[]>([]);
     const [searching, setSearching] = useState(false);
-    const [place, setPlace] = useState(DEFAULT_PLACE);
+    const [auth, setAuth] = useState<AuthorizationInfo>(EMPTY_AUTH);
     const [docDate, setDocDate] = useState(todayIso());
 
     const updateRow = (taxCode: string, patch: Partial<CompanyRow>) => {
@@ -78,6 +95,7 @@ export const CompanyLookup: React.FC = () => {
                 address: '',
                 issueDate: '',
                 issuedBy: DEFAULT_ISSUED_BY,
+                place: DEFAULT_PLACE,
                 representative: '',
                 position: DEFAULT_POSITION,
             }))
@@ -87,7 +105,10 @@ export const CompanyLookup: React.FC = () => {
             codes.map(async taxCode => {
                 try {
                     const info = await companyLookupApi.lookup(taxCode);
+                    // Nơi làm đơn + cấp bởi theo tỉnh/thành của công ty
+                    const locality = deriveLocality(info.address);
                     updateRow(taxCode, {
+                        ...(locality || {}),
                         loading: false,
                         status: info.status,
                         companyName: info.name || '',
@@ -120,7 +141,7 @@ export const CompanyLookup: React.FC = () => {
     };
 
     const handleDownload = (row: CompanyRow) => {
-        downloadKhacDauDoc({ ...row, place, docDate: docDateObj() });
+        downloadKhacDauDoc({ ...row, docDate: docDateObj(), authorization: auth });
     };
 
     const handleDownloadAll = async () => {
@@ -169,10 +190,6 @@ export const CompanyLookup: React.FC = () => {
                     />
                     <div className="flex flex-wrap items-end gap-3">
                         <div>
-                            <label className="block text-xs text-gray-500 mb-1">Nơi làm đơn</label>
-                            <Input value={place} onChange={e => setPlace(e.target.value)} className="w-48" />
-                        </div>
-                        <div>
                             <label className="block text-xs text-gray-500 mb-1">Ngày làm đơn</label>
                             <Input type="date" value={docDate} onChange={e => setDocDate(e.target.value)} className="w-44" />
                         </div>
@@ -184,6 +201,55 @@ export const CompanyLookup: React.FC = () => {
                             {searching ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
                             Tra cứu
                         </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Thông tin ủy quyền và nhận bàn giao (dùng chung cho mọi đơn) */}
+            <Card>
+                <CardContent className="p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="text-sm font-medium text-gray-700">
+                            Thông tin ủy quyền và nhận bàn giao{' '}
+                            <span className="text-gray-400 font-normal">(để trống tên thì đơn không có mục này)</span>
+                        </label>
+                        <div className="flex rounded-md border border-gray-300 p-0.5 text-sm">
+                            {(['individual', 'agent'] as const).map(type => (
+                                <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => setAuth(a => ({ ...a, type }))}
+                                    className={`rounded px-3 py-1 ${auth.type === type ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    {type === 'individual' ? 'Cá nhân (CCCD)' : 'Đại lý'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Field label={auth.type === 'individual' ? 'Họ và tên' : 'Tên đại lý'}>
+                            <Input value={auth.name} onChange={e => setAuth(a => ({ ...a, name: e.target.value }))} />
+                        </Field>
+                        {auth.type === 'individual' ? (
+                            <>
+                                <Field label="Số CCCD">
+                                    <Input value={auth.idNumber} onChange={e => setAuth(a => ({ ...a, idNumber: e.target.value }))} />
+                                </Field>
+                                <Field label="Ngày cấp CCCD (DD/MM/YYYY)">
+                                    <Input value={auth.idIssueDate} placeholder="VD: 03/10/2025" onChange={e => setAuth(a => ({ ...a, idIssueDate: e.target.value }))} />
+                                </Field>
+                                <Field label="Nơi cấp">
+                                    <Input value={auth.idIssuedBy} onChange={e => setAuth(a => ({ ...a, idIssuedBy: e.target.value }))} />
+                                </Field>
+                            </>
+                        ) : (
+                            <Field label="Địa chỉ đại lý" className="md:col-span-2">
+                                <Input value={auth.address} onChange={e => setAuth(a => ({ ...a, address: e.target.value }))} />
+                            </Field>
+                        )}
+                        <Field label="Số điện thoại liên hệ">
+                            <Input value={auth.phone} onChange={e => setAuth(a => ({ ...a, phone: e.target.value }))} />
+                        </Field>
                     </div>
                 </CardContent>
             </Card>
@@ -256,6 +322,9 @@ export const CompanyLookup: React.FC = () => {
                             </Field>
                             <Field label="Cấp bởi">
                                 <Input value={row.issuedBy} disabled={row.loading} onChange={e => updateRow(row.taxCode, { issuedBy: e.target.value })} />
+                            </Field>
+                            <Field label="Nơi làm đơn">
+                                <Input value={row.place} disabled={row.loading} onChange={e => updateRow(row.taxCode, { place: e.target.value })} />
                             </Field>
                         </div>
                     </CardContent>

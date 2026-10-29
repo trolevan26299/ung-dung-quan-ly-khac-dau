@@ -403,3 +403,46 @@ export const companyLookupApi = {
     return response.data as CompanyLookupResult;
   },
 };
+
+// Tài khoản web đại lý (khacdau-client) — chỉ admin
+export interface ClientAccount {
+  id: string;
+  username: string;
+  displayName: string;
+  phone: string;
+  address: string;
+  notes: string;
+  isActive: boolean;
+  lastLoginAt?: string;
+  createdAt?: string;
+}
+
+export interface ClientAccountInput {
+  username: string;
+  password: string;
+  displayName: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+  isActive?: boolean;
+}
+
+export const clientAccountsApi = {
+  list: async (): Promise<ClientAccount[]> => {
+    const response = await api.get('/client-accounts');
+    return response.data as ClientAccount[];
+  },
+  create: async (data: ClientAccountInput): Promise<ClientAccount> => {
+    const response = await api.post('/client-accounts', data);
+    return response.data as ClientAccount;
+  },
+  update: async (id: string, data: Partial<ClientAccountInput>): Promise<ClientAccount> => {
+    // Chỉ gửi các trường backend nhận
+    const { username, password, displayName, phone, address, notes, isActive } = data;
+    const response = await api.patch(`/client-accounts/${id}`, { username, password, displayName, phone, address, notes, isActive });
+    return response.data as ClientAccount;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/client-accounts/${id}`);
+  },
+};

@@ -15,6 +15,7 @@ export enum CacheNamespace {
   STATISTICS = 'statistics',
   INVOICES = 'invoices',
   USERS = 'users',
+  COMPANY_LOOKUP = 'company-lookup', // tra cứu MST từ nguồn ngoài, chỉ hết hạn theo TTL
 }
 
 /**

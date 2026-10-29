@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { CacheNamespace } from '../cache/cache-keys';
 
 export interface CompanyInfo {
   taxCode: string;
@@ -15,17 +17,39 @@ export interface CompanyInfo {
 // MST doanh nghiệp: 10 số, chi nhánh: 10 số + "-" + 3 số
 const TAX_CODE_REGEX = /^\d{10}(-\d{3})?$/;
 const REQUEST_TIMEOUT_MS = 10000;
+// VietQR giới hạn 2 request/giây => giãn cách các lượt gọi, bị 429 thì đợi rồi thử lại
+const VIETQR_SPACING_MS = 550;
+const VIETQR_MAX_ATTEMPTS = 3;
+// Lưu kết quả tra cứu 6 giờ: tra lại cùng MST không gọi nguồn ngoài (tránh bị giới hạn)
+const LOOKUP_CACHE_TTL = 6 * 60 * 60;
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 @Injectable()
 export class CompanyLookupService {
   private readonly logger = new Logger(CompanyLookupService.name);
+  private vietqrQueue: Promise<void> = Promise.resolve();
+
+  constructor(private readonly cache: RedisCacheService) {}
+
+  // Chờ tới lượt gọi VietQR (dùng chung cho mọi request đang chạy)
+  private async vietqrSlot() {
+    const previous = this.vietqrQueue;
+    let release: () => void;
+    this.vietqrQueue = new Promise<void>(resolve => (release = resolve));
+    await previous;
+    setTimeout(release, VIETQR_SPACING_MS);
+  }
 
   async lookup(rawTaxCode: string): Promise<CompanyInfo> {
     const taxCode = (rawTaxCode || '').replace(/\s/g, '');
     if (!TAX_CODE_REGEX.test(taxCode)) {
       throw new BadRequestException('Mã số thuế không hợp lệ (10 số hoặc 10 số-3 số)');
     }
+    // Không tìm thấy => ném lỗi, không bị cache
+    return this.cache.wrap(CacheNamespace.COMPANY_LOOKUP, taxCode, LOOKUP_CACHE_TTL, () => this.fetchCompany(taxCode));
+  }
 
+  private async fetchCompany(taxCode: string): Promise<CompanyInfo> {
     // Gọi song song 3 nguồn:
     // - VietQR: dữ liệu từ Cục Thuế, cập nhật nhanh (tên, địa chỉ, tình trạng)
     // - doanhnghiep.biz: người đại diện + ngày cấp, có cả DN mới thành lập vài ngày
@@ -130,7 +154,25 @@ export class CompanyLookupService {
   }
 
   private async fromVietQR(taxCode: string) {
-    const json = await this.fetchJson(`https://api.vietqr.io/v2/business/${taxCode}`);
+    const url = `https://api.vietqr.io/v2/business/${taxCode}`;
+    let json: any = null;
+    for (let attempt = 1; attempt <= VIETQR_MAX_ATTEMPTS; attempt++) {
+      await this.vietqrSlot();
+      try {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+        if (res.status === 429) {
+          await sleep(600 * attempt);
+          continue;
+        }
+        json = res.ok ? await res.json() : null;
+      } catch (error) {
+        this.logger.warn(`Lỗi gọi ${url}: ${error?.message}`);
+      }
+      break;
+    }
     if (!json || json.code !== '00' || !json.data?.name) return null;
     return {
       name: json.data.name as string,

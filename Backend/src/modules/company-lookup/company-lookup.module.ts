@@ -5,5 +5,6 @@ import { CompanyLookupService } from './company-lookup.service';
 @Module({
   controllers: [CompanyLookupController],
   providers: [CompanyLookupService],
+  exports: [CompanyLookupService],
 })
 export class CompanyLookupModule {}

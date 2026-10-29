@@ -20,6 +20,7 @@ const Orders = lazy(() => import('./pages/Orders').then(m => ({ default: m.Order
 const Stock = lazy(() => import('./pages/Stock').then(m => ({ default: m.Stock })));
 const Statistics = lazy(() => import('./pages/Statistics').then(m => ({ default: m.Statistics })));
 const CompanyLookup = lazy(() => import('./pages/CompanyLookup').then(m => ({ default: m.CompanyLookup })));
+const ClientAccounts = lazy(() => import('./pages/ClientAccounts').then(m => ({ default: m.ClientAccounts })));
 
 // Fallback hiển thị trong lúc chunk của trang đang tải.
 const PageLoader: React.FC = () => (
@@ -55,6 +56,7 @@ const AppRouter: React.FC = () => {
           <Route path="/stock" element={<Stock />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/company-lookup" element={<CompanyLookup />} />
+          <Route path="/client-accounts" element={<ClientAccounts />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

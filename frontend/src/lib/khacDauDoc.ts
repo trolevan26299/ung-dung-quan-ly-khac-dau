@@ -2,6 +2,7 @@
 // Bố cục bám theo file mẫu gốc (0319755936.doc): A4, lề trên/dưới/trái 2.54cm, lề phải 1.25cm,
 // Times New Roman, đầu đơn 12pt đậm, tiêu đề 15pt đậm, nội dung 13pt thường,
 // giãn dòng 1.15 + cách sau 8pt (đoạn "Chức vụ" -> "Doanh nghiệp tự chịu..." giãn 1.5).
+// Mẫu mới (0402362264.doc) thêm mục "Thông tin ủy quyền và nhận bàn giao" in đậm, tô vàng.
 import { zipStore } from './zipStore';
 
 export const OUR_COMPANY_NAME = 'CÔNG TY TNHH THƯƠNG MẠI VÀ KỸ THUẬT TÂM TÍN';
@@ -16,7 +17,44 @@ export interface KhacDauDocData {
     position: string; // Chức vụ
     place: string; // Nơi làm đơn
     docDate: Date; // Ngày làm đơn
+    authorization?: AuthorizationInfo; // Bỏ trống tên => không in mục ủy quyền
 }
+
+// Người được ủy quyền và nhận bàn giao dấu: cá nhân (CCCD) hoặc đại lý
+export interface AuthorizationInfo {
+    type: 'individual' | 'agent';
+    name: string; // Họ tên / tên đại lý
+    idNumber?: string; // Số CCCD
+    idIssueDate?: string; // Ngày cấp CCCD
+    idIssuedBy?: string; // Nơi cấp CCCD
+    address?: string; // Địa chỉ đại lý
+    phone?: string;
+}
+
+export const DEFAULT_ID_ISSUED_BY = 'Bộ CA';
+
+// Lấy tỉnh/thành từ cuối địa chỉ: "..., TP Đà Nẵng" / "..., Đà Nẵng" => nơi làm đơn "TP Đà Nẵng",
+// cấp bởi "Sở tài chính TP Đà Nẵng" (giống file mẫu); "..., Tỉnh Đồng Nai" => "Đồng Nai", "Sở tài chính tỉnh Đồng Nai"
+const CENTRAL_CITIES = ['hà nội', 'hồ chí minh', 'hải phòng', 'đà nẵng', 'cần thơ', 'huế'];
+
+export const deriveLocality = (address: string): { place: string; issuedBy: string } | null => {
+    const parts = (address || '').split(',').map(x => x.trim().replace(/\.$/, '')).filter(Boolean);
+    if (/^Vi[eệ]t\s*Nam$/i.test(parts[parts.length - 1] || '')) parts.pop();
+    const last = parts[parts.length - 1] || '';
+    const city = last.match(/^(?:TP|Thành phố)\.?\s*(.+)$/i);
+    const name = (city ? city[1] : last).trim();
+    if (!name) return null;
+    if (city || CENTRAL_CITIES.includes(name.toLowerCase())) {
+        return { place: `TP ${name}`, issuedBy: `Sở tài chính TP ${name}` };
+    }
+    const province = name.match(/^Tỉnh\s+(.+)$/i);
+    if (province) return { place: province[1], issuedBy: `Sở tài chính tỉnh ${province[1]}` };
+    // Tên tỉnh không có chữ "Tỉnh" (bỏ qua nếu là phường/xã/quận... hoặc có số)
+    if (!/^(Phường|Xã|Quận|Huyện|Thị xã|Thị trấn|Việt Nam)/i.test(name) && !/\d/.test(name)) {
+        return { place: name, issuedBy: `Sở tài chính tỉnh ${name}` };
+    }
+    return null;
+};
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const BLANK = '......................';
@@ -34,14 +72,33 @@ interface ParaOpts {
     bold?: boolean;
     size?: number; // pt
     line?: number;
+    highlight?: boolean;
 }
 
 // Khai báo font ở từng run: Pages/Quick Look bỏ qua font mặc định trong styles.xml
 // và tự thay bằng "Times" (lỗi hiển thị dấu tiếng Việt)
 const FONT = '<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>';
 
-const rPr = ({ bold, size = 13 }: ParaOpts) =>
-    `<w:rPr>${FONT}${bold ? '<w:b/><w:bCs/>' : ''}<w:sz w:val="${size * 2}"/><w:szCs w:val="${size * 2}"/></w:rPr>`;
+const rPr = ({ bold, size = 13, highlight }: ParaOpts) =>
+    `<w:rPr>${FONT}${bold ? '<w:b/><w:bCs/>' : ''}<w:sz w:val="${size * 2}"/><w:szCs w:val="${size * 2}"/>` +
+    `${highlight ? '<w:highlight w:val="yellow"/>' : ''}</w:rPr>`;
+
+const authorizationParas = (a?: AuthorizationInfo): string[] => {
+    if (!a || !a.name.trim()) return [];
+    const opts = { bold: true, highlight: true, line: LINE_WIDE };
+    const lines = ['Thông tin ủy quyền và nhận bàn giao:'];
+    if (a.type === 'individual') {
+        lines.push(
+            `${a.name.trim().toUpperCase()}${spaces(3)}Số CCCD: ${val(a.idNumber || '')}${spaces(2)}` +
+                `Ngày cấp: ${val(a.idIssueDate || '', '....../....../..........')} ` +
+                `Nơi cấp: ${val(a.idIssuedBy || '', DEFAULT_ID_ISSUED_BY)}`
+        );
+    } else {
+        lines.push(`Đại lý: ${a.name.trim().toUpperCase()}${a.address?.trim() ? `${spaces(3)}Địa chỉ: ${a.address.trim()}` : ''}`);
+    }
+    if (a.phone?.trim()) lines.push(`Số điện thoại liên hệ: ${a.phone.trim()}`);
+    return lines.map(line => para(line, opts));
+};
 
 // "\t" trong text => tab của Word
 const para = (text: string, opts: ParaOpts = {}) => {
@@ -90,7 +147,8 @@ const buildDocumentXml = (d: KhacDauDocData) => {
         ),
         para('Hồ sơ đính kèm: GPKD bản gốc + CCCD đại diện pháp luật', wide),
         para('Doanh nghiệp tự chịu trách nhiệm trước pháp luật việc sử dụng con dấu hợp pháp.', wide),
-        para(' Tôi xin chân thành cám ơn!'),
+        ...authorizationParas(d.authorization),
+        para('Tôi xin chân thành cám ơn!'),
         para(`${spaces(88)}Người đề nghị`),
         para(`${spaces(84)}(Ký, ghi rõ họ tên)`),
     ].join('');

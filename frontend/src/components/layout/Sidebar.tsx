@@ -15,7 +15,8 @@ import {
     Tag,
     ChevronDown,
     ChevronRight,
-    FileSearch
+    FileSearch,
+    KeyRound
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
@@ -35,6 +36,7 @@ const mainMenuItems = [
 const settingsMenuItems = [
     { icon: Tag, label: 'Danh mục sản phẩm', path: '/categories' },
     { icon: Settings, label: 'Người dùng', path: '/users', adminOnly: true },
+    { icon: KeyRound, label: 'Tài khoản đại lý', path: '/client-accounts', adminOnly: true },
     { icon: UserCheck, label: 'Đại lý', path: '/agents' },
     { icon: Users, label: 'Khách hàng', path: '/customers' },
 ];
