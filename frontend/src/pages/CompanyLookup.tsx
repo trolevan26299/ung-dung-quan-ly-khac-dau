@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { companyLookupApi } from '../services/api';
 import {
     AuthorizationInfo,
+    AuthorizationType,
     DEFAULT_ID_ISSUED_BY,
     deriveLocality,
     downloadKhacDauDoc,
@@ -33,8 +34,14 @@ interface CompanyRow {
     position: string;
 }
 
+const AUTH_OPTIONS: { type: AuthorizationType; label: string }[] = [
+    { type: 'none', label: 'Không hiển thị' },
+    { type: 'agent', label: 'Đại lý' },
+    { type: 'individual', label: 'Cá nhân (CCCD)' },
+];
+
 const EMPTY_AUTH: AuthorizationInfo = {
-    type: 'individual',
+    type: 'none',
     name: '',
     idNumber: '',
     idIssueDate: '',
@@ -209,48 +216,49 @@ export const CompanyLookup: React.FC = () => {
             <Card>
                 <CardContent className="p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <label className="text-sm font-medium text-gray-700">
-                            Thông tin ủy quyền và nhận bàn giao{' '}
-                            <span className="text-gray-400 font-normal">(để trống tên thì đơn không có mục này)</span>
-                        </label>
+                        <label className="text-sm font-medium text-gray-700">Thông tin ủy quyền và nhận bàn giao</label>
                         <div className="flex rounded-md border border-gray-300 p-0.5 text-sm">
-                            {(['individual', 'agent'] as const).map(type => (
+                            {AUTH_OPTIONS.map(option => (
                                 <button
-                                    key={type}
+                                    key={option.type}
                                     type="button"
-                                    onClick={() => setAuth(a => ({ ...a, type }))}
-                                    className={`rounded px-3 py-1 ${auth.type === type ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                                    onClick={() => setAuth(a => ({ ...a, type: option.type }))}
+                                    className={`rounded px-3 py-1 ${auth.type === option.type ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
                                 >
-                                    {type === 'individual' ? 'Cá nhân (CCCD)' : 'Đại lý'}
+                                    {option.label}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <Field label={auth.type === 'individual' ? 'Họ và tên' : 'Tên đại lý'}>
-                            <Input value={auth.name} onChange={e => setAuth(a => ({ ...a, name: e.target.value }))} />
-                        </Field>
-                        {auth.type === 'individual' ? (
-                            <>
-                                <Field label="Số CCCD">
-                                    <Input value={auth.idNumber} onChange={e => setAuth(a => ({ ...a, idNumber: e.target.value }))} />
-                                </Field>
-                                <Field label="Ngày cấp CCCD (DD/MM/YYYY)">
-                                    <Input value={auth.idIssueDate} placeholder="VD: 03/10/2025" onChange={e => setAuth(a => ({ ...a, idIssueDate: e.target.value }))} />
-                                </Field>
-                                <Field label="Nơi cấp">
-                                    <Input value={auth.idIssuedBy} onChange={e => setAuth(a => ({ ...a, idIssuedBy: e.target.value }))} />
-                                </Field>
-                            </>
-                        ) : (
-                            <Field label="Địa chỉ đại lý" className="md:col-span-2">
-                                <Input value={auth.address} onChange={e => setAuth(a => ({ ...a, address: e.target.value }))} />
+                    {auth.type === 'none' ? (
+                        <p className="text-sm text-gray-500">Đơn sẽ không có mục "Thông tin ủy quyền và nhận bàn giao".</p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <Field label={auth.type === 'individual' ? 'Họ và tên' : 'Tên đại lý'}>
+                                <Input value={auth.name} onChange={e => setAuth(a => ({ ...a, name: e.target.value }))} />
                             </Field>
-                        )}
-                        <Field label="Số điện thoại liên hệ">
-                            <Input value={auth.phone} onChange={e => setAuth(a => ({ ...a, phone: e.target.value }))} />
-                        </Field>
-                    </div>
+                            {auth.type === 'individual' ? (
+                                <>
+                                    <Field label="Số CCCD">
+                                        <Input value={auth.idNumber} onChange={e => setAuth(a => ({ ...a, idNumber: e.target.value }))} />
+                                    </Field>
+                                    <Field label="Ngày cấp CCCD (DD/MM/YYYY)">
+                                        <Input value={auth.idIssueDate} placeholder="VD: 03/10/2025" onChange={e => setAuth(a => ({ ...a, idIssueDate: e.target.value }))} />
+                                    </Field>
+                                    <Field label="Nơi cấp">
+                                        <Input value={auth.idIssuedBy} onChange={e => setAuth(a => ({ ...a, idIssuedBy: e.target.value }))} />
+                                    </Field>
+                                </>
+                            ) : (
+                                <Field label="Địa chỉ đại lý" className="md:col-span-2">
+                                    <Input value={auth.address} onChange={e => setAuth(a => ({ ...a, address: e.target.value }))} />
+                                </Field>
+                            )}
+                            <Field label="Số điện thoại liên hệ">
+                                <Input value={auth.phone} onChange={e => setAuth(a => ({ ...a, phone: e.target.value }))} />
+                            </Field>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
