@@ -249,11 +249,10 @@ export const CompanyLookup: React.FC = () => {
                                         <Input value={auth.idIssuedBy} onChange={e => setAuth(a => ({ ...a, idIssuedBy: e.target.value }))} />
                                     </Field>
                                 </>
-                            ) : (
-                                <Field label="Địa chỉ đại lý" className="md:col-span-2">
-                                    <Input value={auth.address} onChange={e => setAuth(a => ({ ...a, address: e.target.value }))} />
-                                </Field>
-                            )}
+                            ) : null}
+                            <Field label={auth.type === 'individual' ? 'Địa chỉ (bỏ trống thì không in)' : 'Địa chỉ đại lý'} className="md:col-span-2">
+                                <Input value={auth.address} onChange={e => setAuth(a => ({ ...a, address: e.target.value }))} />
+                            </Field>
                             <Field label="Số điện thoại liên hệ">
                                 <Input value={auth.phone} onChange={e => setAuth(a => ({ ...a, phone: e.target.value }))} />
                             </Field>
